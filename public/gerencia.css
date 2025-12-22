@@ -1,0 +1,255 @@
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+}
+
+/* Container geral */
+.container {
+    padding: 20px;
+}
+
+/* Navegação de abas */
+.aba-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.aba-btn {
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: 0.3s;
+}
+.aba-btn:hover {
+  color: var(--color-primary);
+}
+.aba-btn.ativa {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Conteúdos das abas */
+.aba-conteudo {
+    display: none;
+}
+
+.aba-conteudo.ativa {
+    display: block;
+}
+
+/* === GRID PRINCIPAL === */
+.supervisor-grid {
+    display: grid;
+    grid-template-columns: 20% 1fr 20%; /* 3 colunas lado a lado */
+    gap: 20px;
+}
+
+
+
+
+/* RESPONSIVIDADE */
+@media (max-width: 1100px) {
+    .supervisor-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .supervisor-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Card simples (sem visual extra) */
+.card {
+    background: #fff;
+    padding: 16px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+/* --- ESTILO DO BLOCO DE ATENDENTES --- */
+
+.select-atendente {
+    width: 100%;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-top: 6px;
+    background: #fff;
+}
+
+.atendente-info {
+    margin-top: 10px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 2 colunas */
+    gap: 15px;
+}
+
+.info-item {
+    background: #fafafa;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+
+.info-item p {
+    margin: 3px 0;
+}
+
+/* ======= STATUS DA FILA (CÍRCULO) ======= */
+.fila-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.fila-status-circle {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 2px solid #ccc;
+}
+
+/* Cores */
+.fila-status-circle.verde {
+    background-color: #3fbf3f;
+}
+
+.fila-status-circle.amarela {
+    background-color: #e4d12e;
+}
+
+.fila-status-circle.laranja {
+    background-color: #ff8c00;
+}
+
+.fila-status-circle.vermelha {
+    background-color: #d62828;
+}
+
+/* ======= LISTA DA FILA ======= */
+.fila-lista {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cliente-item {
+    background: #fafafa;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cliente-nome {
+    font-weight: 600;
+}
+
+.cliente-tempo {
+    font-size: 13px;
+    color: #666;
+}
+/* CARD DO CHAT */
+.chat-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Header */
+.chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.chat-select {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* FUNDO WhatsApp */
+.chat-box.whatsapp-style {
+    flex: 1;
+    padding: 14px;
+    border-radius: 10px;
+    overflow-y: auto;
+    background: #e5ddd5; /* cor de fundo do whatsapp */
+    background-image: url("https://i.imgur.com/O8P4Y8N.png"); /* papel de parede padrão */
+    background-size: cover;
+    border: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* BALÕES */
+.msg {
+    max-width: 70%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    position: relative;
+    font-size: 14px;
+    line-height: 1.4;
+    display: inline-block;
+    animation: fadeIn 0.2s ease;
+}
+
+/* Cliente - esquerda */
+.msg-left {
+    align-self: flex-start;
+    background: #ffffff;
+    border-radius: 0 8px 8px 8px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.15);
+}
+
+/* Atendente - direita */
+.msg-right {
+    align-self: flex-end;
+    background: #d2f8c6; /* verde claro igual WhatsApp */
+    border-radius: 8px 0 8px 8px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.15);
+}
+
+/* Hora da mensagem */
+.msg-hora {
+    display: block;
+    text-align: right;
+    font-size: 11px;
+    color: #4a4a4a;
+    margin-top: 3px;
+}
+
+/* Animação */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}

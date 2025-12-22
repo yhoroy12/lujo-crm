@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lujo Network</title>
+
+  <!-- Ícones -->
+  <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css">
+
+  <!-- CSS principal -->
+  <link rel="stylesheet" href="main.css">
+</head>
+
+<body>
+
+  <!-- MENU LATERAL -->
+  <aside class="sidebar" id="sidebar">
+    <ul>
+      <li><a href="#" title="Início" onclick="voltarMain()"><i class="fi fi-rr-home"></i></a></li>
+      <li><a href="#" title="Atendimento" onclick="loadContent('atendimento')"><i class="fi fi-rr-phone-call"></i></a></li>
+      <li><a href="#" title="Conteúdo" onclick="loadContent('conteudo')"><i class="fi fi-rr-download"></i></a></li>
+      <li><a href="#" title="Financeiro" onclick="loadContent('financeiro')"><i class="fi fi-rr-dollar"></i></a></li>
+      <li><a href="#" title="Marketing" onclick="loadContent('marketing')"><i class="fi fi-rr-star"></i></a></li>
+      <li><a href="#" title="Técnico" onclick="loadContent('tecnico')"><i class="fi fi-rr-users"></i></a></li>
+      <li><a href="#" title="Gerência" onclick="loadContent('gerencia')"><i class="fi fi-rr-user"></i></a></li>
+      <li><a href="#" title="Relatórios" onclick="loadContent('relatorios')"><i class="fi fi-rr-chart-histogram"></i></a></li>
+    </ul>
+  </aside>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <div class="main">
+    <header>
+      <button class="menu-btn" id="menuTrigger">
+        <i class="fi fi-rr-menu-burger"></i>
+      </button>
+
+      <h1>Lujo Network</h1>
+
+      <div>
+        <button class="btn btn-secondary">Ajuda</button>
+        <button class="btn btn-primary">Sair</button>
+      </div>
+    </header>
+
+    <main id="content">
+
+      <section class="news-section" id="news-section">
+        <h2>Notícias da Empresa</h2>
+
+        <article class="news-item">
+          <h3>Nova Política de Atendimento</h3>
+          <p>A partir do próximo mês, haverá atualizações nos horários e procedimentos para melhor atender nossos clientes.</p>
+          <span class="news-date">Publicado em: 28/10/2025</span>
+        </article>
+
+        <article class="news-item">
+          <h3>Campanha de Marketing 2025</h3>
+          <p>O novo ciclo de campanhas foca no público jovem e em estratégias digitais modernas.</p>
+          <span class="news-date">Publicado em: 25/10/2025</span>
+        </article>
+
+      </section>
+
+    </main>
+
+    <footer>
+      &copy; 2025 - Sistema Web Integrado | Desenvolvido com Google Apps Script
+      <br>
+      <small>Ícones por <a href="https://www.flaticon.com/">Flaticon</a></small>
+    </footer>
+  </div>
+
+  <!-- JS principal -->
+  <script src="main.js"></script>
+
+</body>
+</html>
