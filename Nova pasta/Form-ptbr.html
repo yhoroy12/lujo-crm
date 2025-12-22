@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Ata – Reunião Sacramental</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Para teste no VS Code -->
+  <link rel="stylesheet" href="Styles.css">
+</head>
+
+<body>
+  <div class="container">
+    <h1>Agenda – Reunião Sacramental</h1>
+    <div class="subtitle">Preencha os dados para gerar a ata automaticamente</div>
+
+    <!-- DADOS GERAIS -->
+    <div class="section">
+      <div class="section-title">Dados Gerais</div>
+      <div class="grid-3">
+        <div class="field">
+          <label>Data</label>
+          <input type="date" id="data">
+        </div>
+        <div class="field">
+          <label>Preside</label>
+          <select id="preside"></select>
+        </div>
+        <div class="field">
+          <label>Dirige</label>
+          <select id="dirige"></select>
+        </div>
+        <div class="field">
+          <label>Diretor</label>
+          <input type="text" id="diretor">
+        </div>
+        <div class="field">
+          <label>Pianista</label>
+          <select id="pianista"></select>
+        </div>
+        <div class="field">
+          <label>Assistência</label>
+          <input type="text" id="assistencia">
+        </div>
+      </div>
+    </div>
+
+    <!-- ABERTURA -->
+    <div class="section">
+      <div class="section-title">Abertura</div>
+      <div class="grid-3">
+        <div class="field">
+          <label>Prelúdio</label>
+          <input type="text" id="preludio">
+        </div>
+        <div class="field">
+          <label>Himno Inicial</label>
+          <select id="himnoInicial"></select>
+        </div>
+        <div class="field">
+          <label>Oração Inicial</label>
+          <input type="text" id="oracaoInicial">
+        </div>
+      </div>
+    </div>
+    <!-- ANÚNCIOS -->
+    <div class="section">
+      <div class="section-title">Anúncios</div>
+      <textarea id="anuncios"></textarea>
+    </div>
+    
+    
+    <div class="section">
+      <div class="section-title">Saludo y Reconocimiento</div>
+    
+      <div class="grid-2">
+        <div class="field">
+          <label>Saludo y Bienvenida</label>
+          <textarea id="saludoBienvenida"></textarea>
+        </div>
+    
+        <div class="field">
+          <label>Reconocimiento de las autoridades</label>
+          <textarea id="reconocimientoAutoridades"></textarea>
+        </div>
+      </div>
+    </div>
+    
+    <!-- HIMNOS E DISCURSOS -->
+    <div class="section">
+      <div class="section-title">Himnos y Discursos</div>
+
+      <div class="field">
+        <label>Himno Sacramental</label>
+        <select id="himnoSacramental"></select>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Primer Discursante</label>
+          <input type="text" id="discursante1">
+        </div>
+        <div class="field">
+          <label>Tema</label>
+          <input type="text" id="tema1">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Segundo Discursante</label>
+          <input type="text" id="discursante2">
+        </div>
+        <div class="field">
+          <label>Tema</label>
+          <input type="text" id="tema2">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Himno Intermedio</label>
+        <select id="himnoIntermedio"></select>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Tercer Discursante</label>
+          <input type="text" id="discursante3">
+        </div>
+        <div class="field">
+          <label>Tema</label>
+          <input type="text" id="tema3">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Cuarto Discursante</label>
+          <input type="text" id="discursante4">
+        </div>
+        <div class="field">
+          <label>Tema</label>
+          <input type="text" id="tema4">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Himno Final</label>
+        <select id="himnoFinal"></select>
+      </div>
+    </div>
+    <!-- RELEVOS -->
+    <div class="section">
+      <div class="section-title">Relevos</div>
+      <textarea id="relevos"></textarea>
+    </div>
+
+    <!-- SUSTENIMENTOS -->
+    <div class="section">
+      <div class="section-title">Sustenimentos</div>
+      <textarea id="sustenimentos"></textarea>
+    </div>
+
+    <button class="btn" onclick="enviar()">Gerar Ata em PDF</button>
+
+    <footer>Sistema interno – Ata de Reunião</footer>
+  </div>
+
+  <script>
+    function enviar() {
+      alert("Envio será tratado pelo Google Apps Script");
+    }
+
+    async function carregarListas() {
+      const carregar = async (id, arquivo) => {
+        const res = await fetch(arquivo);
+        const html = await res.text();
+        document.getElementById(id).innerHTML = html;
+      };
+
+      await carregar('dirige', 'dirige.html');
+      await carregar('preside', 'preside.html');
+      await carregar('pianista', 'pianista.html');
+      await carregar('himnoInicial', 'himnos.html');
+      await carregar('himnoSacramental', 'himnos.html');
+      await carregar('himnoIntermedio', 'himnos.html');
+      await carregar('himnoFinal', 'himnos.html');
+    }
+
+    carregarListas();
+  </script>
+
+</body>
+</html>
