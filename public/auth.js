@@ -1,178 +1,174 @@
-// ==================== AUTH.JS - LUJO CRM (PERMISSÕES GRANULARES) ====================
+// ==================== AUTH.JS - Sistema de Autenticação CORRIGIDO ====================
 
-// ===== DEFINIÇÃO DE PERMISSÕES DO SISTEMA =====
-const PERMISSIONS = {
-  // Sistema
-  SYSTEM_ADMIN: "SYSTEM_ADMIN",
-  USER_MANAGE: "USER_MANAGE",
-
-  // Atendimento
-  ATEND_VIEW: "ATEND_VIEW",
-  ATEND_CREATE: "ATEND_CREATE",
-  ATEND_ASSIGN: "ATEND_ASSIGN",
-
-  // Supervisão / Gerência
-  SUP_VIEW: "SUP_VIEW",
-  SUP_REPORTS: "SUP_REPORTS",
-  SUP_MANAGE_TEAM: "SUP_MANAGE_TEAM",
-
-  // Copyright
-  COPYR_VIEW: "COPYR_VIEW",
-  COPYR_CREATE_ACCOUNT: "COPYR_CREATE_ACCOUNT",
-  COPYR_APPROVE: "COPYR_APPROVE",
-  COPYR_STRIKE: "COPYR_STRIKE",
-  COPYR_CONTRACT: "COPYR_CONTRACT",
-
-  // Conteúdo (produtividade)
-  CONT_VIEW: "CONT_VIEW",
-  CONT_REQUEST: "CONT_REQUEST",
-  CONT_PRODUCTIVITY: "CONT_PRODUCTIVITY",
-
-  // Financeiro
-  FIN_VIEW: "FIN_VIEW",
-  FIN_APPROVE: "FIN_APPROVE",
-
-  // Marketing
-  MKT_VIEW: "MKT_VIEW"
-};
-
-// ===== ROLES BASE (EDITÁVEIS PELO ADMIN NO FUTURO) =====
-const ROLES = {
-  atendente: [
-    PERMISSIONS.ATEND_VIEW,
-    PERMISSIONS.ATEND_CREATE,
-    PERMISSIONS.CONT_REQUEST
-  ],
-
-  supervisor: [
-    PERMISSIONS.ATEND_VIEW,
-    PERMISSIONS.ATEND_ASSIGN,
-    PERMISSIONS.SUP_VIEW,
-    PERMISSIONS.SUP_REPORTS,
-    PERMISSIONS.CONT_PRODUCTIVITY
-  ],
-
-  gerente: [
-    PERMISSIONS.ATEND_VIEW,
-    PERMISSIONS.SUP_VIEW,
-    PERMISSIONS.SUP_MANAGE_TEAM,
-    PERMISSIONS.SUP_REPORTS,
-    PERMISSIONS.FIN_VIEW,
-    PERMISSIONS.MKT_VIEW
-  ],
-
-  copyright: [
-    PERMISSIONS.COPYR_VIEW,
-    PERMISSIONS.COPYR_CREATE_ACCOUNT,
-    PERMISSIONS.COPYR_APPROVE,
-    PERMISSIONS.COPYR_STRIKE,
-    PERMISSIONS.COPYR_CONTRACT
-  ],
-
-  admin: Object.values(PERMISSIONS) // acesso total
-};
-
-// ===== USUÁRIOS (SIMULADO - FUTURO FIREBASE) =====
+// ===== BANCO DE DADOS SIMULADO =====
 const users = {
   ana: {
-    password: "123456",
-    name: "Ana Silva",
-    role: "atendente"
+    password: '123456',
+    name: 'Ana Silva',
+    role: 'atendente',
+    permissions: ['atendimento']
   },
   carlos: {
-    password: "123456",
-    name: "Carlos Souza",
-    role: "supervisor"
+    password: '123456',
+    name: 'Carlos Souza',
+    role: 'supervisor',
+    permissions: ['atendimento', 'gerencia', 'relatorios']
   },
   marina: {
-    password: "123456",
-    name: "Marina Lopes",
-    role: "gerente"
+    password: '123456',
+    name: 'Marina Lopes',
+    role: 'gerente',
+    permissions: ['atendimento', 'gerencia', 'relatorios', 'conteudo', 'marketing']
   },
   juan: {
-    password: "123456",
-    name: "Juan Copyright",
-    role: "copyright"
+    password: '123456',
+    name: 'Juan Copyright',
+    role: 'copyright',
+    permissions: ['atendimento', 'conteudo']
   },
   admin: {
-    password: "123456",
-    name: "Administrador",
-    role: "admin"
+    password: '123456',
+    name: 'Administrador',
+    role: 'admin',
+    permissions: ['atendimento', 'gerencia', 'relatorios', 'conteudo', 'marketing', 'financeiro', 'tecnico']
   }
 };
 
-// ===== LOGIN =====
-document.getElementById("loginForm").addEventListener("submit", (e) => {
-  e.preventDefault();
+// ===== ELEMENTOS DO DOM =====
+const loginForm = document.getElementById('loginForm');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const loginBtn = document.getElementById('loginBtn');
+const loading = document.getElementById('loading');
 
-  const username = document.getElementById("username").value.trim().toLowerCase();
-  const password = document.getElementById("password").value;
-
-  if (!users[username] || users[username].password !== password) {
-    alert("Usuário ou senha inválidos");
+// ===== PREVENIR LOOP - NÃO REDIRECIONAR SE JÁ ESTIVER NA PÁGINA DE LOGIN =====
+window.addEventListener('DOMContentLoaded', () => {
+  // Se estiver na página login.html, não fazer nada
+  if (window.location.pathname.includes('login.html')) {
     return;
   }
-
-  const user = users[username];
-
-  const authUser = {
-    username,
-    name: user.name,
-    role: user.role,
-    permissions: [...ROLES[user.role]]
-  };
-
-  sessionStorage.setItem("authUser", JSON.stringify(authUser));
-  window.location.href = "main.html";
+  
+  // Se estiver em outra página, verificar autenticação
+  const savedUser = sessionStorage.getItem('currentUser');
+  if (savedUser && window.location.pathname.includes('Main.html')) {
+    // Usuário está logado e na página correta, OK
+    return;
+  }
 });
 
-// ===== HELPERS =====
-function getAuthUser() {
-  const data = sessionStorage.getItem("authUser");
-  return data ? JSON.parse(data) : null;
+// ===== LOGIN =====
+if (loginForm) {
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const username = usernameInput.value.trim().toLowerCase();
+    const password = passwordInput.value;
+
+    // Limpar erros anteriores
+    document.getElementById('usernameError')?.classList.remove('show');
+    document.getElementById('passwordError')?.classList.remove('show');
+    usernameInput.classList.remove('error');
+    passwordInput.classList.remove('error');
+
+    // Validar usuário
+    if (!users[username]) {
+      usernameInput.classList.add('error');
+      document.getElementById('usernameError')?.classList.add('show');
+      return;
+    }
+
+    // Validar senha
+    if (users[username].password !== password) {
+      passwordInput.classList.add('error');
+      document.getElementById('passwordError')?.classList.add('show');
+      return;
+    }
+
+    // Login bem-sucedido
+    loginBtn.disabled = true;
+    if (loading) loading.classList.add('show');
+
+    setTimeout(() => {
+      const user = users[username];
+      
+      // Salvar sessão
+      sessionStorage.setItem('currentUser', JSON.stringify({
+        username,
+        name: user.name,
+        role: user.role,
+        permissions: user.permissions
+      }));
+
+      // Redirecionar para o sistema principal
+      window.location.href = 'Main.html';
+    }, 800);
+  });
 }
 
-function isAuthenticated() {
-  return !!getAuthUser();
-}
-
-function hasPermission(permission) {
-  const user = getAuthUser();
-  if (!user) return false;
-
-  if (user.permissions.includes(PERMISSIONS.SYSTEM_ADMIN)) return true;
-  return user.permissions.includes(permission);
-}
-
-function requireAuth() {
-  if (!isAuthenticated()) {
-    window.location.href = "login.html";
-    return false;
-  }
-  return true;
-}
-
-function requirePermission(permission) {
-  if (!requireAuth()) return false;
-
-  if (!hasPermission(permission)) {
-    alert("Você não tem permissão para esta ação.");
-    return false;
-  }
-  return true;
-}
-
-function logout() {
-  sessionStorage.removeItem("authUser");
-  window.location.href = "login.html";
-}
-
-// ===== APLICAR PERMISSÕES NO DOM =====
-function applyPermissions() {
-  document.querySelectorAll("[data-permission]").forEach(el => {
-    const perm = el.dataset.permission;
-    if (!hasPermission(perm)) {
-      el.style.display = "none";
+// ===== PREENCHER COM PERFIL DE TESTE =====
+document.querySelectorAll('.profile-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    if (usernameInput && passwordInput) {
+      usernameInput.value = chip.dataset.user;
+      passwordInput.value = chip.dataset.pass;
     }
   });
+});
+
+// ===== FUNÇÕES AUXILIARES PARA INTEGRAÇÃO COM O SISTEMA =====
+
+// Verificar se usuário está logado
+function isAuthenticated() {
+  return sessionStorage.getItem('currentUser') !== null;
+}
+
+// Obter usuário atual
+function getCurrentUser() {
+  const user = sessionStorage.getItem('currentUser');
+  return user ? JSON.parse(user) : null;
+}
+
+// Verificar se usuário tem permissão para acessar um módulo
+function hasPermission(module) {
+  const user = getCurrentUser();
+  if (!user) return false;
+  return user.permissions.includes(module);
+}
+
+// Redirecionar para login se não estiver autenticado
+function requireAuth() {
+  if (!isAuthenticated()) {
+    window.location.href = 'login.html';
+    return false;
+  }
+  return true;
+}
+
+// Verificar permissão e redirecionar se não tiver acesso
+function requirePermission(module) {
+  if (!requireAuth()) return false;
+  
+  if (!hasPermission(module)) {
+    alert('Você não tem permissão para acessar este módulo.');
+    return false;
+  }
+  return true;
+}
+
+// Logout
+function logout() {
+  sessionStorage.removeItem('currentUser');
+  window.location.href = 'login.html';
+}
+
+// Helper: Label do perfil
+function getRoleLabel(role) {
+  const labels = {
+    atendente: 'Atendente',
+    supervisor: 'Supervisor',
+    gerente: 'Gerente',
+    copyright: 'Copyright',
+    admin: 'Administrador'
+  };
+  return labels[role] || role;
 }

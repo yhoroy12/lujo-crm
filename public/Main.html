@@ -73,7 +73,14 @@
           <span class="menu-text">Relatórios</span>
         </a>
       </li>
-    </ul>
+
+       <li>
+         <a href="#" title="Administração" onclick="window.location.href='admin.html'">
+          <i class="fi fi-rr-settings"></i>
+          <span class="menu-text">Admin</span>
+        </a>
+      </li>  
+        </ul>
   </aside>
 
 
@@ -138,9 +145,10 @@
       <ul class="search-results" id="searchResults"></ul>
     </div>
   </div>
-  <!-- JS principal -->
-  <script src="main.js"></script>
 
+  <!-- Carregar sistema de permissões -->
+  <script src="permissions.js"></script>
+  <script src="main.js"></script>
 </body>
 
 </html>
