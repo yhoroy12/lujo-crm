@@ -1,213 +1,178 @@
-// ==================== AUTH.JS - Sistema de Autenticação ====================
+// ==================== AUTH.JS - LUJO CRM (PERMISSÕES GRANULARES) ====================
 
-// ===== BANCO DE DADOS SIMULADO =====
+// ===== DEFINIÇÃO DE PERMISSÕES DO SISTEMA =====
+const PERMISSIONS = {
+  // Sistema
+  SYSTEM_ADMIN: "SYSTEM_ADMIN",
+  USER_MANAGE: "USER_MANAGE",
+
+  // Atendimento
+  ATEND_VIEW: "ATEND_VIEW",
+  ATEND_CREATE: "ATEND_CREATE",
+  ATEND_ASSIGN: "ATEND_ASSIGN",
+
+  // Supervisão / Gerência
+  SUP_VIEW: "SUP_VIEW",
+  SUP_REPORTS: "SUP_REPORTS",
+  SUP_MANAGE_TEAM: "SUP_MANAGE_TEAM",
+
+  // Copyright
+  COPYR_VIEW: "COPYR_VIEW",
+  COPYR_CREATE_ACCOUNT: "COPYR_CREATE_ACCOUNT",
+  COPYR_APPROVE: "COPYR_APPROVE",
+  COPYR_STRIKE: "COPYR_STRIKE",
+  COPYR_CONTRACT: "COPYR_CONTRACT",
+
+  // Conteúdo (produtividade)
+  CONT_VIEW: "CONT_VIEW",
+  CONT_REQUEST: "CONT_REQUEST",
+  CONT_PRODUCTIVITY: "CONT_PRODUCTIVITY",
+
+  // Financeiro
+  FIN_VIEW: "FIN_VIEW",
+  FIN_APPROVE: "FIN_APPROVE",
+
+  // Marketing
+  MKT_VIEW: "MKT_VIEW"
+};
+
+// ===== ROLES BASE (EDITÁVEIS PELO ADMIN NO FUTURO) =====
+const ROLES = {
+  atendente: [
+    PERMISSIONS.ATEND_VIEW,
+    PERMISSIONS.ATEND_CREATE,
+    PERMISSIONS.CONT_REQUEST
+  ],
+
+  supervisor: [
+    PERMISSIONS.ATEND_VIEW,
+    PERMISSIONS.ATEND_ASSIGN,
+    PERMISSIONS.SUP_VIEW,
+    PERMISSIONS.SUP_REPORTS,
+    PERMISSIONS.CONT_PRODUCTIVITY
+  ],
+
+  gerente: [
+    PERMISSIONS.ATEND_VIEW,
+    PERMISSIONS.SUP_VIEW,
+    PERMISSIONS.SUP_MANAGE_TEAM,
+    PERMISSIONS.SUP_REPORTS,
+    PERMISSIONS.FIN_VIEW,
+    PERMISSIONS.MKT_VIEW
+  ],
+
+  copyright: [
+    PERMISSIONS.COPYR_VIEW,
+    PERMISSIONS.COPYR_CREATE_ACCOUNT,
+    PERMISSIONS.COPYR_APPROVE,
+    PERMISSIONS.COPYR_STRIKE,
+    PERMISSIONS.COPYR_CONTRACT
+  ],
+
+  admin: Object.values(PERMISSIONS) // acesso total
+};
+
+// ===== USUÁRIOS (SIMULADO - FUTURO FIREBASE) =====
 const users = {
-  atendente: {
-    password: '123456',
-    name: 'Ana Silva',
-    role: 'atendente',
-    permissions: ['atendimento', 'chat']
+  ana: {
+    password: "123456",
+    name: "Ana Silva",
+    role: "atendente"
   },
-  supervisor: {
-    password: '123456',
-    name: 'Carlos Souza',
-    role: 'supervisor',
-    permissions: ['atendimento', 'chat', 'gerencia', 'relatorios']
+  carlos: {
+    password: "123456",
+    name: "Carlos Souza",
+    role: "supervisor"
   },
-  gerente: {
-    password: '123456',
-    name: 'Marina Lopes',
-    role: 'gerente',
-    permissions: ['atendimento', 'chat', 'gerencia', 'relatorios', 'conteudo', 'marketing']
+  marina: {
+    password: "123456",
+    name: "Marina Lopes",
+    role: "gerente"
+  },
+  juan: {
+    password: "123456",
+    name: "Juan Copyright",
+    role: "copyright"
   },
   admin: {
-    password: '123456',
-    name: 'Roberto Admin',
-    role: 'admin',
-    permissions: ['atendimento', 'chat', 'gerencia', 'relatorios', 'conteudo', 'marketing', 'financeiro', 'tecnico', 'configuracoes']
+    password: "123456",
+    name: "Administrador",
+    role: "admin"
   }
 };
-
-// Módulos do sistema
-const modules = {
-  atendimento: { name: 'Atendimento', icon: '📞', desc: 'Gestão de atendimentos' },
-  chat: { name: 'Chat', icon: '💬', desc: 'Conversas em tempo real' },
-  gerencia: { name: 'Gerência', icon: '👥', desc: 'Supervisão de equipe' },
-  relatorios: { name: 'Relatórios', icon: '📊', desc: 'Métricas e análises' },
-  conteudo: { name: 'Conteúdo', icon: '📥', desc: 'Gestão de conteúdo' },
-  marketing: { name: 'Marketing', icon: '⭐', desc: 'Campanhas e promoções' },
-  financeiro: { name: 'Financeiro', icon: '💰', desc: 'Controle financeiro' },
-  tecnico: { name: 'Técnico', icon: '🔧', desc: 'Suporte técnico' },
-  configuracoes: { name: 'Configurações', icon: '⚙️', desc: 'Ajustes do sistema' }
-};
-
-// ===== ELEMENTOS DO DOM =====
-const loginScreen = document.getElementById('loginScreen');
-const dashboard = document.getElementById('dashboard');
-const loginForm = document.getElementById('loginForm');
-const usernameInput = document.getElementById('username');
-const passwordInput = document.getElementById('password');
-const loginBtn = document.getElementById('loginBtn');
-const loading = document.getElementById('loading');
-
-// ===== VERIFICAR SESSÃO AO CARREGAR =====
-window.addEventListener('DOMContentLoaded', () => {
-  const savedUser = sessionStorage.getItem('currentUser');
-  if (savedUser) {
-    const user = JSON.parse(savedUser);
-    showDashboard(user);
-  }
-});
 
 // ===== LOGIN =====
-loginForm.addEventListener('submit', (e) => {
+document.getElementById("loginForm").addEventListener("submit", (e) => {
   e.preventDefault();
-  
-  const username = usernameInput.value.trim().toLowerCase();
-  const password = passwordInput.value;
 
-  // Limpar erros anteriores
-  document.getElementById('usernameError').classList.remove('show');
-  document.getElementById('passwordError').classList.remove('show');
-  usernameInput.classList.remove('error');
-  passwordInput.classList.remove('error');
+  const username = document.getElementById("username").value.trim().toLowerCase();
+  const password = document.getElementById("password").value;
 
-  // Validar
-  if (!users[username]) {
-    usernameInput.classList.add('error');
-    document.getElementById('usernameError').classList.add('show');
+  if (!users[username] || users[username].password !== password) {
+    alert("Usuário ou senha inválidos");
     return;
   }
 
-  if (users[username].password !== password) {
-    passwordInput.classList.add('error');
-    document.getElementById('passwordError').classList.add('show');
-    return;
-  }
+  const user = users[username];
 
-  // Simular loading
-  loginBtn.disabled = true;
-  loading.classList.add('show');
-
-  setTimeout(() => {
-    const user = users[username];
-    
-    // Salvar sessão
-    sessionStorage.setItem('currentUser', JSON.stringify({
-      username,
-      name: user.name,
-      role: user.role,
-      permissions: user.permissions
-    }));
-
-    // Redirecionar para o sistema principal
-    window.location.href = 'Main.html';
-    
-    loginBtn.disabled = false;
-    loading.classList.remove('show');
-  }, 1000);
-});
-
-// ===== PREENCHER COM PERFIL DE TESTE =====
-document.querySelectorAll('.profile-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    usernameInput.value = chip.dataset.user;
-    passwordInput.value = chip.dataset.pass;
-  });
-});
-
-// ===== MOSTRAR DASHBOARD =====
-function showDashboard(user) {
-  loginScreen.style.display = 'none';
-  dashboard.classList.add('active');
-
-  // Atualizar informações do usuário
-  document.getElementById('userName').textContent = user.name;
-  document.getElementById('userRole').textContent = getRoleLabel(user.role);
-  document.getElementById('roleDisplay').textContent = getRoleLabel(user.role);
-  document.getElementById('userAvatar').textContent = user.name[0].toUpperCase();
-
-  // Renderizar permissões
-  renderPermissions(user.permissions);
-}
-
-// ===== RENDERIZAR MÓDULOS COM BASE NAS PERMISSÕES =====
-function renderPermissions(permissions) {
-  const grid = document.getElementById('permissionsGrid');
-  grid.innerHTML = '';
-
-  Object.keys(modules).forEach(moduleKey => {
-    const module = modules[moduleKey];
-    const hasAccess = permissions.includes(moduleKey);
-
-    const card = document.createElement('div');
-    card.className = `permission-card ${!hasAccess ? 'locked' : ''}`;
-    card.innerHTML = `
-      ${!hasAccess ? '<i class="fi fi-rr-lock lock-icon"></i>' : ''}
-      <div class="permission-icon">${module.icon}</div>
-      <h3>${module.name}</h3>
-      <p>${module.desc}</p>
-    `;
-
-    grid.appendChild(card);
-  });
-}
-
-// ===== LOGOUT =====
-function logout() {
-  sessionStorage.removeItem('currentUser');
-  dashboard.classList.remove('active');
-  loginScreen.style.display = 'block';
-  loginForm.reset();
-}
-
-// ===== HELPER: LABEL DO PERFIL =====
-function getRoleLabel(role) {
-  const labels = {
-    atendente: 'Atendente',
-    supervisor: 'Supervisor',
-    gerente: 'Gerente',
-    admin: 'Administrador'
+  const authUser = {
+    username,
+    name: user.name,
+    role: user.role,
+    permissions: [...ROLES[user.role]]
   };
-  return labels[role] || role;
+
+  sessionStorage.setItem("authUser", JSON.stringify(authUser));
+  window.location.href = "main.html";
+});
+
+// ===== HELPERS =====
+function getAuthUser() {
+  const data = sessionStorage.getItem("authUser");
+  return data ? JSON.parse(data) : null;
 }
 
-// ===== FUNÇÕES AUXILIARES PARA INTEGRAÇÃO COM O SISTEMA =====
-
-// Verificar se usuário está logado
 function isAuthenticated() {
-  return sessionStorage.getItem('currentUser') !== null;
+  return !!getAuthUser();
 }
 
-// Obter usuário atual
-function getCurrentUser() {
-  const user = sessionStorage.getItem('currentUser');
-  return user ? JSON.parse(user) : null;
-}
-
-// Verificar se usuário tem permissão para acessar um módulo
-function hasPermission(module) {
-  const user = getCurrentUser();
+function hasPermission(permission) {
+  const user = getAuthUser();
   if (!user) return false;
-  return user.permissions.includes(module);
+
+  if (user.permissions.includes(PERMISSIONS.SYSTEM_ADMIN)) return true;
+  return user.permissions.includes(permission);
 }
 
-// Redirecionar para login se não estiver autenticado
 function requireAuth() {
   if (!isAuthenticated()) {
-    window.location.href = 'login.html';
+    window.location.href = "login.html";
     return false;
   }
   return true;
 }
 
-// Verificar permissão e redirecionar se não tiver acesso
-function requirePermission(module) {
+function requirePermission(permission) {
   if (!requireAuth()) return false;
-  
-  if (!hasPermission(module)) {
-    alert('Você não tem permissão para acessar este módulo.');
+
+  if (!hasPermission(permission)) {
+    alert("Você não tem permissão para esta ação.");
     return false;
   }
   return true;
+}
+
+function logout() {
+  sessionStorage.removeItem("authUser");
+  window.location.href = "login.html";
+}
+
+// ===== APLICAR PERMISSÕES NO DOM =====
+function applyPermissions() {
+  document.querySelectorAll("[data-permission]").forEach(el => {
+    const perm = el.dataset.permission;
+    if (!hasPermission(perm)) {
+      el.style.display = "none";
+    }
+  });
 }
