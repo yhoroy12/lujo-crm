@@ -1,14 +1,4 @@
-<!-- admin.html - SEGUE O PADRÃO SPA DO SISTEMA -->
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Administração - Lujo Network</title>
-  <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css">
-  <link rel="stylesheet" href="admin.css">
-</head>
-<body>
+<!-- admin.html - MÓDULO SPA (SEM <html>, <head>, <body>) -->
 
 <div class="painel-admin">
 
@@ -16,7 +6,7 @@
   <div class="abas-container">
     <button class="aba-btn ativa" data-aba="aba-usuarios">👥 Usuários</button>
     <button class="aba-btn" data-aba="aba-perfis">🛡️ Perfis de Acesso</button>
-    <button class="aba-btn" data-aba="aba-permissoes">🔒 Permissões</button>
+    <button class="aba-btn" data-aba="aba-permissoes">🔑 Permissões</button>
     <button class="aba-btn" data-aba="aba-auditoria">📊 Auditoria</button>
   </div>
 
@@ -215,9 +205,8 @@
   </div>
 </div>
 
-<!-- Scripts -->
-<script src="permissions.js"></script>
-<script src="admin.js"></script>
+<!-- IMPORTANTE: CSS será carregado externamente -->
+<link rel="stylesheet" href="admin.css">
 
-</body>
-</html>
+<!-- Scripts necessários -->
+<script src="admin.js"></script>

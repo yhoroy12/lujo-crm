@@ -1,4 +1,6 @@
-/* RESET */
+/* =========================
+   RESET E ESTILO BASE
+========================= */
 * {
     margin: 0;
     padding: 0;
@@ -15,7 +17,9 @@ body {
     padding: 20px;
 }
 
-/* Navegação de abas */
+/* =========================
+   NAVEGAÇÃO DE ABAS PRINCIPAL
+========================= */
 .aba-nav {
     display: flex;
     gap: 10px;
@@ -23,22 +27,24 @@ body {
 }
 
 .aba-btn {
-  padding: 12px 20px;
-  border: none;
-  background: transparent;
-  color: var(--color-text);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  border-bottom: 3px solid transparent;
-  transition: 0.3s;
+    padding: 12px 20px;
+    border: none;
+    background: transparent;
+    color: var(--color-text, #333);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 3px solid transparent;
+    transition: 0.3s;
 }
+
 .aba-btn:hover {
-  color: var(--color-primary);
+    color: var(--color-primary, #007bff);
 }
+
 .aba-btn.ativa {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+    color: var(--color-primary, #007bff);
+    border-bottom-color: var(--color-primary, #007bff);
 }
 
 /* Conteúdos das abas */
@@ -50,17 +56,15 @@ body {
     display: block;
 }
 
-/* === GRID PRINCIPAL === */
+/* =========================
+   GRID PRINCIPAL
+========================= */
 .supervisor-grid {
     display: grid;
-    grid-template-columns: 20% 1fr 20%; /* 3 colunas lado a lado */
+    grid-template-columns: 20% 1fr 20%;
     gap: 20px;
 }
 
-
-
-
-/* RESPONSIVIDADE */
 @media (max-width: 1100px) {
     .supervisor-grid {
         grid-template-columns: 1fr 1fr;
@@ -73,7 +77,7 @@ body {
     }
 }
 
-/* Card simples (sem visual extra) */
+/* Cards */
 .card {
     background: #fff;
     padding: 16px;
@@ -81,8 +85,9 @@ body {
     border-radius: 6px;
 }
 
-/* --- ESTILO DO BLOCO DE ATENDENTES --- */
-
+/* =========================
+   ATENDENTES / INFORMAÇÕES
+========================= */
 .select-atendente {
     width: 100%;
     padding: 8px;
@@ -98,7 +103,7 @@ body {
 
 .info-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* 2 colunas */
+    grid-template-columns: 1fr 1fr;
     gap: 15px;
 }
 
@@ -113,7 +118,9 @@ body {
     margin: 3px 0;
 }
 
-/* ======= STATUS DA FILA (CÍRCULO) ======= */
+/* =========================
+   FILA DE ATENDIMENTO
+========================= */
 .fila-header {
     display: flex;
     align-items: center;
@@ -128,24 +135,11 @@ body {
     border: 2px solid #ccc;
 }
 
-/* Cores */
-.fila-status-circle.verde {
-    background-color: #3fbf3f;
-}
+.fila-status-circle.verde { background-color: #3fbf3f; }
+.fila-status-circle.amarela { background-color: #e4d12e; }
+.fila-status-circle.laranja { background-color: #ff8c00; }
+.fila-status-circle.vermelha { background-color: #d62828; }
 
-.fila-status-circle.amarela {
-    background-color: #e4d12e;
-}
-
-.fila-status-circle.laranja {
-    background-color: #ff8c00;
-}
-
-.fila-status-circle.vermelha {
-    background-color: #d62828;
-}
-
-/* ======= LISTA DA FILA ======= */
 .fila-lista {
     margin-top: 15px;
     display: flex;
@@ -158,7 +152,6 @@ body {
     padding: 12px;
     border: 1px solid #ddd;
     border-radius: 6px;
-
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -172,14 +165,16 @@ body {
     font-size: 13px;
     color: #666;
 }
-/* CARD DO CHAT */
+
+/* =========================
+   CHAT ESTILO WHATSAPP
+========================= */
 .chat-card {
     display: flex;
     flex-direction: column;
     height: 100%;
 }
 
-/* Header */
 .chat-header {
     display: flex;
     align-items: center;
@@ -196,14 +191,13 @@ body {
     cursor: pointer;
 }
 
-/* FUNDO WhatsApp */
 .chat-box.whatsapp-style {
     flex: 1;
     padding: 14px;
     border-radius: 10px;
     overflow-y: auto;
-    background: #e5ddd5; /* cor de fundo do whatsapp */
-    background-image: url("https://i.imgur.com/O8P4Y8N.png"); /* papel de parede padrão */
+    background: #e5ddd5;
+    background-image: url("https://i.imgur.com/O8P4Y8N.png");
     background-size: cover;
     border: 1px solid #ccc;
     display: flex;
@@ -211,7 +205,6 @@ body {
     gap: 12px;
 }
 
-/* BALÕES */
 .msg {
     max-width: 70%;
     padding: 8px 10px;
@@ -223,7 +216,6 @@ body {
     animation: fadeIn 0.2s ease;
 }
 
-/* Cliente - esquerda */
 .msg-left {
     align-self: flex-start;
     background: #ffffff;
@@ -231,15 +223,13 @@ body {
     box-shadow: 0 1px 1px rgba(0,0,0,0.15);
 }
 
-/* Atendente - direita */
 .msg-right {
     align-self: flex-end;
-    background: #d2f8c6; /* verde claro igual WhatsApp */
+    background: #d2f8c6;
     border-radius: 8px 0 8px 8px;
     box-shadow: 0 1px 1px rgba(0,0,0,0.15);
 }
 
-/* Hora da mensagem */
 .msg-hora {
     display: block;
     text-align: right;
@@ -248,8 +238,152 @@ body {
     margin-top: 3px;
 }
 
-/* Animação */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================
+   SUB-ABAS DO MÓDULO GERÊNCIA
+========================= */
+.gerencia-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.sub-aba-btn {
+    padding: 12px 20px;
+    border: none;
+    background: transparent;
+    border-bottom: 3px solid transparent;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.3s;
+    color: var(--color-text, #333);
+}
+
+.sub-aba-btn:hover {
+    color: var(--color-primary, #007bff);
+}
+
+.sub-aba-btn.ativa {
+    color: var(--color-primary, #007bff);
+    border-bottom-color: var(--color-primary, #007bff);
+}
+
+/* Conteúdos das sub-abas */
+.sub-aba-conteudo {
+    display: none;
+}
+
+.sub-aba-conteudo.ativa {
+    display: block;
+}
+
+/* =========================
+   GRID INTERNO GERÊNCIA
+========================= */
+.gerencia-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+}
+
+/* =========================
+   LISTA DE PEDIDOS
+========================= */
+.pedidos-lista ul {
+    list-style: none;
+}
+
+.pedido-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #ddd;
+}
+
+.pedido-item:last-child {
+    border-bottom: none;
+}
+
+/* =========================
+   BOTÕES DE AÇÃO
+========================= */
+.btn-detalhes, .btn-aprovar, .btn-reprovar {
+    padding: 4px 8px;
+    font-size: 12px;
+    margin-left: 4px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-detalhes {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-aprovar {
+    background-color: #3fbf3f;
+    color: white;
+}
+
+.btn-reprovar {
+    background-color: #d62828;
+    color: white;
+}
+
+/* =========================
+   PAINEL DE DETALHES DO PEDIDO
+========================= */
+.pedido-detalhes {
+    background: #fff;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+.painel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.btn-fechar {
+    background-color: #d62828;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.detalhes-info p {
+    margin: 4px 0;
+}
+
+.detalhes-descricao {
+    margin-top: 10px;
+}
+
+.detalhes-descricao h4 {
+    margin-bottom: 6px;
+}
+
+/* =========================
+   RESPONSIVIDADE
+========================= */
+@media (max-width: 900px) {
+    .sub-aba-btn { flex-wrap: wrap; }
+}
+
+@media (max-width: 700px) {
+    .gerencia-grid {
+        grid-template-columns: 1fr;
+    }
 }

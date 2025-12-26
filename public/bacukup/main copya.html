@@ -6,7 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lujo Network</title>
 
+  <!-- Ícones -->
   <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css">
+
+  <!-- CSS principal -->
   <link rel="stylesheet" href="main.css">
   <script src="permissions.js"></script>
 </head>
@@ -17,69 +20,70 @@
   <aside class="sidebar" id="sidebar">
     <ul>
       <li>
-        <a href="#" title="Início" data-action="voltarMain">
+        <a href="#" title="Início" onclick="voltarMain()">
           <i class="fi fi-rr-home"></i>
           <span class="menu-text">Início</span>
         </a>
       </li>
 
       <li>
-        <a href="#" title="Atendimento" data-module="atendimento">
+        <a href="#" title="Atendimento" onclick="loadContent('atendimento')">
           <i class="fi fi-rr-phone-call"></i>
           <span class="menu-text">Atendimento</span>
         </a>
       </li>
 
       <li>
-        <a href="#" title="Conteúdo" data-module="conteudo">
+        <a href="#" title="Conteúdo" onclick="loadContent('conteudo')">
           <i class="fi fi-rr-download"></i>
           <span class="menu-text">Conteúdo</span>
         </a>
       </li>
 
       <li>
-        <a href="#" title="Financeiro" data-module="financeiro">
+        <a href="#" title="Financeiro" onclick="loadContent('financeiro')">
           <i class="fi fi-rr-dollar"></i>
           <span class="menu-text">Financeiro</span>
         </a>
       </li>
 
       <li>
-        <a href="#" title="Marketing" data-module="marketing">
+        <a href="#" title="Marketing" onclick="loadContent('marketing')">
           <i class="fi fi-rr-star"></i>
           <span class="menu-text">Marketing</span>
         </a>
       </li>
 
       <li>
-        <a href="#" title="Técnico" data-module="tecnico">
+        <a href="#" title="Técnico" onclick="loadContent('tecnico')">
           <i class="fi fi-rr-users"></i>
           <span class="menu-text">Técnico</span>
         </a>
       </li>
 
       <li>
-        <a href="#" title="Gerência" data-module="gerencia">
+        <a href="#" title="Gerência" onclick="loadContent('gerencia')">
           <i class="fi fi-rr-user"></i>
           <span class="menu-text">Gerência</span>
         </a>
       </li>
 
       <li>
-        <a href="#" title="Relatórios" data-module="relatorios">
+        <a href="#" title="Relatórios" onclick="loadContent('relatorios')">
           <i class="fi fi-rr-chart-histogram"></i>
           <span class="menu-text">Relatórios</span>
         </a>
       </li>
 
        <li>
-         <a href="#" title="Administração" data-module="admin">
+         <a href="#" title="Administração" onclick="loadContent('admin')"> </a>
           <i class="fi fi-rr-settings"></i>
-          <span class="menu-text">Admin</span>
+          <span class="menu-text">User</span>
         </a>
       </li>  
-    </ul>
+        </ul>
   </aside>
+
 
   <!-- CONTEÚDO PRINCIPAL -->
   <div class="main">
@@ -95,7 +99,7 @@
 
       <div class="header-actions">
         <button class="btn btn-secondary">Ajuda</button>
-        <button class="btn btn-primary" id="btnSair">Sair</button>
+        <button class="btn btn-primary">Sair</button>
       </div>
     </header>
 
@@ -103,6 +107,7 @@
     <div id="globalLoading" class="global-loading hidden">
       <div class="spinner"></div>
     </div>
+
 
     <main id="content">
 
@@ -142,6 +147,7 @@
     </div>
   </div>
 
+  <!-- Carregar sistema de permissões -->
   <script src="main.js"></script>
   
 </body>

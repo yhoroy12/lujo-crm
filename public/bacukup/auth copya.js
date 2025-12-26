@@ -45,7 +45,6 @@ const loading = document.getElementById('loading');
 window.addEventListener('DOMContentLoaded', () => {
   // Se estiver na página login.html, não fazer nada
   if (window.location.pathname.includes('login.html')) {
-    initLoginPage();
     return;
   }
   
@@ -56,25 +55,6 @@ window.addEventListener('DOMContentLoaded', () => {
     return;
   }
 });
-
-// ===== INICIALIZAR PÁGINA DE LOGIN =====
-function initLoginPage() {
-  // Event listener para profile chips
-  document.querySelectorAll('.profile-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      if (usernameInput && passwordInput) {
-        usernameInput.value = chip.dataset.user;
-        passwordInput.value = chip.dataset.pass;
-      }
-    });
-  });
-
-  // Event listener para botão logout no dashboard
-  const btnLogout = document.getElementById('btnLogout');
-  if (btnLogout) {
-    btnLogout.addEventListener('click', logout);
-  }
-}
 
 // ===== LOGIN =====
 if (loginForm) {
@@ -112,23 +92,33 @@ if (loginForm) {
       const user = users[username];
       
       // Salvar sessão
-      const roleKey = user.role.toUpperCase();
+const roleKey = user.role.toUpperCase();
 
-      const permissionsFromRole =
-        window.PermissionsSystem?.ROLES?.[roleKey]?.permissions || [];
+const permissionsFromRole =
+  window.PermissionsSystem?.ROLES?.[roleKey]?.permissions || [];
 
-      sessionStorage.setItem('currentUser', JSON.stringify({
-        username,
-        name: user.name,
-        role: roleKey,
-        permissions: permissionsFromRole
-      }));
+sessionStorage.setItem('currentUser', JSON.stringify({
+  username,
+  name: user.name,
+  role: roleKey,
+  permissions: permissionsFromRole
+}));
 
       // Redirecionar para o sistema principal
       window.location.href = 'Main.html';
     }, 800);
   });
 }
+
+// ===== PREENCHER COM PERFIL DE TESTE =====
+document.querySelectorAll('.profile-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    if (usernameInput && passwordInput) {
+      usernameInput.value = chip.dataset.user;
+      passwordInput.value = chip.dataset.pass;
+    }
+  });
+});
 
 // ===== FUNÇÕES AUXILIARES PARA INTEGRAÇÃO COM O SISTEMA =====
 

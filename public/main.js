@@ -1,50 +1,37 @@
-// ==================== MAIN.JS - COM ESTADO GLOBAL (FASE B) ====================
+// ==================== MAIN.JS — SPA MODULAR LIMPO ====================
 
 /* =========================
-   ESTADO GLOBAL DO SISTEMA
+   ESTADO GLOBAL
 ========================= */
 const AppState = {
   user: {
     isAuthenticated: false,
-    data: null,
+    data: null
   },
-
   navigation: {
-    currentModule: 'main',
-    breadcrumb: ['Início'],
+    currentModule: "main",
+    breadcrumb: ["Início"]
   },
-
   ui: {
     sidebarOpen: false,
-    sidebarMode: 'compact',
-    theme: 'light',
-    loading: false,
+    theme: "light",
+    loading: false
   },
-
-  system: {
-    notifications: [],
-    errors: [],
-  },
-
   listeners: []
 };
+
 /* =========================
-   MAPEAMENTO DOS MODULOS
+   OBSERVADORES
 ========================= */
-const globalModules = [
-  { name: "Início", action: voltarMain },
-  { name: "Atendimento", section: "atendimento" },
-  { name: "Conteúdo", section: "conteudo" },
-  { name: "Financeiro", section: "financeiro" },
-  { name: "Marketing", section: "marketing" },
-  { name: "Técnico", section: "tecnico" },
-  { name: "Gerência", section: "gerencia" },
-  { name: "Relatórios", section: "relatorios" }
-];
-
+function subscribe(fn) {
+  AppState.listeners.push(fn);
+}
+function notify() {
+  AppState.listeners.forEach(fn => fn(AppState));
+}
 
 /* =========================
-   RENDERIZAÇÃO DE UI
+   UI
 ========================= */
 function renderUI(state) {
   renderBreadcrumb(state.navigation.breadcrumb);
@@ -52,50 +39,30 @@ function renderUI(state) {
 }
 
 function renderBreadcrumb(items) {
-  const el = document.getElementById('breadcrumb');
+  const el = document.getElementById("breadcrumb");
   if (!el) return;
-
-  el.innerHTML = items.map(i => `<span>${i}</span>`).join('');
+  el.innerHTML = items.map(i => `<span>${i}</span>`).join("");
 }
 
 function renderLoading(show) {
-  const loader = document.getElementById('globalLoading');
+  const loader = document.getElementById("globalLoading");
   if (!loader) return;
-
-  loader.classList.toggle('hidden', !show);
+  loader.classList.toggle("hidden", !show);
 }
 
-/* Registrar observador */
 subscribe(renderUI);
 
 /* =========================
-   OBSERVADORES DE ESTADO
+   CONTROLE DE ESTADO
 ========================= */
-function subscribe(listener) {
-  AppState.listeners.push(listener);
-}
-
-function notify() {
-  AppState.listeners.forEach(fn => fn(AppState));
-}
-
-/* =========================
-   CONTROLADORES DE ESTADO
-========================= */
-function setUser(userData) {
-  AppState.user.isAuthenticated = !!userData;
-  AppState.user.data = userData;
+function setModule(module) {
+  AppState.navigation.currentModule = module;
+  updateBreadcrumb(module);
   notify();
 }
 
-function setModule(moduleName) {
-  AppState.navigation.currentModule = moduleName;
-  updateBreadcrumb(moduleName);
-  notify();
-}
-
-function setLoading(value) {
-  AppState.ui.loading = value;
+function setLoading(v) {
+  AppState.ui.loading = v;
   notify();
 }
 
@@ -104,105 +71,210 @@ function toggleSidebar(open) {
   notify();
 }
 
-function setTheme(theme) {
-  AppState.ui.theme = theme;
-  localStorage.setItem('theme', theme);
-  notify();
-}
-
 /* =========================
-   BREADCRUMB (ESTADO)
+   BREADCRUMB
 ========================= */
 function updateBreadcrumb(module) {
   const map = {
-    main: ['Início'],
-    atendimento: ['Início', 'Atendimento'],
-    conteudo: ['Início', 'Conteúdo'],
-    financeiro: ['Início', 'Financeiro'],
-    marketing: ['Início', 'Marketing'],
-    tecnico: ['Início', 'Técnico'],
-    gerencia: ['Início', 'Gerência'],
-    relatorios: ['Início', 'Relatórios'],
+    main: ["Início"],
+    atendimento: ["Início", "Atendimento"],
+    conteudo: ["Início", "Conteúdo"],
+    financeiro: ["Início", "Financeiro"],
+    marketing: ["Início", "Marketing"],
+    tecnico: ["Início", "Técnico"],
+    gerencia: ["Início", "Gerência"],
+    relatorios: ["Início", "Relatórios"],
+    admin: ["Início", "Administração"]
   };
-
-  AppState.navigation.breadcrumb = map[module] || ['Início'];
+  AppState.navigation.breadcrumb = map[module] || ["Início"];
 }
 
 /* =========================
-   AUTENTICAÇÃO
+   AUTENTICAÇÃO / PERMISSÃO
 ========================= */
 function isAuthenticated() {
-  return sessionStorage.getItem('currentUser') !== null;
+  return sessionStorage.getItem("currentUser") !== null;
 }
 
 function getCurrentUser() {
-  const user = sessionStorage.getItem('currentUser');
-  return user ? JSON.parse(user) : null;
+  const u = sessionStorage.getItem("currentUser");
+  return u ? JSON.parse(u) : null;
 }
 
 function hasPermission(module) {
+  if (!window.PermissionsSystem) return false;
   const user = getCurrentUser();
   if (!user) return false;
-  return user.permissions.includes(module);
-}
 
-function getRoleLabel(role) {
-  const labels = {
-    atendente: 'Atendente',
-    supervisor: 'Supervisor',
-    gerente: 'Gerente',
-    admin: 'Administrador'
+  const permissions = {
+    atendimento: "atendimento.view",
+    conteudo: "conteudo.view",
+    financeiro: "financeiro.view",
+    marketing: "marketing.view",
+    tecnico: "tecnico.view",
+    gerencia: "gerencia.view",
+    relatorios: "relatorios.view",
+    admin: "system.super_admin"
   };
-  return labels[role] || role;
+
+  return window.PermissionsSystem.hasPermission(permissions[module]);
 }
 
 /* =========================
-   HEADER (INFO DO USUÁRIO)
-========================= */
-function loadUserInfo() {
-  const user = getCurrentUser();
-  if (!user) return;
-
-  const headerTitle = document.querySelector('header h1');
-  if (headerTitle) {
-    headerTitle.innerHTML = `
-      Lujo Network
-      <small style="font-size: 14px; font-weight: 400; margin-left: 10px; color: rgba(255,255,255,0.8);">
-        | ${user.name} - ${getRoleLabel(user.role)}
-      </small>
-    `;
-  }
-
-  const btnSair = document.querySelector('header .btn-primary');
-  if (btnSair) btnSair.onclick = handleLogout;
-}
-
-/* =========================
-   LOGOUT
-========================= */
-function handleLogout() {
-  if (confirm('Deseja realmente sair do sistema?')) {
-    sessionStorage.removeItem('currentUser');
-    window.location.href = 'login.html';
-  }
-}
-
-/* =========================
-   SIDEBAR
+   ELEMENTOS BASE
 ========================= */
 const sidebar = document.getElementById("sidebar");
 const content = document.getElementById("content");
-const noticiasHTML = document.getElementById("news-section").outerHTML;
+const noticiasHTML = document.getElementById("news-section")?.outerHTML || "";
 
-function atualizarPointerEvents() {
-  sidebar.style.pointerEvents = sidebar.classList.contains("active") ? "auto" : "none";
+/* =========================
+   HOME
+========================= */
+function voltarMain() {
+  setModule("main");
+  content.innerHTML = noticiasHTML;
+  sidebar.classList.remove("active");
+  toggleSidebar(false);
+  content.scrollTo(0, 0);
 }
 
-const observer = new MutationObserver(atualizarPointerEvents);
-observer.observe(sidebar, { attributes: true, attributeFilter: ["class"] });
+/* =========================
+   MAPA DE MÓDULOS (CHAVE!)
+========================= */
+const ModuleRegistry = {
+  atendimento: () => window.initAtendimentoModule?.(),
+  gerencia: () => window.initGerenciaModule?.(),
+  admin: () => window.initAdminModule?.()
+};
+
+/* =========================
+   SPA — LOAD CONTENT
+========================= */
+async function loadContent(section) {
+  console.log(`📂 Carregando módulo: ${section}`);
+
+  if (!hasPermission(section)) {
+    content.innerHTML = `
+      <div class="card" style="text-align:center;padding:40px">
+        <h3>🔒 Acesso Negado</h3>
+        <button class="btn btn-primary" id="btnVoltar">Voltar</button>
+      </div>
+    `;
+    document.getElementById("btnVoltar")?.addEventListener("click", voltarMain);
+    return;
+  }
+
+  setLoading(true);
+  setModule(section);
+  sidebar.classList.remove("active");
+  toggleSidebar(false);
+
+  try {
+    // HTML
+    const res = await fetch(`${section}.html`);
+    if (!res.ok) throw new Error("HTML não encontrado");
+    content.innerHTML = await res.text();
+
+    // CSS
+    loadModuleCSS(section);
+
+    // JS
+    await loadModuleJS(section);
+
+    // INIT
+    ModuleRegistry[section]?.();
+    console.log(`✅ Módulo ${section} inicializado`);
+  } catch (e) {
+    console.error(e);
+    content.innerHTML = `<div class="card"><p>${e.message}</p></div>`;
+  } finally {
+    setLoading(false);
+    content.scrollTo(0, 0);
+  }
+}
+
+/* =========================
+   CSS POR MÓDULO
+========================= */
+function loadModuleCSS(section) {
+  document.querySelectorAll("link[data-module]").forEach(l => l.remove());
+
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = `${section}.css`;
+  link.dataset.module = section;
+  document.head.appendChild(link);
+}
+
+/* =========================
+   JS POR MÓDULO
+========================= */
+function loadModuleJS(section) {
+  return new Promise((resolve, reject) => {
+    document.querySelectorAll("script[data-module]").forEach(s => s.remove());
+
+    const script = document.createElement("script");
+    script.src = `${section}.js`;
+    script.dataset.module = section;
+    script.defer = true;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.body.appendChild(script);
+  });
+}
+
+/* =========================
+   MENU LATERAL
+========================= */
+function initSidebarMenu() {
+  document.querySelectorAll(".sidebar a").forEach(link => {
+    link.addEventListener("click", e => {
+      e.preventDefault();
+      const module = link.dataset.module;
+      const action = link.dataset.action;
+      if (action === "voltarMain") voltarMain();
+      if (module) loadContent(module);
+    });
+  });
+}
+
+/* =========================
+   START
+========================= */
+window.addEventListener("DOMContentLoaded", () => {
+  if (!isAuthenticated()) {
+    location.href = "login.html";
+    return;
+  }
+
+  initSidebarMenu();
+  setModule("main");
+});
+
+/* =========================
+   SIDEBAR — CONTROLE COMPLETO
+========================= */
+
+function atualizarPointerEvents() {
+  sidebar.style.pointerEvents =
+    sidebar.classList.contains("active") ? "auto" : "none";
+}
+
+const sidebarObserver = new MutationObserver(atualizarPointerEvents);
+sidebarObserver.observe(sidebar, {
+  attributes: true,
+  attributeFilter: ["class"]
+});
+
 atualizarPointerEvents();
 
-let hideTimeout;
+let hideTimeout = null;
+
+sidebar.addEventListener("mouseenter", () => {
+  if (hideTimeout) clearTimeout(hideTimeout);
+  sidebar.classList.add("active");
+  toggleSidebar(true);
+});
 
 sidebar.addEventListener("mouseleave", () => {
   hideTimeout = setTimeout(() => {
@@ -211,209 +283,9 @@ sidebar.addEventListener("mouseleave", () => {
   }, 500);
 });
 
-sidebar.addEventListener("mouseenter", () => {
-  clearTimeout(hideTimeout);
-});
-
-/* =========================
-   VOLTAR PARA HOME
-========================= */
-function voltarMain() {
-  setModule('main');
-  content.innerHTML = noticiasHTML;
-  sidebar.classList.remove("active");
-  toggleSidebar(false);
-  content.scrollTo(0, 0);
-}
-
-/* =========================
-   SPA - LOAD CONTENT
-========================= */
-async function loadContent(section) {
-  if (!hasPermission(section)) {
-    content.innerHTML = `
-      <div class="card" style="text-align: center; padding: 40px;">
-        <i class="fi fi-rr-lock" style="font-size: 48px; color: #ccc;"></i>
-        <h3 style="color:#f44336;">Acesso Negado</h3>
-        <p>Você não tem permissão para acessar <strong>${section}</strong>.</p>
-        <button class="btn btn-primary" onclick="voltarMain()">Voltar</button>
-      </div>
-    `;
-    return;
-  }
-
-  setLoading(true);
-  setModule(section);
-  sidebar.classList.remove("active");
-  toggleSidebar(false);
-  cleanPreviousDynamicScripts();
-
-  try {
-    const response = await fetch(`${section}.html`);
-    if (!response.ok) throw new Error("Arquivo não encontrado");
-
-    const html = await response.text();
-    content.innerHTML = html;
-
-    const temp = document.createElement("div");
-    temp.innerHTML = html;
-    const scripts = temp.querySelectorAll("script");
-
-    for (const s of scripts) {
-      if (s.src) await injectExternalScript(s.src, section);
-      else injectInlineScript(s.textContent, section);
-    }
-  } catch (e) {
-    content.innerHTML = `<div class="card"><h3>Erro</h3><p>${e.message}</p></div>`;
-  }
-
-  setLoading(false);
-  content.scrollTo(0, 0);
-}
-
-/* =========================
-   SCRIPTS DINÂMICOS
-========================= */
-function cleanPreviousDynamicScripts() {
-  document.querySelectorAll('script[data-dyn-script="true"]').forEach(s => s.remove());
-}
-
-function injectInlineScript(text, section) {
-  const script = document.createElement("script");
-  script.textContent = text;
-  script.dataset.dynScript = "true";
-  script.dataset.section = section;
-  document.body.appendChild(script);
-}
-
-function injectExternalScript(src, section) {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.dataset.dynScript = "true";
-    script.dataset.section = section;
-    script.onload = resolve;
-    script.onerror = reject;
-    document.body.appendChild(script);
-  });
-}
-
-/* =========================
-   MENU HOVER
-========================= */
 const menuTrigger = document.getElementById("menuTrigger");
-menuTrigger.addEventListener("mouseenter", () => {
+
+menuTrigger?.addEventListener("mouseenter", () => {
   sidebar.classList.add("active");
   toggleSidebar(true);
-});
-
-/* =========================
-   BLOQUEIO VISUAL DE MÓDULOS
-========================= */
-window.addEventListener('DOMContentLoaded', () => {
-  if (!isAuthenticated()) {
-    window.location.href = 'login.html';
-    return;
-  }
-
-  const user = getCurrentUser();
-  setUser(user);
-  loadUserInfo();
-
-  const menuLinks = document.querySelectorAll('.sidebar ul li a');
-
-  menuLinks.forEach(link => {
-    const match = link.getAttribute('onclick')?.match(/loadContent\('(.+?)'\)/);
-    if (match && !hasPermission(match[1])) {
-      link.style.opacity = '0.4';
-      link.style.cursor = 'not-allowed';
-      link.setAttribute('title', link.getAttribute('title') + ' 🔒');
-    }
-  });
-
-  setModule('main');
-});
-/* =========================
-   ABRI/FECHAR PESQUISA COM TECLADO
-========================= */
-const globalSearch = document.getElementById("globalSearch");
-const searchInput = document.getElementById("searchInput");
-const searchResults = document.getElementById("searchResults");
-
-document.addEventListener("keydown", (e) => {
-  if (e.ctrlKey && e.key.toLowerCase() === "k") {
-    e.preventDefault();
-    openSearch();
-  }
-
-  if (e.key === "Escape") {
-    closeSearch();
-  }
-});
-
-function openSearch() {
-  globalSearch.classList.remove("hidden");
-  searchInput.value = "";
-  searchResults.innerHTML = "";
-  searchInput.focus();
-}
-
-function closeSearch() {
-  globalSearch.classList.add("hidden");
-}
-
-
-/* =========================
-   FILTRAR RESULTADOS DA PESQUISA
-========================= */
-
-searchInput.addEventListener("input", () => {
-  const query = searchInput.value.toLowerCase();
-  searchResults.innerHTML = "";
-
-  if (!query) return;
-
-  globalModules
-    .filter(m => m.name.toLowerCase().includes(query))
-    .forEach(module => {
-      const li = document.createElement("li");
-      li.textContent = module.name;
-
-      if (module.section && !hasPermission(module.section)) {
-        li.classList.add("disabled");
-      } else {
-        li.onclick = () => {
-          closeSearch();
-          module.section ? loadContent(module.section) : module.action();
-        };
-      }
-
-      searchResults.appendChild(li);
-    });
-});
-
-/* ===============================
-   MENU EXPANDIDO / COMPACTO
-================================ */
-
-const SIDEBAR_STATE_KEY = 'lujo_sidebar_state';
-
-function setSidebarState(state) {
-  if (state === 'expanded') {
-    sidebar.classList.add('expanded');
-  } else {
-    sidebar.classList.remove('expanded');
-  }
-  localStorage.setItem(SIDEBAR_STATE_KEY, state);
-}
-
-function toggleSidebarState() {
-  const isExpanded = sidebar.classList.contains('expanded');
-  setSidebarState(isExpanded ? 'compact' : 'expanded');
-}
-
-// Restaurar estado ao carregar
-window.addEventListener('DOMContentLoaded', () => {
-  const savedState = localStorage.getItem(SIDEBAR_STATE_KEY) || 'compact';
-  setSidebarState(savedState);
 });
