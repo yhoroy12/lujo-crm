@@ -1,15 +1,4 @@
 <!-- atendimento.html -->
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel de Atendimento</title>
-  <!-- Link para o CSS externo -->
-  <link rel="stylesheet" href="atendimento.css">
-</head>
-<body>
-
 <section class="painel-atendimento">
 
   <!-- ==================== ABAS SUPERIORES ==================== -->
@@ -23,10 +12,8 @@
     </div>
   </div>
 
-
   <!-- ==================== ABA: ATENDIMENTO ==================== -->
   <div class="aba-conteudo aba-atendimento ativa">
-
     <div class="atendimento-grid">
 
       <!-- ======= COLUNA 1 – ATENDIMENTO ATUAL ======= -->
@@ -36,7 +23,7 @@
           📄 Atendimento Atual
           <span class="id-atendimento">MS-20251111-223841</span>
         </h3>
-        <!-- Campos automáticos alinhados -->
+        
         <div class="linha-cabecalho">
           <div class="campo">
             <label>Nome do Cliente</label>
@@ -50,7 +37,7 @@
             <label>Email em Atendimento</label>
             <div class="selecao-conta">
               <input type="text" value="conta1@example.com" readonly id="emailAtual">
-              <button class="btn btn-secondary" onclick="abrirSelecaoContaCliente()">Alterar</button>
+              <button class="btn btn-secondary" id="btnAlterarEmail">Alterar</button>
             </div>
           </div>
         </div>
@@ -110,23 +97,23 @@
         </div>
         <div class="chat-input">
           <input type="text" id="chatInput" placeholder="Digite sua mensagem...">
-          <button class="btn-enviar" onclick="enviarMensagem()">Enviar</button>
+          <button class="btn-enviar" id="btnEnviarMensagem">Enviar</button>
         </div>
       </div>
 
       <!-- ======= COLUNA 3 – LISTA DE ATENDIMENTOS ======= -->
       <div class="col-lista card">
         <h3>📋 Lista de Atendimentos</h3>
-        <ul class="lista-atendimentos">
-          <li class="item ativo" onclick="selecionarAtendimento(this)">
+        <ul class="lista-atendimentos" id="listaAtendimentos">
+          <li class="item ativo" data-id="1">
             <strong>Maria Souza</strong><br>
             <small>Em atendimento - 14:32</small>
           </li>
-          <li class="item" onclick="selecionarAtendimento(this)">
+          <li class="item" data-id="2">
             <strong>João Silva</strong><br>
             <small>Pendente - 13:58</small>
           </li>
-          <li class="item" onclick="selecionarAtendimento(this)">
+          <li class="item" data-id="3">
             <strong>Pedro Costa</strong><br>
             <small>Encerrado - 11:45</small>
           </li>
@@ -195,53 +182,54 @@
       </div>
     </div>
   </div>
-</section>
+
   <!-- ==================== ABA: E-MAILS ==================== -->
-<div class="aba-conteudo aba-emails">
-  <div class="emails-container">
-    
-    <!-- COLUNA ESQUERDA: LISTA DE E-MAILS -->
-    <div class="emails-lista">
-      <div class="emails-header">
-        <h2>E-mails</h2>
-        <button class="btn btn-primary">Finalizar E-mail</button>
+  <div class="aba-conteudo aba-emails">
+    <div class="emails-container">
+      
+      <!-- COLUNA ESQUERDA: LISTA DE E-MAILS -->
+      <div class="emails-lista">
+        <div class="emails-header">
+          <h2>E-mails</h2>
+          <button class="btn btn-primary">Finalizar E-mail</button>
+        </div>
+
+        <div class="emails-itens">
+          <div class="email-item ativa">
+            <p class="assunto">Confirmação de pedido</p>
+            <span class="data">12/11/2025</span>
+          </div>
+          <div class="email-item">
+            <p class="assunto">Atualização de status</p>
+            <span class="data">11/11/2025</span>
+          </div>
+          <div class="email-item">
+            <p class="assunto">Suporte técnico</p>
+            <span class="data">09/11/2025</span>
+          </div>
+        </div>
       </div>
 
-      <div class="emails-itens">
-        <div class="email-item ativa">
-          <p class="assunto">Confirmação de pedido</p>
-          <span class="data">12/11/2025</span>
+      <!-- COLUNA DIREITA: DETALHES DO E-MAIL -->
+      <div class="emails-detalhes">
+        <div class="detalhes-corpo">
+          <p><strong>De:</strong> loja@exemplo.com</p>
+          <p><strong>Para:</strong> cliente@exemplo.com</p>
+          <p><strong>Cc:</strong> financeiro@exemplo.com</p>
+          <p><strong>Assunto:</strong> Confirmação de pedido</p>
+          <hr>
+          <p>Olá, o pedido #1234 foi confirmado com sucesso.</p>
+          <p>Previsão de entrega: 15/11/2025.</p>
+          <p>Obrigado por escolher a Lujo Network.</p>
         </div>
-        <div class="email-item">
-          <p class="assunto">Atualização de status</p>
-          <span class="data">11/11/2025</span>
-        </div>
-        <div class="email-item">
-          <p class="assunto">Suporte técnico</p>
-          <span class="data">09/11/2025</span>
+        <div class="detalhes-footer">
+          <button class="btn-responder">Responder</button>
         </div>
       </div>
+
     </div>
-
-    <!-- COLUNA DIREITA: DETALHES DO E-MAIL -->
-    <div class="emails-detalhes">
-      <div class="detalhes-corpo">
-        <p><strong>De:</strong> loja@exemplo.com</p>
-        <p><strong>Para:</strong> cliente@exemplo.com</p>
-        <p><strong>Cc:</strong> financeiro@exemplo.com</p>
-        <p><strong>Assunto:</strong> Confirmação de pedido</p>
-        <hr>
-        <p>Olá, o pedido #1234 foi confirmado com sucesso.</p>
-        <p>Previsão de entrega: 15/11/2025.</p>
-        <p>Obrigado por escolher a Lujo Network.</p>
-      </div>
-      <div class="detalhes-footer">
-        <button class="btn-responder">Responder</button>
-      </div>
-    </div>
-
   </div>
-</div>
+</section>
 
 <!-- ==================== POP-UP DE NOVO ATENDIMENTO ==================== -->
 <div class="popup-atendimento" id="popupAtendimento">
@@ -255,70 +243,7 @@
     </div>
 
     <div class="popup-actions">
-      <button class="btn btn-primary" onclick="iniciarAtendimento()">Iniciar Atendimento</button>
+      <button class="btn btn-primary" id="btnIniciarAtendimento">Iniciar Atendimento</button>
     </div>
   </div>
 </div>
-
-<!-- JS -->
-<script>
-  // Troca de abas
-  const botoesAba = document.querySelectorAll('.aba-btn');
-  const conteudosAba = document.querySelectorAll('.aba-conteudo');
-  botoesAba.forEach(btn => {
-    btn.addEventListener('click', () => {
-      botoesAba.forEach(b => b.classList.remove('ativa'));
-      conteudosAba.forEach(c => c.classList.remove('ativa'));
-      btn.classList.add('ativa');
-      document.querySelector('.' + btn.dataset.aba).classList.add('ativa');
-    });
-  });
-
-  // Chat simples
-  function enviarMensagem() {
-    const input = document.getElementById('chatInput');
-    const chatbox = document.getElementById('chatbox');
-    if (input.value.trim() !== "") {
-      const msg = document.createElement('div');
-      msg.classList.add('msg', 'atendente');
-      msg.textContent = input.value;
-      chatbox.appendChild(msg);
-      input.value = '';
-      chatbox.scrollTop = chatbox.scrollHeight;
-    }
-  }
-
-  // Seleção de atendimento
-  function selecionarAtendimento(el) {
-    document.querySelectorAll('.lista-atendimentos .item').forEach(i => i.classList.remove('ativo'));
-    el.classList.add('ativo');
-  }
-
-  // Pop-up de novo atendimento
-  const popup = document.getElementById('popupAtendimento');
-  const nomeCliente = document.getElementById('popupCliente');
-  const canalCliente = document.getElementById('popupCanal');
-
-  setTimeout(() => {
-    mostrarNovoAtendimento({ nome: 'João Ferreira', canal: 'WhatsApp' });
-  }, 5000);
-
-  function mostrarNovoAtendimento(dados) {
-    nomeCliente.textContent = dados.nome;
-    canalCliente.textContent = dados.canal;
-    popup.style.display = 'flex';
-  }
-
-  function iniciarAtendimento() {
-    popup.style.display = 'none';
-    document.querySelector('.aba-btn[data-aba="aba-atendimento"]').click();
-
-    const nomeInput = document.querySelector('.col-atual input[type="text"]');
-    const telefoneInput = document.querySelector('.col-atual input[type="text"]:nth-of-type(2)');
-    if (nomeInput) nomeInput.value = nomeCliente.textContent;
-    if (telefoneInput) telefoneInput.value = '(11) 90000-0000';
-  }
-</script>
-
-</body>
-</html>

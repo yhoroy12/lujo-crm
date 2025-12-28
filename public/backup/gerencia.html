@@ -1,0 +1,214 @@
+<div class="container">
+    <!-- BARRA SUPERIOR -->
+    <header class="header">
+        <h1>Gerenciamento</h1>
+    </header>
+
+    <!-- NAVEGAÇÃO DAS ABAS PRINCIPAIS -->
+    <div class="aba-nav">
+      <button class="aba-btn ativa" data-aba="aba-supervisor">Supervisão</button>
+      <button class="aba-btn" data-aba="aba-Gerencia">Gerência</button>
+      <button class="aba-btn" data-aba="aba-relatorios">Resultados</button>
+    </div>
+    
+    <!-- ABA 1 – SUPERVISÃO -->
+    <div class="aba-conteudo aba-supervisor ativa">
+      <div class="supervisor-grid">
+        <div class="card-atendente">
+          <h2>Atendentes</h2>
+          <label for="selectAtendente" class="label-select">Selecionar Atendente:</label>
+          <select id="selectAtendente" class="select-atendente">
+            <option value="">-- selecione --</option>
+            <option value="at01">Ana Silva</option>
+            <option value="at02">Carlos Souza</option>
+            <option value="at03">Marina Lopes</option>
+          </select>
+          <hr style="margin: 15px 0; opacity: .3;">
+          <div id="atendenteInfo" class="atendente-info">
+            <h3>Informações do Atendente</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <strong>Atendimentos Totais</strong>
+                <p>Hoje: <span id="totaisHoje">0</span></p>
+                <p>Semana: <span id="totaisSemana">0</span></p>
+                <p>Mês: <span id="totaisMes">0</span></p>
+              </div>
+              <div class="info-item">
+                <strong>Derivados</strong>
+                <p>Hoje: <span id="derivadosHoje">0</span></p>
+                <p>Semana: <span id="derivadosSemana">0</span></p>
+                <p>Mês: <span id="derivadosMes">0</span></p>
+              </div>
+              <div class="info-item">
+                <strong>E-mails Finalizados</strong>
+                <p><span id="emailsFinalizados">0</span></p>
+              </div>
+              <div class="info-item">
+                <strong>Em Atendimento</strong>
+                <p><span id="emAtendimento">0</span></p>
+              </div>
+              <div class="info-item">
+                <strong>Tempo Médio de Atendimento</strong>
+                <p><span id="tempoMedio">00:00</span></p>
+              </div>
+              <div class="info-item">
+                <strong>Taxa de Conclusão</strong>
+                <p><span id="taxaConclusao">0%</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+    
+        <div class="card chat-card">
+          <div class="chat-header">
+            <h2>Chat</h2>
+            <select class="chat-select">
+              <option selected disabled>Selecione um atendimento</option>
+              <option>Cliente 1 - Pedido #3021</option>
+              <option>Cliente 2 - Suporte Técnico</option>
+              <option>Cliente 3 - Financeiro</option>
+            </select>
+          </div>
+          <div class="chat-box whatsapp-style">
+            <div class="msg msg-left">
+              <p>Olá, preciso de ajuda com meu pedido.</p>
+              <span class="msg-hora">14:32</span>
+            </div>
+            <div class="msg msg-right">
+              <p>Claro, poderia confirmar o número, por favor?</p>
+              <span class="msg-hora">14:33</span>
+            </div>
+            <div class="msg msg-left">
+              <p>É o 3021.</p>
+              <span class="msg-hora">14:34</span>
+            </div>
+          </div>
+        </div>
+    
+        <div class="card fila-card">
+          <div class="fila-header">
+            <h2>Fila de Atendimento</h2>
+            <span id="filaStatus" class="fila-status-circle verde"></span>
+          </div>
+          <div class="fila-lista">
+            <div class="cliente-item">
+              <span class="cliente-nome">Carlos Menezes</span>
+              <span class="cliente-tempo">Aguardando há 2 min</span>
+            </div>
+            <div class="cliente-item">
+              <span class="cliente-nome">Julia Santos</span>
+              <span class="cliente-tempo">Aguardando há 5 min</span>
+            </div>
+            <div class="cliente-item">
+              <span class="cliente-nome">Roberto Lima</span>
+              <span class="cliente-tempo">Aguardando há 8 min</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ABA 2 – GERÊNCIA -->
+    <div class="aba-conteudo aba-Gerencia">
+      <div class="gerencia-nav">
+        <button class="sub-aba-btn ativa" data-sub-aba="sub-aba-pedidos">Pedidos Pendentes</button>
+        <button class="sub-aba-btn" data-sub-aba="sub-aba-indicadores">Indicadores</button>
+        <button class="sub-aba-btn" data-sub-aba="sub-aba-operadores">Operadores</button>
+        <button class="sub-aba-btn" data-sub-aba="sub-aba-controle">Controle</button>
+      </div>
+    
+      <!-- ABA 2.1 – PEDIDOS PENDENTES -->
+      <div class="sub-aba-conteudo sub-aba-pedidos ativa">
+        <div class="gerencia-grid">
+          <!-- Lista de Pedidos -->
+          <div class="card pedidos-lista">
+            <h2>Pedidos Pendentes</h2>
+            <ul id="listaPedidos">
+              <!-- Pedidos gerados dinamicamente -->
+              <li class="pedido-item">
+                <span>Pedido #0001 - Advanced</span>
+                <button class="btn-detalhes" data-pedido-id="0001">Ver Detalhes</button>
+                <button class="btn-aprovar">Aprovar</button>
+                <button class="btn-reprovar">Rejeitar</button>
+              </li>
+              <li class="pedido-item">
+                <span>Pedido #0002 - Takedown</span>
+                <button class="btn-detalhes" data-pedido-id="0002">Ver Detalhes</button>
+                <button class="btn-aprovar">Aprovar</button>
+                <button class="btn-reprovar">Rejeitar</button>
+              </li>
+            </ul>
+          </div>
+    
+          <!-- Painel de Detalhes do Pedido -->
+          <div class="card pedido-detalhes" id="painelDetalhes">
+            <div class="painel-header">
+              <h3 id="detalhesTitulo">Pedido #ID</h3>
+              <button id="fecharDetalhes" class="btn-fechar">X</button>
+            </div>
+            <div class="detalhes-info">
+              <p><strong>Cliente:</strong> <span id="detalhesCliente">-</span></p>
+              <p><strong>Email:</strong> <span id="detalhesEmail">-</span></p>
+              <p><strong>Tipo:</strong> <span id="detalhesTipo">-</span></p>
+              <p><strong>Data/Hora:</strong> <span id="detalhesDataHora">-</span></p>
+              <p><strong>Status:</strong> <span id="detalhesStatus">-</span></p>
+              <p><strong>Responsável:</strong> <span id="detalhesResponsavel">-</span></p>
+            </div>
+            <div class="detalhes-descricao">
+              <h4>Descrição da Solicitação</h4>
+              <p id="detalhesDescricao">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+      <!-- ABA 2.2 – INDICADORES -->
+      <div class="sub-aba-conteudo sub-aba-indicadores">
+        <div class="supervisor-grid">
+          <div class="card">
+            <h2>Indicadores</h2>
+            <p>Resumo dos principais indicadores.</p>
+          </div>
+        </div>
+      </div>
+    
+      <!-- ABA 2.3 – OPERADORES -->
+      <div class="sub-aba-conteudo sub-aba-operadores">
+        <div class="supervisor-grid">
+          <div class="card">
+            <h2>Operadores</h2>
+            <p>Desempenho individual dos operadores.</p>
+          </div>
+        </div>
+      </div>
+    
+      <!-- ABA 2.4 – CONTROLE -->
+      <div class="sub-aba-conteudo sub-aba-controle">
+        <div class="supervisor-grid">
+          <div class="card">
+            <h2>Controle</h2>
+            <p>Ajustes de regras e permissões.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+    <!-- ABA 3 – RESULTADOS -->
+    <div class="aba-conteudo aba-relatorios">
+      <div class="supervisor-grid">
+            <div class="card">
+                <h2>Métricas Gerais</h2>
+                <p>Resultados globais do time.</p>
+            </div>
+            <div class="card">
+                <h2>Gráficos</h2>
+                <p>Representações visuais do desempenho.</p>
+            </div>
+            <div class="card">
+                <h2>Exportações</h2>
+                <p>Ferramentas para exportar relatórios.</p>
+            </div>
+        </div>
+    </div>
+</div>
