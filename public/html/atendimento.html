@@ -1,0 +1,255 @@
+  <!-- atendimento.html -->
+<section class="modulo-painel-atendimento">
+  <div class="painel-atendimento">
+
+    <!-- ==================== ABAS SUPERIORES ==================== -->
+    <div class="abas-container">
+      <button class="aba-btn ativa" data-aba="aba-atendimento">Atendimento</button>
+      <button class="aba-btn" data-aba="aba-historico">Histórico</button>
+      <button class="aba-btn" data-aba="aba-emails">E-mails</button>
+
+      <div class="fila-status" id="filaStatus">
+        Status da Fila
+      </div>
+    </div>
+
+    <!-- ==================== ABA: ATENDIMENTO ==================== -->
+    <div class="aba-conteudo aba-atendimento ativa">
+      <div class="atendimento-grid">
+
+        <!-- COLUNA 1 -->
+        <div class="col-atual card">
+
+          <h3 class="titulo-atendimento">
+            📄 Atendimento Atual
+            <span class="id-atendimento">MS-20251111-223841</span>
+          </h3>
+
+          <div class="linha-cabecalho">
+            <div class="campo">
+              <label>Nome do Cliente</label>
+              <input type="text" value="-" readonly>
+            </div>
+            <div class="campo">
+              <label>Telefone</label>
+              <input type="text" value="-" readonly>
+            </div>
+            <div class="campo">
+              <label>Email em Atendimento</label>
+              <div class="selecao-conta">
+                <input type="text" value="conta1@example.com" readonly id="emailAtual">
+                <button class="btn btn-secondary" id="btnAlterarEmail">Alterar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="campo">
+            <label>Tipo de Atendimento</label>
+            <select>
+              <option value="">Selecione...</option>
+              <option>WhatsApp</option>
+              <option>Ligação</option>
+              <option>Gmail</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label>Demanda</label>
+            <select>
+              <option value="">Selecione...</option>
+              <option>Conteúdo</option>
+              <option>Financeira</option>
+              <option>Conta</option>
+              <option>Strike</option>
+              <option>Canal</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label>Setor Responsável</label>
+            <select>
+              <option value="">Selecione...</option>
+              <option>Atendimento</option>
+              <option>Conteúdo</option>
+              <option>Financeiro</option>
+              <option>Técnico</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label>Descrição da Solicitação</label>
+            <textarea rows="5" placeholder="Descreva brevemente o motivo do atendimento..."></textarea>
+          </div>
+
+          <div class="acoes">
+            <button class="btn btn-primary">Salvar Atendimento</button>
+            <button class="btn btn-primary">Enviar Email</button>
+            <button class="btn btn-primary">Direcionar Demanda</button>
+            <button class="btn btn-primary">Finalizar Atendimento</button>
+          </div>
+        </div>
+
+        <!-- COLUNA 2 -->
+        <div class="col-chat card">
+          <h3>💬 Chat</h3>
+          <div class="chatbox" id="chatbox">
+            <div class="msg cliente">Olá! Estou com uma dúvida sobre minha fatura.</div>
+            <div class="msg atendente">Claro, posso te ajudar! Qual o número da fatura?</div>
+          </div>
+          <div class="chat-input">
+            <input type="text" id="chatInput" placeholder="Digite sua mensagem...">
+            <button class="btn-enviar" id="btnEnviarMensagem">Enviar</button>
+          </div>
+        </div>
+
+        <!-- COLUNA 3 -->
+        <div class="col-lista card">
+          <h3>📋 Lista de Atendimentos</h3>
+          <ul class="lista-atendimentos" id="listaAtendimentos">
+            <li class="item ativo" data-id="1">
+              <strong>Maria Souza</strong><br>
+              <small>Em atendimento - 14:32</small>
+            </li>
+            <li class="item" data-id="2">
+              <strong>João Silva</strong><br>
+              <small>Pendente - 13:58</small>
+            </li>
+            <li class="item" data-id="3">
+              <strong>Pedro Costa</strong><br>
+              <small>Encerrado - 11:45</small>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== ABA: HISTÓRICO ==================== -->
+    <div class="aba-conteudo aba-historico">
+      <div class="historico-container">
+
+        <div class="historico-filtros">
+          <div class="filtro-busca">
+            <i class="fi fi-rr-search"></i>
+            <input type="text" placeholder="Buscar atendimento...">
+          </div>
+
+          <div class="filtro-opcoes">
+            <select>
+              <option>Todos os status</option>
+              <option>Finalizado</option>
+              <option>Pendente</option>
+              <option>Em andamento</option>
+            </select>
+            <select>
+              <option>Hoje</option>
+              <option>Ontem</option>
+              <option>Últimos 7 dias</option>
+              <option>Últimos 30 dias</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="historico-lista">
+
+          <div class="historico-card">
+            <div class="historico-header">
+              <span class="id">#4523</span>
+              <span class="status finalizado">Finalizado</span>
+            </div>
+            <h4>Dúvida sobre produto</h4>
+            <div class="historico-detalhes">
+              <span><i class="fi fi-rr-user"></i> Ana Costa</span>
+              <span><i class="fi fi-rr-comment-alt"></i> 8</span>
+            </div>
+            <div class="historico-footer">
+              <span><i class="fi fi-rr-calendar"></i> 31/10/2025 - 10:30</span>
+              <span><i class="fi fi-rr-time-fast"></i> 15 min</span>
+            </div>
+          </div>
+
+          <div class="historico-card">
+            <div class="historico-header">
+              <span class="id">#4522</span>
+              <span class="status pendente">Pendente</span>
+            </div>
+            <h4>Reclamação - Entrega atrasada</h4>
+            <div class="historico-detalhes">
+              <span><i class="fi fi-rr-user"></i> João Silva</span>
+              <span><i class="fi fi-rr-comment-alt"></i> 3</span>
+            </div>
+            <div class="historico-footer">
+              <span><i class="fi fi-rr-calendar"></i> 31/10/2025 - 08:45</span>
+              <span><i class="fi fi-rr-time-fast"></i> 25 min</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== ABA: E-MAILS ==================== -->
+    <div class="aba-conteudo aba-emails">
+      <div class="emails-container">
+
+        <div class="emails-lista">
+          <div class="emails-header">
+            <h2>E-mails</h2>
+            <button class="btn btn-primary">Finalizar E-mail</button>
+          </div>
+
+          <div class="emails-itens">
+            <div class="email-item ativa">
+              <p class="assunto">Confirmação de pedido</p>
+              <span class="data">12/11/2025</span>
+            </div>
+            <div class="email-item">
+              <p class="assunto">Atualização de status</p>
+              <span class="data">11/11/2025</span>
+            </div>
+            <div class="email-item">
+              <p class="assunto">Suporte técnico</p>
+              <span class="data">09/11/2025</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="emails-detalhes">
+          <div class="detalhes-corpo">
+            <p><strong>De:</strong> loja@exemplo.com</p>
+            <p><strong>Para:</strong> cliente@exemplo.com</p>
+            <p><strong>Cc:</strong> financeiro@exemplo.com</p>
+            <p><strong>Assunto:</strong> Confirmação de pedido</p>
+            <hr>
+            <p>Olá, o pedido #1234 foi confirmado com sucesso.</p>
+            <p>Previsão de entrega: 15/11/2025.</p>
+            <p>Obrigado por escolher a Lujo Network.</p>
+          </div>
+          <div class="detalhes-footer">
+            <button class="btn-responder">Responder</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== POP-UP ==================== -->
+  <div class="popup-atendimento" id="popupAtendimento">
+    <div class="popup-content">
+      <h3>📞 Novo Atendimento Disponível</h3>
+      <p>Você tem um novo cliente aguardando atendimento!</p>
+
+      <div class="popup-info">
+        <strong>Cliente:</strong> <span id="popupCliente">Carregando...</span><br>
+        <strong>Canal:</strong> <span id="popupCanal">WhatsApp</span>
+      </div>
+
+      <div class="popup-actions">
+        <button class="btn btn-primary" id="btnIniciarAtendimento">Iniciar Atendimento</button>
+      </div>
+    </div>
+  </div>
+</section>
+

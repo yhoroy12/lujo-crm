@@ -197,13 +197,15 @@ async function loadContent(section) {
    CSS POR MÓDULO
 ========================= */
 function loadModuleCSS(section) {
+  // Remove CSS antigo
   document.querySelectorAll("link[data-module]").forEach(l => l.remove());
 
+  // Carrega CSS específico do módulo
   const link = document.createElement("link");
   link.rel = "stylesheet";
   link.href = `${section}.css`;
   link.dataset.module = section;
-  document.head.appendChild(link);
+  document.head.appendChild(link);  
 }
 
 /* =========================

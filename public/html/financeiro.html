@@ -1,0 +1,123 @@
+<div class="modulo-painel-financeiro">
+  <div class="painel-financeiro">
+
+    <div class="modulo-header">
+      <div>
+        <h1>💰 Gestão Financeira</h1>
+        <p>Controle de fluxo, adiantamentos e relatórios consolidados.</p>
+      </div>
+      <div class="user-context-pill">
+        Perfil Atual: <strong id="currentRoleDisplay">Carregando...</strong>
+      </div>
+    </div>
+
+    <div class="abas-container">
+      <button class="aba-btn ativa" data-tab="visao-geral">
+        <i class="fi fi-rr-stats"></i> Visão Geral
+      </button>
+      <button class="aba-btn" data-tab="advances">
+        <i class="fi fi-rr-money-bill-wave"></i> Controle de Advances
+      </button>
+      <button class="aba-btn" data-tab="relatorios" id="tabRelatorios">
+        <i class="fi fi-rr-document"></i> Relatórios Estratégicos
+      </button>
+    </div>
+
+    <div class="modulo-body">
+
+      <section id="tab-visao-geral" class="aba-conteudo ativa">
+        <div class="dashboard-cards">
+          <div class="card card-info">
+            <h3>Advances Pendentes</h3>
+            <p class="valor" id="totalPendentes">R$ 0,00</p>
+          </div>
+          <div class="card card-success">
+            <h3>Total Pago (Mês)</h3>
+            <p class="valor" id="totalPago">R$ 0,00</p>
+          </div>
+          <div class="card card-warning">
+            <h3>Aguardando Aprovação</h3>
+            <p class="valor" id="totalAprovacao">0</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-advances" class="aba-conteudo">
+        <div class="admin-header-actions">
+          <div class="search-box">
+            <input type="text" id="searchAdvance" placeholder="🔍 Buscar por cliente ou ID...">
+          </div>
+          <button class="btn btn-primary" id="btnNovoAdvance" data-perm="FIN_ADV_CREATE">
+            <i class="fi fi-rr-plus"></i> Novo Advance
+          </button>
+        </div>
+
+        <div class="table-container">
+          <table class="financeiro-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Solicitante</th>
+                <th class="txt-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tableAdvancesBody">
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="tab-relatorios" class="aba-conteudo">
+        <div class="card placeholder-card">
+          <i class="fi fi-rr-lock"></i>
+          <h3>Relatórios Gerenciais</h3>
+          <p>Acesso restrito ao nível de Gerência Financeira.</p>
+          <button class="btn btn-secondary">Exportar DRE .PDF</button>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="modal-overlay" id="advanceModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalTitle">Detalhes do Advance</h3>
+          <button class="close-btn" onclick="financeiroModule.closeModal()">&times;</button>
+        </div>
+        <form id="advanceForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Cliente</label>
+              <input type="text" id="advCliente" required>
+            </div>
+            <div class="form-group">
+              <label>Valor (R$)</label>
+              <input type="number" step="0.01" id="advValor" required>
+            </div>
+            <div class="form-group full-width">
+              <label>Descrição/Motivo</label>
+              <textarea id="advDescricao" rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="modal-logs">
+            <h4><i class="fi fi-rr-time-past"></i> Histórico de Alterações</h4>
+            <ul id="historyList"></ul>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-danger" id="btnRejeitar" data-perm="FIN_APPROVE">Rejeitar</button>
+            <button type="button" class="btn btn-success" id="btnAprovar" data-perm="FIN_APPROVE">Aprovar
+              Pagamento</button>
+            <button type="submit" class="btn btn-primary" id="btnSalvar" data-perm="FIN_ADV_EDIT">Salvar
+              Alterações</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
