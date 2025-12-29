@@ -1,39 +1,5 @@
 // ==================== AUTH.JS - Sistema de Autenticação CORRIGIDO ====================
 
-// ===== BANCO DE DADOS SIMULADO =====
-const users = {
-  ana: {
-    password: '123456',
-    name: 'Ana Silva',
-    role: 'atendente',
-    permissions: ['atendimento']
-  },
-  carlos: {
-    password: '123456',
-    name: 'Carlos Souza',
-    role: 'supervisor',
-    permissions: ['atendimento', 'gerencia', 'relatorios']
-  },
-  marina: {
-    password: '123456',
-    name: 'Marina Lopes',
-    role: 'gerente',
-    permissions: ['atendimento', 'gerencia', 'relatorios', 'conteudo', 'marketing']
-  },
-  juan: {
-    password: '123456',
-    name: 'Juan Copyright',
-    role: 'copyright',
-    permissions: ['atendimento', 'conteudo']
-  },
-  admin: {
-    password: '123456',
-    name: 'Administrador',
-    role: 'admin',
-    permissions: ['atendimento', 'gerencia', 'relatorios', 'conteudo', 'marketing', 'financeiro', 'tecnico']
-  }
-};
-
 // ===== ELEMENTOS DO DOM =====
 const loginForm = document.getElementById('loginForm');
 const usernameInput = document.getElementById('username');
@@ -41,18 +7,15 @@ const passwordInput = document.getElementById('password');
 const loginBtn = document.getElementById('loginBtn');
 const loading = document.getElementById('loading');
 
-// ===== PREVENIR LOOP - NÃO REDIRECIONAR SE JÁ ESTIVER NA PÁGINA DE LOGIN =====
+// ===== PREVENIR LOOP =====
 window.addEventListener('DOMContentLoaded', () => {
-  // Se estiver na página login.html, não fazer nada
   if (window.location.pathname.includes('login.html')) {
     initLoginPage();
     return;
   }
   
-  // Se estiver em outra página, verificar autenticação
   const savedUser = sessionStorage.getItem('currentUser');
   if (savedUser && window.location.pathname.includes('Main.html')) {
-    // Usuário está logado e na página correta, OK
     return;
   }
 });
@@ -69,7 +32,6 @@ function initLoginPage() {
     });
   });
 
-  // Event listener para botão logout no dashboard
   const btnLogout = document.getElementById('btnLogout');
   if (btnLogout) {
     btnLogout.addEventListener('click', logout);
@@ -84,23 +46,28 @@ if (loginForm) {
     const username = usernameInput.value.trim().toLowerCase();
     const password = passwordInput.value;
 
-    // Limpar erros anteriores
+    // Limpar erros
     document.getElementById('usernameError')?.classList.remove('show');
     document.getElementById('passwordError')?.classList.remove('show');
     usernameInput.classList.remove('error');
     passwordInput.classList.remove('error');
 
-    // Validar usuário
-    if (!users[username]) {
-      usernameInput.classList.add('error');
-      document.getElementById('usernameError')?.classList.add('show');
+    // Validar com PermissionsSystem
+    if (!window.PermissionsSystem) {
+      alert('Sistema de permissões não carregado. Recarregue a página.');
       return;
     }
 
-    // Validar senha
-    if (users[username].password !== password) {
-      passwordInput.classList.add('error');
-      document.getElementById('passwordError')?.classList.add('show');
+    const result = window.PermissionsSystem.login(username, password);
+    
+    if (!result.success) {
+      if (result.error.includes('usuário') || result.error.includes('Usuário')) {
+        usernameInput.classList.add('error');
+        document.getElementById('usernameError')?.classList.add('show');
+      } else {
+        passwordInput.classList.add('error');
+        document.getElementById('passwordError')?.classList.add('show');
+      }
       return;
     }
 
@@ -109,48 +76,29 @@ if (loginForm) {
     if (loading) loading.classList.add('show');
 
     setTimeout(() => {
-      const user = users[username];
-      
-      // Salvar sessão
-      const roleKey = user.role.toUpperCase();
-
-      const permissionsFromRole =
-        window.PermissionsSystem?.ROLES?.[roleKey]?.permissions || [];
-
-      sessionStorage.setItem('currentUser', JSON.stringify({
-        username,
-        name: user.name,
-        role: roleKey,
-        permissions: permissionsFromRole
-      }));
-
-      // Redirecionar para o sistema principal
       window.location.href = 'Main.html';
     }, 800);
   });
 }
 
-// ===== FUNÇÕES AUXILIARES PARA INTEGRAÇÃO COM O SISTEMA =====
+// ===== FUNÇÕES AUXILIARES =====
 
-// Verificar se usuário está logado
 function isAuthenticated() {
-  return sessionStorage.getItem('currentUser') !== null;
+  return window.PermissionsSystem?.isAuthenticated() || false;
 }
 
-// Obter usuário atual
 function getCurrentUser() {
-  const user = sessionStorage.getItem('currentUser');
-  return user ? JSON.parse(user) : null;
+  return window.PermissionsSystem?.getCurrentUser() || null;
 }
 
-// Verificar se usuário tem permissão para acessar um módulo
-function hasPermission(module) {
-  const user = getCurrentUser();
-  if (!user) return false;
-  return user.permissions.includes(module);
+function hasPermission(permission) {
+  return window.PermissionsSystem?.hasPermission(permission) || false;
 }
 
-// Redirecionar para login se não estiver autenticado
+function hasModuleAccess(module) {
+  return window.PermissionsSystem?.hasModuleAccess(module) || false;
+}
+
 function requireAuth() {
   if (!isAuthenticated()) {
     window.location.href = 'login.html';
@@ -159,31 +107,35 @@ function requireAuth() {
   return true;
 }
 
-// Verificar permissão e redirecionar se não tiver acesso
-function requirePermission(module) {
+function requirePermission(permission) {
   if (!requireAuth()) return false;
   
-  if (!hasPermission(module)) {
-    alert('Você não tem permissão para acessar este módulo.');
+  if (!hasPermission(permission)) {
+    alert('Você não tem permissão para esta ação.');
     return false;
   }
   return true;
 }
 
-// Logout
 function logout() {
-  sessionStorage.removeItem('currentUser');
-  window.location.href = 'login.html';
+  if (window.PermissionsSystem) {
+    window.PermissionsSystem.logout();
+  } else {
+    sessionStorage.removeItem('currentUser');
+    window.location.href = 'login.html';
+  }
 }
 
-// Helper: Label do perfil
 function getRoleLabel(role) {
   const labels = {
-    atendente: 'Atendente',
-    supervisor: 'Supervisor',
-    gerente: 'Gerente',
-    copyright: 'Copyright',
-    admin: 'Administrador'
+    ATENDENTE: 'Atendente',
+    SUPERVISOR: 'Supervisor',
+    GERENTE: 'Gerente',
+    COPYRIGHT: 'Copyright',
+    CEO: 'CEO',
+    ADMIN: 'Administrador'
   };
   return labels[role] || role;
 }
+
+console.log("✅ Sistema de Autenticação carregado");

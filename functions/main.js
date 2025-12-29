@@ -1,4 +1,4 @@
-// ==================== MAIN.JS — SPA MODULAR LIMPO ====================
+// ==================== MAIN.JS – SPA MODULAR LIMPO ====================
 
 /* =========================
    ESTADO GLOBAL
@@ -148,7 +148,7 @@ const ModuleRegistry = {
 };
 
 /* =========================
-   SPA — LOAD CONTENT
+   SPA – LOAD CONTENT
 ========================= */
 async function loadContent(section) {
   console.log(`📂 Carregando módulo: ${section}`);
@@ -170,15 +170,15 @@ async function loadContent(section) {
   toggleSidebar(false);
 
   try {
-    // HTML
-    const res = await fetch(`${section}.html`);
+    // HTML - CAMINHO CORRIGIDO
+    const res = await fetch(`../html/${section}.html`);
     if (!res.ok) throw new Error("HTML não encontrado");
     content.innerHTML = await res.text();
 
-    // CSS
+    // CSS - CAMINHO CORRIGIDO
     loadModuleCSS(section);
 
-    // JS
+    // JS - CAMINHO CORRIGIDO
     await loadModuleJS(section);
 
     // INIT
@@ -200,10 +200,10 @@ function loadModuleCSS(section) {
   // Remove CSS antigo
   document.querySelectorAll("link[data-module]").forEach(l => l.remove());
 
-  // Carrega CSS específico do módulo
+  // Carrega CSS específico do módulo - CAMINHO CORRIGIDO
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = `${section}.css`;
+  link.href = `../css/${section}.css`;
   link.dataset.module = section;
   document.head.appendChild(link);  
 }
@@ -216,7 +216,8 @@ function loadModuleJS(section) {
     document.querySelectorAll("script[data-module]").forEach(s => s.remove());
 
     const script = document.createElement("script");
-    script.src = `${section}.js`;
+    // CAMINHO CORRIGIDO - adiciona /modulos/ para os arquivos JS dos módulos
+    script.src = `../../functions/modulos/${section}.js`;
     script.dataset.module = section;
     script.defer = true;
     script.onload = resolve;
@@ -254,7 +255,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 /* =========================
-   SIDEBAR — CONTROLE COMPLETO
+   SIDEBAR – CONTROLE COMPLETO
 ========================= */
 
 function atualizarPointerEvents() {
@@ -291,3 +292,12 @@ menuTrigger?.addEventListener("mouseenter", () => {
   sidebar.classList.add("active");
   toggleSidebar(true);
 });
+
+// Adicionar botão de sair
+const btnSair = document.getElementById("btnSair");
+if (btnSair) {
+  btnSair.addEventListener("click", () => {
+    sessionStorage.removeItem("currentUser");
+    window.location.href = "../html/login.html";
+  });
+}

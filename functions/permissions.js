@@ -3,7 +3,6 @@
 /* 
  * LUJO NETWORK CRM - SISTEMA DE PERMISSÕES
  * Arquitetura baseada em RBAC (Role-Based Access Control)
- * Preparado para migração futura para Firebase
  */
 
 // ===== DEFINIÇÃO DE TODAS AS PERMISSÕES DO SISTEMA =====
@@ -59,6 +58,7 @@ const PERMISSIONS = {
   FIN_APPROVE: "financeiro.approve",
   FIN_EXECUTE_PAYMENT: "financeiro.execute_payment",
   FIN_EXPORT: "financeiro.export",
+  FIN_ADV_VIEW: "financeiro.advance.view",
   FIN_ADV_CREATE: "financeiro.advance.create",
   FIN_ADV_EDIT: "financeiro.advance.edit",
   FIN_REPORTS: "financeiro.reports",
@@ -92,7 +92,7 @@ const PERMISSIONS = {
   AUDIT_LOGS: "system.audit_logs"
 };
 
-// ===== BASES DE PERMISSÕES (EVITA REFERÊNCIA CIRCULAR) =====
+// ===== BASES DE PERMISSÕES =====
 const BASE_PERMISSIONS = {
   ATENDENTE: [
     PERMISSIONS.ATEND_VIEW,
@@ -118,7 +118,10 @@ BASE_PERMISSIONS.SUPERVISOR = [
   PERMISSIONS.GERENCIA_VIEW_METRICS,
   PERMISSIONS.RELAT_VIEW,
   PERMISSIONS.RELAT_EXPORT,
-  PERMISSIONS.FIN_VIEW
+  PERMISSIONS.FIN_VIEW,
+  PERMISSIONS.FIN_ADV_VIEW,
+  PERMISSIONS.FIN_ADV_CREATE,
+  PERMISSIONS.FIN_ADV_EDIT
 ];
 
 BASE_PERMISSIONS.GERENTE = [
@@ -129,6 +132,9 @@ BASE_PERMISSIONS.GERENTE = [
   PERMISSIONS.FIN_CREATE,
   PERMISSIONS.FIN_UPDATE,
   PERMISSIONS.FIN_APPROVE,
+  PERMISSIONS.FIN_REPORTS,
+  PERMISSIONS.FIN_EXECUTE_PAYMENT,
+  PERMISSIONS.FIN_EXPORT,
   PERMISSIONS.CONT_APPROVE,
   PERMISSIONS.MKT_VIEW,
   PERMISSIONS.MKT_CREATE_CAMPAIGN,
@@ -195,6 +201,8 @@ const ROLES = {
       PERMISSIONS.GERENCIA_VIEW,
       PERMISSIONS.GERENCIA_VIEW_METRICS,
       PERMISSIONS.FIN_VIEW,
+      PERMISSIONS.FIN_ADV_VIEW,
+      PERMISSIONS.FIN_REPORTS,
       PERMISSIONS.MKT_ANALYTICS,
       PERMISSIONS.AUDIT_LOGS
     ]
@@ -212,12 +220,60 @@ const ROLES = {
 
 // ===== BANCO DE DADOS DE USUÁRIOS (SIMULADO) =====
 let USERS_DB = {
-  ana: { password: '123456', name: 'Ana Silva', email: 'ana@lujonetwork.com', role: 'ATENDENTE', active: true, createdAt: '2025-01-01', customPermissions: [] },
-  carlos: { password: '123456', name: 'Carlos Souza', email: 'carlos@lujonetwork.com', role: 'SUPERVISOR', active: true, createdAt: '2025-01-01', customPermissions: [] },
-  marina: { password: '123456', name: 'Marina Lopes', email: 'marina@lujonetwork.com', role: 'GERENTE', active: true, createdAt: '2025-01-01', customPermissions: [] },
-  juan: { password: '123456', name: 'Juan Copyright', email: 'juan@lujonetwork.com', role: 'COPYRIGHT', active: true, createdAt: '2025-01-01', customPermissions: [] },
-  jeff: { password: '123456', name: 'Jeff CEO', email: 'jeff@lujonetwork.com', role: 'CEO', active: true, createdAt: '2025-01-01', customPermissions: [] },
-  admin: { password: 'admin', name: 'Administrador', email: 'admin@lujonetwork.com', role: 'ADMIN', active: true, createdAt: '2025-01-01', customPermissions: [] }
+  ana: { 
+    password: '123456', 
+    name: 'Ana Silva', 
+    email: 'ana@lujonetwork.com', 
+    role: 'ATENDENTE', 
+    active: true, 
+    createdAt: '2025-01-01', 
+    customPermissions: [] 
+  },
+  carlos: { 
+    password: '123456', 
+    name: 'Carlos Souza', 
+    email: 'carlos@lujonetwork.com', 
+    role: 'SUPERVISOR', 
+    active: true, 
+    createdAt: '2025-01-01', 
+    customPermissions: [] 
+  },
+  marina: { 
+    password: '123456', 
+    name: 'Marina Lopes', 
+    email: 'marina@lujonetwork.com', 
+    role: 'GERENTE', 
+    active: true, 
+    createdAt: '2025-01-01', 
+    customPermissions: [] 
+  },
+  juan: { 
+    password: '123456', 
+    name: 'Juan Copyright', 
+    email: 'juan@lujonetwork.com', 
+    role: 'COPYRIGHT', 
+    active: true, 
+    createdAt: '2025-01-01', 
+    customPermissions: [] 
+  },
+  jeff: { 
+    password: '123456', 
+    name: 'Jeff CEO', 
+    email: 'jeff@lujonetwork.com', 
+    role: 'CEO', 
+    active: true, 
+    createdAt: '2025-01-01', 
+    customPermissions: [] 
+  },
+  admin: { 
+    password: '123456', 
+    name: 'Administrador', 
+    email: 'admin@lujonetwork.com', 
+    role: 'ADMIN', 
+    active: true, 
+    createdAt: '2025-01-01', 
+    customPermissions: [] 
+  }
 };
 
 // ===== FUNÇÕES DE AUTENTICAÇÃO =====
@@ -257,15 +313,38 @@ function isAuthenticated() {
 function getUserPermissions(username) {
   const user = USERS_DB[username];
   if (!user) return [];
+  
+  // Admin tem TODAS as permissões
   if (user.role === 'ADMIN') return Object.values(PERMISSIONS);
+  
+  // Outros usuários recebem permissões do role + customizadas
   return [...new Set([...(ROLES[user.role]?.permissions || []), ...(user.customPermissions || [])])];
 }
 
 function hasPermission(permission) {
   const user = getCurrentUser();
   if (!user) return false;
+  
+  // Super Admin tem acesso a tudo
   if (user.permissions.includes(PERMISSIONS.SUPER_ADMIN)) return true;
+  
   return user.permissions.includes(permission);
+}
+
+// ===== FUNÇÃO AUXILIAR: VERIFICAR ACESSO A MÓDULO =====
+function hasModuleAccess(module) {
+  const modulePermissions = {
+    atendimento: PERMISSIONS.ATEND_VIEW,
+    conteudo: PERMISSIONS.CONT_VIEW,
+    financeiro: PERMISSIONS.FIN_VIEW,
+    marketing: PERMISSIONS.MKT_VIEW,
+    tecnico: PERMISSIONS.TEC_VIEW,
+    gerencia: PERMISSIONS.GERENCIA_VIEW,
+    relatorios: PERMISSIONS.RELAT_VIEW,
+    admin: PERMISSIONS.SUPER_ADMIN
+  };
+
+  return hasPermission(modulePermissions[module]);
 }
 
 // ===== EXPORT GLOBAL =====
@@ -276,6 +355,8 @@ window.PermissionsSystem = {
   logout,
   getCurrentUser,
   isAuthenticated,
-  hasPermission
+  hasPermission,
+  hasModuleAccess
 };
 
+console.log("✅ Sistema de Permissões carregado");
