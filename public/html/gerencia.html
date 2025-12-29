@@ -114,14 +114,12 @@
         <button class="sub-aba-btn" data-sub-aba="sub-aba-controle">Controle</button>
       </div>
 
-      <!-- ABA 2.1 – PEDIDOS PENDENTES -->
+      <!-- SUB-ABA: PEDIDOS PENDENTES -->
       <div class="sub-aba-conteudo sub-aba-pedidos ativa">
         <div class="gerencia-grid">
-          <!-- Lista de Pedidos -->
           <div class="card pedidos-lista">
             <h2>Pedidos Pendentes</h2>
             <ul id="listaPedidos">
-              <!-- Pedidos gerados dinamicamente -->
               <li class="pedido-item">
                 <span>Pedido #0001 - Advanced</span>
                 <button class="btn-detalhes" data-pedido-id="0001">Ver Detalhes</button>
@@ -137,7 +135,6 @@
             </ul>
           </div>
 
-          <!-- Painel de Detalhes do Pedido -->
           <div class="card pedido-detalhes" id="painelDetalhes">
             <div class="painel-header">
               <h3 id="detalhesTitulo">Pedido #ID</h3>
@@ -159,20 +156,15 @@
         </div>
       </div>
 
-      <!-- ABA 2.2 – INDICADORES -->
+      <!-- SUB-ABA: INDICADORES -->
       <div class="sub-aba-conteudo sub-aba-indicadores">
-
-        <!-- HEADER DA ABA -->
         <div class="card">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+          <div class="indicadores-header">
             <div>
-              <h2 style="margin-bottom: 8px;">Indicadores</h2>
+              <h2 class="indicadores-title">Indicadores</h2>
             </div>
-
-            <!-- FILTROS VISUAIS -->
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <select
-                style="padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius); font-size: 14px; background: white;">
+            <div class="indicadores-filtros">
+              <select>
                 <option>Hoje</option>
                 <option>Últimos 7 dias</option>
                 <option>Últimos 30 dias</option>
@@ -185,370 +177,284 @@
           </div>
         </div>
 
-        <!-- KPIs PRINCIPAIS -->
-        <div class="dashboard-cards">
-
-          <!-- KPI: Atendimentos -->
-          <div class="card">
-            <p
-              style="font-size: 12px; color: #999; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
-              Total de Atendimentos</p>
-            <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;">
-              <h2 style="font-size: 32px; font-weight: 600; margin: 0;">247</h2>
-              <span style="color: var(--color-success); font-size: 14px; font-weight: 600;">
+        <div class="kpis-grid">
+          <div class="kpi-card">
+            <p class="kpi-label">Total de Atendimentos</p>
+            <div class="kpi-value-row">
+              <h2 class="kpi-value">247</h2>
+              <span class="kpi-trend positive">
                 <i class="fi fi-rr-arrow-small-up"></i> +12%
               </span>
             </div>
-            <div style="font-size: 12px; color: #666;">
-              vs. período anterior
-            </div>
+            <div class="kpi-subtitle">vs. período anterior</div>
           </div>
 
-          <!-- KPI: Concluídos -->
-          <div class="card">
-            <p
-              style="font-size: 12px; color: #999; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
-              Concluídos</p>
-            <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;">
-              <h2 style="font-size: 32px; font-weight: 600; margin: 0;">189</h2>
-              <span style="color: var(--color-success); font-size: 14px; font-weight: 600;">
+          <div class="kpi-card">
+            <p class="kpi-label">Concluídos</p>
+            <div class="kpi-value-row">
+              <h2 class="kpi-value">189</h2>
+              <span class="kpi-trend positive">
                 <i class="fi fi-rr-arrow-small-up"></i> +8%
               </span>
             </div>
-            <div style="font-size: 12px; color: #666;">
-              76% do total
-            </div>
+            <div class="kpi-subtitle">76% do total</div>
           </div>
 
-          <!-- KPI: Pendentes -->
-          <div class="card">
-            <p
-              style="font-size: 12px; color: #999; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
-              Pendentes</p>
-            <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;">
-              <h2 style="font-size: 32px; font-weight: 600; margin: 0;">58</h2>
-              <span style="color: var(--color-warning); font-size: 14px; font-weight: 600;">
+          <div class="kpi-card">
+            <p class="kpi-label">Pendentes</p>
+            <div class="kpi-value-row">
+              <h2 class="kpi-value">58</h2>
+              <span class="kpi-trend neutral">
                 <i class="fi fi-rr-arrow-small-right"></i> +3
               </span>
             </div>
-            <div style="font-size: 12px; color: #666;">
-              necessitam atenção
-            </div>
+            <div class="kpi-subtitle">necessitam atenção</div>
           </div>
 
-          <!-- KPI: TMA Médio -->
-          <div class="card">
-            <p
-              style="font-size: 12px; color: #999; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
-              TMA Médio</p>
-            <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;">
-              <h2 style="font-size: 32px; font-weight: 600; margin: 0;">8:34</h2>
-              <span style="color: var(--color-success); font-size: 14px; font-weight: 600;">
+          <div class="kpi-card">
+            <p class="kpi-label">TMA Médio</p>
+            <div class="kpi-value-row">
+              <h2 class="kpi-value">8:34</h2>
+              <span class="kpi-trend positive">
                 <i class="fi fi-rr-arrow-small-down"></i> -12%
               </span>
             </div>
-            <div style="font-size: 12px; color: #666;">
-              tempo médio de atendimento
-            </div>
+            <div class="kpi-subtitle">tempo médio de atendimento</div>
           </div>
 
-          <!-- KPI: SLA -->
-          <div class="card">
-            <p
-              style="font-size: 12px; color: #999; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
-              SLA Compliance</p>
-            <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;">
-              <h2 style="font-size: 32px; font-weight: 600; margin: 0;">94%</h2>
-              <span style="color: var(--color-success); font-size: 14px; font-weight: 600;">
+          <div class="kpi-card">
+            <p class="kpi-label">SLA Compliance</p>
+            <div class="kpi-value-row">
+              <h2 class="kpi-value">94%</h2>
+              <span class="kpi-trend positive">
                 <i class="fi fi-rr-check"></i> Meta
               </span>
             </div>
-            <div style="font-size: 12px; color: #666;">
-              dentro do objetivo
-            </div>
+            <div class="kpi-subtitle">dentro do objetivo</div>
           </div>
-
         </div>
 
-        <!-- GRÁFICOS -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-
-          <!-- Gráfico: Atendimentos por Hora -->
-          <div class="card">
-            <h3
-              style="font-size: 16px; font-weight: 600; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid var(--color-border);">
-              Atendimentos por Hora
-            </h3>
-
-            <!-- PLACEHOLDER: Gráfico de Barras Vertical -->
-            <div
-              style="display: flex; align-items: flex-end; justify-content: space-between; height: 200px; padding: 10px 0; gap: 8px;">
-              <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
-                <div style="width: 100%; background: #e3f2fd; border-radius: 4px 4px 0 0; height: 45%;"></div>
-                <span style="font-size: 11px; color: #666; margin-top: 8px;">08h</span>
+        <div class="graficos-grid">
+          <div class="grafico-card">
+            <h3 class="grafico-header">Atendimentos por Hora</h3>
+            <div class="grafico-placeholder">
+              <div class="barra-container">
+                <div class="barra secondary" style="height: 45%;"></div>
+                <span class="barra-label">08h</span>
               </div>
-              <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
-                <div style="width: 100%; background: #e3f2fd; border-radius: 4px 4px 0 0; height: 62%;"></div>
-                <span style="font-size: 11px; color: #666; margin-top: 8px;">09h</span>
+              <div class="barra-container">
+                <div class="barra secondary" style="height: 62%;"></div>
+                <span class="barra-label">09h</span>
               </div>
-              <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
-                <div style="width: 100%; background: var(--color-primary); border-radius: 4px 4px 0 0; height: 85%;">
-                </div>
-                <span style="font-size: 11px; color: #666; margin-top: 8px;">10h</span>
+              <div class="barra-container">
+                <div class="barra primary" style="height: 85%;"></div>
+                <span class="barra-label">10h</span>
               </div>
-              <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
-                <div style="width: 100%; background: var(--color-primary); border-radius: 4px 4px 0 0; height: 95%;">
-                </div>
-                <span style="font-size: 11px; color: #666; margin-top: 8px;">11h</span>
+              <div class="barra-container">
+                <div class="barra primary" style="height: 95%;"></div>
+                <span class="barra-label">11h</span>
               </div>
-              <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
-                <div style="width: 100%; background: var(--color-primary); border-radius: 4px 4px 0 0; height: 78%;">
-                </div>
-                <span style="font-size: 11px; color: #666; margin-top: 8px;">12h</span>
+              <div class="barra-container">
+                <div class="barra primary" style="height: 78%;"></div>
+                <span class="barra-label">12h</span>
               </div>
-              <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
-                <div style="width: 100%; background: #e3f2fd; border-radius: 4px 4px 0 0; height: 52%;"></div>
-                <span style="font-size: 11px; color: #666; margin-top: 8px;">13h</span>
+              <div class="barra-container">
+                <div class="barra secondary" style="height: 52%;"></div>
+                <span class="barra-label">13h</span>
               </div>
-              <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
-                <div style="width: 100%; background: #e3f2fd; border-radius: 4px 4px 0 0; height: 68%;"></div>
-                <span style="font-size: 11px; color: #666; margin-top: 8px;">14h</span>
+              <div class="barra-container">
+                <div class="barra secondary" style="height: 68%;"></div>
+                <span class="barra-label">14h</span>
               </div>
-              <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
-                <div style="width: 100%; background: var(--color-primary); border-radius: 4px 4px 0 0; height: 82%;">
-                </div>
-                <span style="font-size: 11px; color: #666; margin-top: 8px;">15h</span>
+              <div class="barra-container">
+                <div class="barra primary" style="height: 82%;"></div>
+                <span class="barra-label">15h</span>
               </div>
             </div>
-
-            <div
-              style="font-size: 12px; color: #666; text-align: center; margin-top: 15px; padding-top: 12px; border-top: 1px solid #f0f0f0;">
-              Pico de atendimentos: 11h - 15h
-            </div>
+            <div class="grafico-footer">Pico de atendimentos: 11h - 15h</div>
           </div>
 
-          <!-- Gráfico: Concluídos x Pendentes -->
-          <div class="card">
-            <h3
-              style="font-size: 16px; font-weight: 600; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid var(--color-border);">
-              Status dos Atendimentos
-            </h3>
-
-            <!-- PLACEHOLDER: Gráfico de Rosca -->
-            <div
-              style="display: flex; align-items: center; justify-content: center; height: 200px; position: relative;">
-
-              <!-- Círculo externo (base) -->
-              <div
-                style="width: 160px; height: 160px; border-radius: 50%; background: conic-gradient(var(--color-success) 0% 76%, var(--color-warning) 76% 100%); position: relative;">
-
-                <!-- Círculo interno (branco) para criar efeito de rosca -->
-                <div
-                  style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; background: white; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                  <span style="font-size: 28px; font-weight: 600; color: var(--color-text);">247</span>
-                  <span style="font-size: 11px; color: #999; text-transform: uppercase;">Total</span>
+          <div class="grafico-card">
+            <h3 class="grafico-header">Status dos Atendimentos</h3>
+            <div class="rosca-container">
+              <div class="rosca-outer">
+                <div class="rosca-inner">
+                  <span class="rosca-value">247</span>
+                  <span class="rosca-label">Total</span>
                 </div>
               </div>
             </div>
-
-            <!-- Legenda -->
-            <div
-              style="display: flex; justify-content: center; gap: 30px; margin-top: 20px; padding-top: 15px; border-top: 1px solid #f0f0f0;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 12px; height: 12px; background: var(--color-success); border-radius: 2px;"></div>
-                <span style="font-size: 13px; color: var(--color-text);">Concluídos (76%)</span>
+            <div class="rosca-legenda">
+              <div class="legenda-item">
+                <div class="legenda-cor" style="background: var(--color-success);"></div>
+                <span class="legenda-texto">Concluídos (76%)</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 12px; height: 12px; background: var(--color-warning); border-radius: 2px;"></div>
-                <span style="font-size: 13px; color: var(--color-text);">Pendentes (24%)</span>
+              <div class="legenda-item">
+                <div class="legenda-cor" style="background: var(--color-warning);"></div>
+                <span class="legenda-texto">Pendentes (24%)</span>
               </div>
             </div>
           </div>
-
         </div>
 
-        <!-- PERFORMANCE OPERACIONAL -->
         <div class="gerencia-grid">
-
-          <!-- TABELA DE OPERADORES -->
           <div class="card">
-            <h3
-              style="font-size: 16px; font-weight: 600; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid var(--color-border);">
-              Performance dos Operadores
-            </h3>
-
-            <table style="width: 100%; border-collapse: collapse;">
+            <h3 class="grafico-header">Performance dos Operadores</h3>
+            <table class="performance-table">
               <thead>
-                <tr style="background: var(--color-secondary);">
-                  <th
-                    style="text-align: left; padding: 10px 12px; font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase; border-bottom: 2px solid var(--color-border);">
-                    Operador</th>
-                  <th
-                    style="text-align: center; padding: 10px 12px; font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase; border-bottom: 2px solid var(--color-border);">
-                    Atend.</th>
-                  <th
-                    style="text-align: center; padding: 10px 12px; font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase; border-bottom: 2px solid var(--color-border);">
-                    TMA</th>
-                  <th
-                    style="text-align: center; padding: 10px 12px; font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase; border-bottom: 2px solid var(--color-border);">
-                    Status</th>
+                <tr>
+                  <th>Operador</th>
+                  <th class="center">Atend.</th>
+                  <th class="center">TMA</th>
+                  <th class="center">Status</th>
                 </tr>
               </thead>
               <tbody>
-                <tr style="border-bottom: 1px solid #f0f0f0;">
-                  <td style="padding: 12px; font-size: 14px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                      <div
-                        style="width: 32px; height: 32px; border-radius: 50%; background: #e3f2fd; display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--color-primary);">
-                        AS</div>
+                <tr>
+                  <td>
+                    <div class="operador-info">
+                      <div class="operador-avatar" style="background: #e3f2fd; color: var(--color-primary);">AS</div>
                       <span>Ana Silva</span>
                     </div>
                   </td>
-                  <td style="padding: 12px; text-align: center; font-size: 14px; font-weight: 600;">47</td>
-                  <td style="padding: 12px; text-align: center; font-size: 14px;">7:23</td>
-                  <td style="padding: 12px; text-align: center;">
-                    <span class="status-badge status-active" style="font-size: 11px; padding: 3px 10px;">Online</span>
+                  <td class="center"><strong>47</strong></td>
+                  <td class="center">7:23</td>
+                  <td class="center">
+                    <span class="status-badge status-active">Online</span>
                   </td>
                 </tr>
-                <tr style="border-bottom: 1px solid #f0f0f0;">
-                  <td style="padding: 12px; font-size: 14px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                      <div
-                        style="width: 32px; height: 32px; border-radius: 50%; background: #fff3cd; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #856404;">
-                        CS</div>
+                <tr>
+                  <td>
+                    <div class="operador-info">
+                      <div class="operador-avatar" style="background: #fff3cd; color: #856404;">CS</div>
                       <span>Carlos Souza</span>
                     </div>
                   </td>
-                  <td style="padding: 12px; text-align: center; font-size: 14px; font-weight: 600;">52</td>
-                  <td style="padding: 12px; text-align: center; font-size: 14px;">8:45</td>
-                  <td style="padding: 12px; text-align: center;">
-                    <span class="status-badge status-active" style="font-size: 11px; padding: 3px 10px;">Online</span>
+                  <td class="center"><strong>52</strong></td>
+                  <td class="center">8:45</td>
+                  <td class="center">
+                    <span class="status-badge status-active">Online</span>
                   </td>
                 </tr>
-                <tr style="border-bottom: 1px solid #f0f0f0;">
-                  <td style="padding: 12px; font-size: 14px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                      <div
-                        style="width: 32px; height: 32px; border-radius: 50%; background: #e6f6ea; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #1a7b3f;">
-                        ML</div>
+                <tr>
+                  <td>
+                    <div class="operador-info">
+                      <div class="operador-avatar" style="background: #e6f6ea; color: #1a7b3f;">ML</div>
                       <span>Marina Lopes</span>
                     </div>
                   </td>
-                  <td style="padding: 12px; text-align: center; font-size: 14px; font-weight: 600;">38</td>
-                  <td style="padding: 12px; text-align: center; font-size: 14px;">9:12</td>
-                  <td style="padding: 12px; text-align: center;">
-                    <span class="status-badge status-pendente" style="font-size: 11px; padding: 3px 10px;">Pausa</span>
+                  <td class="center"><strong>38</strong></td>
+                  <td class="center">9:12</td>
+                  <td class="center">
+                    <span class="status-badge status-pendente">Pausa</span>
                   </td>
                 </tr>
-                <tr style="border-bottom: 1px solid #f0f0f0;">
-                  <td style="padding: 12px; font-size: 14px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                      <div
-                        style="width: 32px; height: 32px; border-radius: 50%; background: #ffebee; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #c62828;">
-                        JC</div>
+                <tr>
+                  <td>
+                    <div class="operador-info">
+                      <div class="operador-avatar" style="background: #ffebee; color: #c62828;">JC</div>
                       <span>Juan Copyright</span>
                     </div>
                   </td>
-                  <td style="padding: 12px; text-align: center; font-size: 14px; font-weight: 600;">31</td>
-                  <td style="padding: 12px; text-align: center; font-size: 14px;">6:54</td>
-                  <td style="padding: 12px; text-align: center;">
-                    <span class="status-badge status-active" style="font-size: 11px; padding: 3px 10px;">Online</span>
+                  <td class="center"><strong>31</strong></td>
+                  <td class="center">6:54</td>
+                  <td class="center">
+                    <span class="status-badge status-active">Online</span>
                   </td>
                 </tr>
               </tbody>
             </table>
-
-            <div style="text-align: center; margin-top: 15px; padding-top: 12px; border-top: 1px solid #f0f0f0;">
+            <div class="table-footer">
               <button class="btn btn-secondary btn-sm">Ver Todos os Operadores</button>
             </div>
           </div>
 
-          <!-- ALERTAS E NOTIFICAÇÕES -->
           <div class="card">
-            <h3
-              style="font-size: 16px; font-weight: 600; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid var(--color-border);">
-              Alertas e Notificações
-            </h3>
-
-            <!-- Lista de Alertas -->
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-
-              <!-- Alerta 1 -->
-              <div
-                style="padding: 12px; background: #fff3cd; border-left: 4px solid var(--color-warning); border-radius: var(--radius); display: flex; gap: 12px; align-items: flex-start;">
-                <i class="fi fi-rr-triangle-warning" style="font-size: 20px; color: var(--color-warning);"></i>
-                <div style="flex: 1;">
-                  <strong style="font-size: 13px; display: block; margin-bottom: 4px;">Fila acima do esperado</strong>
-                  <p style="font-size: 12px; color: #666; margin: 0;">12 clientes aguardando há mais de 5 minutos</p>
-                  <span style="font-size: 11px; color: #999; margin-top: 4px; display: block;">há 3 minutos</span>
+            <h3 class="grafico-header">Alertas e Notificações</h3>
+            <div class="alertas-lista">
+              <div class="alerta-item warning">
+                <i class="fi fi-rr-triangle-warning alerta-icon" style="color: var(--color-warning);"></i>
+                <div class="alerta-content">
+                  <strong class="alerta-titulo">Fila acima do esperado</strong>
+                  <p class="alerta-texto">12 clientes aguardando há mais de 5 minutos</p>
+                  <span class="alerta-tempo">há 3 minutos</span>
                 </div>
               </div>
 
-              <!-- Alerta 2 -->
-              <div
-                style="padding: 12px; background: #ffebee; border-left: 4px solid var(--color-danger); border-radius: var(--radius); display: flex; gap: 12px; align-items: flex-start;">
-                <i class="fi fi-rr-exclamation" style="font-size: 20px; color: var(--color-danger);"></i>
-                <div style="flex: 1;">
-                  <strong style="font-size: 13px; display: block; margin-bottom: 4px;">SLA em risco</strong>
-                  <p style="font-size: 12px; color: #666; margin: 0;">3 atendimentos próximos do limite de tempo</p>
-                  <span style="font-size: 11px; color: #999; margin-top: 4px; display: block;">há 8 minutos</span>
+              <div class="alerta-item danger">
+                <i class="fi fi-rr-exclamation alerta-icon" style="color: var(--color-danger);"></i>
+                <div class="alerta-content">
+                  <strong class="alerta-titulo">SLA em risco</strong>
+                  <p class="alerta-texto">3 atendimentos próximos do limite de tempo</p>
+                  <span class="alerta-tempo">há 8 minutos</span>
                 </div>
               </div>
 
-              <!-- Alerta 3 -->
-              <div
-                style="padding: 12px; background: #e3f2fd; border-left: 4px solid var(--color-primary); border-radius: var(--radius); display: flex; gap: 12px; align-items: flex-start;">
-                <i class="fi fi-rr-info" style="font-size: 20px; color: var(--color-primary);"></i>
-                <div style="flex: 1;">
-                  <strong style="font-size: 13px; display: block; margin-bottom: 4px;">Operador em pausa</strong>
-                  <p style="font-size: 12px; color: #666; margin: 0;">Marina Lopes entrou em pausa às 14:35</p>
-                  <span style="font-size: 11px; color: #999; margin-top: 4px; display: block;">há 15 minutos</span>
+              <div class="alerta-item info">
+                <i class="fi fi-rr-info alerta-icon" style="color: var(--color-primary);"></i>
+                <div class="alerta-content">
+                  <strong class="alerta-titulo">Operador em pausa</strong>
+                  <p class="alerta-texto">Marina Lopes entrou em pausa às 14:35</p>
+                  <span class="alerta-tempo">há 15 minutos</span>
                 </div>
               </div>
 
-              <!-- Alerta 4 -->
-              <div
-                style="padding: 12px; background: #e6f6ea; border-left: 4px solid var(--color-success); border-radius: var(--radius); display: flex; gap: 12px; align-items: flex-start;">
-                <i class="fi fi-rr-check-circle" style="font-size: 20px; color: var(--color-success);"></i>
-                <div style="flex: 1;">
-                  <strong style="font-size: 13px; display: block; margin-bottom: 4px;">Meta atingida</strong>
-                  <p style="font-size: 12px; color: #666; margin: 0;">SLA de 90% foi alcançado hoje</p>
-                  <span style="font-size: 11px; color: #999; margin-top: 4px; display: block;">há 1 hora</span>
+              <div class="alerta-item success">
+                <i class="fi fi-rr-check-circle alerta-icon" style="color: var(--color-success);"></i>
+                <div class="alerta-content">
+                  <strong class="alerta-titulo">Meta atingida</strong>
+                  <p class="alerta-texto">SLA de 90% foi alcançado hoje</p>
+                  <span class="alerta-tempo">há 1 hora</span>
                 </div>
               </div>
-
             </div>
-
-            <div style="text-align: center; margin-top: 15px; padding-top: 12px; border-top: 1px solid #f0f0f0;">
+            <div class="table-footer">
               <button class="btn btn-secondary btn-sm">Ver Todos os Alertas</button>
             </div>
           </div>
-
         </div>
-
       </div>
 
-      <!-- ABA 2.3 – OPERADORES -->
+      <!-- SUB-ABA: OPERADORES -->
       <div class="sub-aba-conteudo sub-aba-operadores">
-        <div class="supervisor-grid">
-          <div class="card">
-            <h2>Operadores</h2>
-            <p>Desempenho individual dos operadores.</p>
+        <div class="operadores-grid">
+          <!-- Sidebar com lista de operadores -->
+          <div class="operadores-sidebar">
+            <div class="sidebar-header">
+              <h3>Minha Equipe</h3>
+              <span class="badge" style="background: var(--color-primary); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">4 ativos</span>
+            </div>
+            <div class="operadores-lista" id="listaOperadores">
+              <!-- Preenchido via JS -->
+            </div>
+          </div>
+
+          <!-- Área de detalhes -->
+          <div class="operador-detalhes" id="operadorDetalhes">
+            <div class="empty-state">
+              <i class="fi fi-rr-users"></i>
+              <h3>Selecione um Operador</h3>
+              <p>Escolha um membro da equipe para visualizar detalhes e métricas</p>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- ABA 2.4 – CONTROLE -->
+      <!-- SUB-ABA: CONTROLE -->
       <div class="sub-aba-conteudo sub-aba-controle">
-        <div class="supervisor-grid">
-          <div class="card">
-            <h2>Controle</h2>
-            <p>Ajustes de regras e permissões.</p>
+        <div class="card hierarquia-alerta">
+          <i class="fi fi-rr-shield-check"></i>
+          <div class="hierarquia-alerta-content">
+            <strong>Controle de Permissões Hierárquico</strong>
+            <p>Você pode gerenciar apenas perfis e permissões da sua área. Permissões de outras áreas são bloqueadas automaticamente.</p>
           </div>
+        </div>
+
+        <div class="controle-grid" id="controleGrid">
+          <!-- Preenchido via JS -->
         </div>
       </div>
     </div>
-
 
     <!-- ABA 3 – RESULTADOS -->
     <div class="aba-conteudo aba-relatorios">

@@ -144,7 +144,9 @@ function voltarMain() {
 const ModuleRegistry = {
   atendimento: () => window.initAtendimentoModule?.(),
   gerencia: () => window.initGerenciaModule?.(),
+  financeiro: () => window.initFinanceiroModule?.(),
   admin: () => window.initAdminModule?.()
+
 };
 
 /* =========================

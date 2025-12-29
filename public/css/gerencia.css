@@ -1,4 +1,8 @@
 /* ==================== GERENCIA.CSS - APENAS ESPECIFICIDADES ==================== */
+/* Imports dos módulos específicos */
+@import url('gerencia-indicadores.css');
+@import url('gerencia-operadores.css');
+@import url('gerencia-controle.css');
 
 /* Container específico */
 .modulo-painel-gerencia .container {
