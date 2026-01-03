@@ -1,432 +1,147 @@
-/* ==================== ATENDIMENTO.CSS - APENAS ESPECIFICIDADES ==================== */
+/* ==================== ATENDIMENTO.CSS ==================== */
 
-/* Container principal */
 .modulo-painel-atendimento .painel-atendimento {
-  width: 100%;  
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* Indicador de fila específico */
-.modulo-painel-atendimento .fila-status {
-  margin-left: auto; 
-  font-weight: 600;
-  font-size: 14px;
-  padding: 2px 12px;
-  border-radius: 8px;
-  color: white;
-  text-align: center;
-  background-color: #4CAF50;
-}
-
-/* Grid específico de atendimento */
-.modulo-painel-atendimento .atendimento-grid {
-  display: grid;
-  grid-template-columns: 1.2fr 1.5fr 0.6fr;
-  gap: 20px;
-}
-
-.modulo-painel-atendimento .col-atual { 
-  min-width: 680px; 
-}
-
-.modulo-painel-atendimento .col-chat, 
-.modulo-painel-atendimento .col-lista { 
-  min-height: 600px; 
-}
-
-/* Título do atendimento */
-.modulo-painel-atendimento .titulo-atendimento {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.modulo-painel-atendimento .id-atendimento {
-  font-weight: 400;
-  font-size: 14px;
-  color: #666;
-  margin-left: 10px;
-}
-
-/* Linha cabeçalho */
-.modulo-painel-atendimento .linha-cabecalho {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-/* Seleção de conta/email */
-.modulo-painel-atendimento .selecao-conta {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.modulo-painel-atendimento .selecao-conta input {
-  flex: 1;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  padding: 6px 10px;
-  background: #f5f5f5;
-  cursor: not-allowed;
-}
-
-.modulo-painel-atendimento .selecao-conta .btn:hover {
-  background: var(--color-primary);
-  color: white;
-}
-
-/* Ações */
-.modulo-painel-atendimento .acoes {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 15px;
-}
-
-/* Chatbox específico */
-.modulo-painel-atendimento .chatbox {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #f9f9f9;
-  height: 520px;
-  padding: 10px;
-  overflow-y: auto;
-  margin-bottom: 10px;
-  display: flex;
-  flex-direction: column;
-}
-
-.modulo-painel-atendimento .msg {
-  padding: 8px 12px;
-  border-radius: 12px;
-  margin: 6px 0;
-  max-width: 80%;
-}
-
-.modulo-painel-atendimento .msg.cliente { 
-  background: #e2e3ff; 
-  align-self: flex-start; 
-}
-
-.modulo-painel-atendimento .msg.atendente { 
-  background: #d1f0d1; 
-  align-self: flex-end; 
-  margin-left: auto; 
-}
-
-.modulo-painel-atendimento .chat-input { 
-  display: flex; 
-  gap: 8px; 
-}
-
-.modulo-painel-atendimento .chat-input input { 
-  flex: 1; 
-}
-
-.modulo-painel-atendimento .btn-enviar { 
-  background: var(--color-primary); 
-  border: none; 
-  color: white; 
-  padding: 8px 14px; 
-  border-radius: 6px; 
-  cursor: pointer; 
-  transition: 0.3s; 
-}
-
-.modulo-painel-atendimento .btn-enviar:hover { 
-  background: #004ecc; 
-}
-
-/* Lista de atendimentos */
-.modulo-painel-atendimento .lista-atendimentos {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.modulo-painel-atendimento .item {
-  padding: 10px;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: 0.2s;
-  background: white;
-}
-
-.modulo-painel-atendimento .item:hover { 
-  background: #f1f4ff; 
-}
-
-.modulo-painel-atendimento .item.ativo { 
-  background: #e8f0ff; 
-  border-left: 3px solid var(--color-primary); 
-}
-
-/* Histórico */
-.modulo-painel-atendimento .historico-container { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 20px; 
-}
-
-.modulo-painel-atendimento .historico-filtros {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  background: #fff;
-  padding: 12px 18px;
-  border-radius: 12px;
-  border: 1px solid var(--color-border);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-}
-
-.modulo-painel-atendimento .filtro-busca { 
-  display: flex; 
-  align-items: center; 
-  gap: 8px; 
-  flex: 1; 
-  max-width: 300px; 
-}
-
-.modulo-painel-atendimento .filtro-busca input { 
-  flex: 1; 
-  border: none; 
-  background: transparent; 
-  font-size: 14px; 
-  outline: none; 
-  color: var(--color-text); 
-}
-
-.modulo-painel-atendimento .filtro-opcoes { 
-  display: flex; 
-  gap: 10px; 
-}
-
-.modulo-painel-atendimento .filtro-opcoes select {
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 8px 12px;
-  background: #fff;
-  font-size: 14px;
-  color: var(--color-text);
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.modulo-painel-atendimento .filtro-opcoes select:hover { 
-  border-color: var(--color-primary); 
-}
-
-.modulo-painel-atendimento .historico-lista {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-}
-
-.modulo-painel-atendimento .historico-card {
-  background: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: 0.25s ease;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-}
-
-.modulo-painel-atendimento .historico-card:hover { 
-  transform: translateY(-3px); 
-  box-shadow: 0 4px 10px rgba(0,0,0,0.06); 
-}
-
-.modulo-painel-atendimento .historico-header { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  margin-bottom: 6px; 
-}
-
-.modulo-painel-atendimento .historico-card .id {
-  font-weight: 600;
-  color: var(--color-primary);
-}
-
-.modulo-painel-atendimento .historico-detalhes {
-  display: flex;
-  gap: 15px;
-  margin: 8px 0;
-  font-size: 13px;
-  color: #666;
-}
-
-.modulo-painel-atendimento .historico-footer {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  font-size: 12px;
-  color: #999;
-}
-
-/* Pop-up de novo atendimento */
-.modulo-painel-atendimento .popup-atendimento {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  backdrop-filter: blur(2px);
-}
-
-.modulo-painel-atendimento .popup-content {
-  background: #fff;
-  padding: 24px 28px;
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
-  max-width: 400px;
-  text-align: center;
-  animation: popupShow 0.4s ease;
-}
-
-@keyframes popupShow {
-  from { transform: translateY(-30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.modulo-painel-atendimento .popup-info {
-  background: #f8f9ff;
-  border: 1px solid #dde3f0;
-  border-radius: 8px;
-  padding: 10px;
-  margin: 10px 0 16px 0;
-  text-align: left;
-  color: #333;
-}
-
-.modulo-painel-atendimento .popup-actions button { 
-  width: 100%; 
-  font-weight: 600; 
-}
-
-/* E-mails lado a lado */
-.modulo-painel-atendimento .aba-emails .emails-container {
-  display: flex;
-  flex-direction: row;
-  gap: 1rem;
-  width: 100%;
-  height: 100%;
-}
-
-.modulo-painel-atendimento .emails-lista {
-  background: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  display: flex;
-  flex-direction: column;
-  width: 30%;
-  min-width: 220px;
-}
-
-.modulo-painel-atendimento .emails-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.modulo-painel-atendimento .emails-itens {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.modulo-painel-atendimento .email-item {
-  padding: 0.8rem 1rem;
-  border-bottom: 1px solid var(--color-border);
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.modulo-painel-atendimento .email-item:hover { 
-  background: #f7f9fc; 
-}
-
-.modulo-painel-atendimento .email-item.ativa { 
-  background: var(--color-primary); 
-  color: #fff; 
-}
-
-.modulo-painel-atendimento .email-item.ativa .data {
-  color: rgba(255,255,255,0.8);
-}
-
-.modulo-painel-atendimento .emails-detalhes {
-  background: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  padding: 1rem;
-}
-
-.modulo-painel-atendimento .detalhes-footer {
-  margin-top: auto;
-  display: flex;
-  justify-content: flex-start;
-  padding-top: 10px;
-}
-
-.modulo-painel-atendimento .btn-responder {
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.modulo-painel-atendimento .btn-responder:hover { 
-  background: #004ecc; 
-}
-
-/* Responsividade */
-@media (max-width: 1000px) {
-  .modulo-painel-atendimento .atendimento-grid { 
-    grid-template-columns: 1fr; 
-  }
-  
-  .modulo-painel-atendimento .linha-cabecalho { 
-    flex-direction: column; 
-  }
-
-  .modulo-painel-atendimento .col-atual {
-    min-width: auto;
-  }
-}
-
-@media (max-width: 900px) {
-  .modulo-painel-atendimento .aba-emails .emails-container {
+    display: flex;
     flex-direction: column;
-  }
-  
-  .modulo-painel-atendimento .emails-lista { 
-    width: 100%; 
-    max-height: 300px; 
-  }
+    height: calc(100vh - 120px);
+    background: #f0f2f5;
 }
+
+/* ABAS SUPERIORES */
+.abas-container {
+    display: flex;
+    background: #fff;
+    padding: 10px 20px 0;
+    border-bottom: 1px solid #ddd;
+    gap: 5px;
+    align-items: center;
+}
+
+.aba-btn {
+    padding: 12px 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #666;
+    border-radius: 8px 8px 0 0;
+    transition: 0.3s;
+}
+
+.aba-btn.ativa {
+    background: #f0f2f5;
+    color: var(--color-primary);
+    box-shadow: inset 0 -2px 0 var(--color-primary);
+}
+
+.ticket-status-indicator {
+    margin-left: auto;
+    padding-bottom: 10px;
+}
+
+.status-badge {
+    background: #ff9800;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* WORKSPACE GRID */
+.atendimento-workspace {
+    display: grid;
+    grid-template-columns: 300px 1fr 280px;
+    gap: 15px;
+    padding: 15px;
+    height: 100%;
+    overflow: hidden;
+}
+
+.card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* COLUNA 1: CONTEXTO */
+.workspace-context { padding: 15px; overflow-y: auto; }
+
+.context-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.ticket-id .label { font-size: 10px; color: #999; display: block; }
+.ticket-id .value { font-weight: bold; font-size: 13px; }
+
+.context-section { margin-bottom: 20px; }
+.section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: #444; }
+.section-title h4 { font-size: 14px; margin: 0; }
+
+.info-group { display: flex; flex-direction: column; gap: 10px; }
+.info-item label { font-size: 11px; color: #777; display: block; }
+.info-item input { width: 100%; border: 1px solid #eee; padding: 6px; border-radius: 4px; background: #f9f9f9; }
+
+/* CHECKLIST */
+.identity-checklist {
+    background: #fff9e6;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+.checkbox-item { display: flex; align-items: center; gap: 10px; font-size: 13px; margin-bottom: 8px; cursor: pointer; }
+
+/* SLA */
+.sla-bar { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
+.sla-progress { height: 100%; background: var(--color-success); transition: 0.5s; }
+.sla-info { display: flex; justify-content: space-between; font-size: 11px; }
+
+/* COLUNA 2: CHAT */
+.chat-container { flex: 1; display: flex; flex-direction: column; background: #fff; }
+.chatbox { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #fdfdfd; }
+
+.msg { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 14px; position: relative; }
+.msg.cliente { align-self: flex-start; background: #f1f0f0; border-bottom-left-radius: 2px; }
+.msg.atendente { align-self: flex-end; background: #e3efff; color: #004aab; border-bottom-right-radius: 2px; }
+.msg-time { font-size: 10px; opacity: 0.6; margin-top: 4px; text-align: right; }
+
+.chat-input-container { padding: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; align-items: flex-end; }
+.chat-input-wrapper { flex: 1; background: #f5f5f5; border-radius: 10px; padding: 8px; }
+.chat-input-wrapper textarea { width: 100%; border: none; background: transparent; resize: none; outline: none; font-family: inherit; }
+
+/* COLUNA 3: SUPORTE */
+.support-section { padding: 15px; border-bottom: 1px solid #eee; }
+.support-title { font-size: 13px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+
+.timeline { position: relative; padding-left: 20px; }
+.timeline-item { position: relative; padding-bottom: 15px; }
+.timeline-dot { position: absolute; left: -20px; width: 10px; height: 10px; background: #ddd; border-radius: 50%; top: 4px; }
+.timeline-dot.active { background: var(--color-primary); box-shadow: 0 0 0 4px rgba(0,102,255,0.2); }
+.timeline-content { font-size: 12px; }
+.timeline-time { color: #999; font-size: 10px; display: block; }
+
+.quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.quick-action-btn { 
+    display: flex; flex-direction: column; align-items: center; gap: 5px; 
+    padding: 10px; border: 1px solid #eee; border-radius: 8px; background: #fff;
+    cursor: pointer; transition: 0.2s; font-size: 11px;
+}
+.quick-action-btn:hover { background: #f0f7ff; border-color: var(--color-primary); }
+
+/* ESTADOS E POPUP */
+.hidden { display: none !important; }
+.popup-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: none; align-items: center; justify-content: center; z-index: 9999;
+}
+.popup-content { background: #fff; padding: 30px; border-radius: 15px; width: 400px; text-align: center; }

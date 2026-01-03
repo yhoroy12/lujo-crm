@@ -5,7 +5,6 @@
  * Arquitetura baseada em RBAC (Role-Based Access Control)
  */
 
-// ===== DEFINIÇÃO DE TODAS AS PERMISSÕES DO SISTEMA =====
 const PERMISSIONS = {
   // MÓDULO: ATENDIMENTO
   ATEND_VIEW: "atendimento.view",
@@ -16,6 +15,7 @@ const PERMISSIONS = {
   ATEND_CLOSE: "atendimento.close",
   ATEND_REOPEN: "atendimento.reopen",
   ATEND_EXPORT: "atendimento.export",
+  ATEND_APPLY_ADMIN_ACTION: "atendimento.apply_admin_action",
 
   // MÓDULO: CHAT
   CHAT_VIEW: "chat.view",
@@ -92,7 +92,6 @@ const PERMISSIONS = {
   AUDIT_LOGS: "system.audit_logs"
 };
 
-// ===== BASES DE PERMISSÕES =====
 const BASE_PERMISSIONS = {
   ATENDENTE: [
     PERMISSIONS.ATEND_VIEW,
@@ -126,6 +125,7 @@ BASE_PERMISSIONS.SUPERVISOR = [
 
 BASE_PERMISSIONS.GERENTE = [
   ...BASE_PERMISSIONS.SUPERVISOR,
+  PERMISSIONS.ATEND_APPLY_ADMIN_ACTION,
   PERMISSIONS.GERENCIA_MANAGE_TEAM,
   PERMISSIONS.RELAT_VIEW_FINANCIAL,
   PERMISSIONS.RELAT_VIEW_ALL,
@@ -141,7 +141,6 @@ BASE_PERMISSIONS.GERENTE = [
   PERMISSIONS.MKT_APPROVE
 ];
 
-// ===== ROLES (CARGOS/PERFIS) =====
 const ROLES = {
   ATENDENTE: {
     name: "Atendente",
@@ -154,6 +153,7 @@ const ROLES = {
     description: "Análise legal, direitos autorais e conflitos de conteúdo",
     permissions: [
       PERMISSIONS.ATEND_VIEW,
+      PERMISSIONS.ATEND_APPLY_ADMIN_ACTION,
       PERMISSIONS.COPYR_VIEW,
       PERMISSIONS.COPYR_CREATE_ACCOUNT,
       PERMISSIONS.COPYR_APPROVE_ACCOUNT,
@@ -218,7 +218,6 @@ const ROLES = {
   }
 };
 
-// ===== BANCO DE DADOS DE USUÁRIOS (SIMULADO) =====
 let USERS_DB = {
   ana: { 
     password: '123456', 
@@ -276,7 +275,6 @@ let USERS_DB = {
   }
 };
 
-// ===== FUNÇÕES DE AUTENTICAÇÃO =====
 function login(username, password) {
   const user = USERS_DB[username];
   if (!user || user.password !== password) return { success: false, error: 'Usuário ou senha inválidos' };
@@ -309,15 +307,12 @@ function isAuthenticated() {
   return getCurrentUser() !== null;
 }
 
-// ===== AUTORIZAÇÃO =====
 function getUserPermissions(username) {
   const user = USERS_DB[username];
   if (!user) return [];
   
-  // Admin tem TODAS as permissões
   if (user.role === 'ADMIN') return Object.values(PERMISSIONS);
   
-  // Outros usuários recebem permissões do role + customizadas
   return [...new Set([...(ROLES[user.role]?.permissions || []), ...(user.customPermissions || [])])];
 }
 
@@ -325,13 +320,11 @@ function hasPermission(permission) {
   const user = getCurrentUser();
   if (!user) return false;
   
-  // Super Admin tem acesso a tudo
   if (user.permissions.includes(PERMISSIONS.SUPER_ADMIN)) return true;
   
   return user.permissions.includes(permission);
 }
 
-// ===== FUNÇÃO AUXILIAR: VERIFICAR ACESSO A MÓDULO =====
 function hasModuleAccess(module) {
   const modulePermissions = {
     atendimento: PERMISSIONS.ATEND_VIEW,
@@ -347,7 +340,6 @@ function hasModuleAccess(module) {
   return hasPermission(modulePermissions[module]);
 }
 
-// ===== EXPORT GLOBAL =====
 window.PermissionsSystem = {
   PERMISSIONS,
   ROLES,

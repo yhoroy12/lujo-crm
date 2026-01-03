@@ -1,124 +1,501 @@
-  <!-- atendimento.html -->
+<!-- atendimento.html -->
 <section class="modulo-painel-atendimento">
   <div class="painel-atendimento">
 
     <!-- ==================== ABAS SUPERIORES ==================== -->
     <div class="abas-container">
-      <button class="aba-btn ativa" data-aba="aba-atendimento">Atendimento</button>
-      <button class="aba-btn" data-aba="aba-historico">Histórico</button>
-      <button class="aba-btn" data-aba="aba-emails">E-mails</button>
+      <button class="aba-btn ativa" data-aba="aba-atendimento">
+        <i class="fi fi-rr-headset"></i>
+        <span>Atendimento</span>
+      </button>
+      <button class="aba-btn" data-aba="aba-emails">
+        <i class="fi fi-rr-envelope"></i>
+        <span>E-mails</span>
+      </button>
+      <button class="aba-btn" data-aba="aba-demandas">
+        <i class="fi fi-rr-inbox"></i>
+        <span>Demandas Externas</span>
+      </button>
+      <button class="aba-btn" data-aba="aba-historico">
+        <i class="fi fi-rr-time-past"></i>
+        <span>Histórico</span>
+      </button>
 
-      <div class="fila-status" id="filaStatus">
-        Status da Fila
+      <div class="ticket-status-indicator" id="ticketStatusIndicator">
+        <span class="status-badge" id="statusBadge">AGUARDANDO</span>
       </div>
     </div>
 
     <!-- ==================== ABA: ATENDIMENTO ==================== -->
     <div class="aba-conteudo aba-atendimento ativa">
-      <div class="atendimento-grid">
-
-        <!-- COLUNA 1 -->
-        <div class="col-atual card">
-
-          <h3 class="titulo-atendimento">
-            📄 Atendimento Atual
-            <span class="id-atendimento">MS-20251111-223841</span>
-          </h3>
-
-          <div class="linha-cabecalho">
-            <div class="campo">
-              <label>Nome do Cliente</label>
-              <input type="text" value="-" readonly>
+      
+      <!-- Mensagem quando não há ticket -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-state-content">
+          <i class="fi fi-rr-hourglass"></i>
+          <h3>Aguardando Próximo Atendimento</h3>
+          <p>Você será notificado quando um novo ticket for atribuído.</p>
+          <div class="empty-state-stats">
+            <div class="stat-item">
+              <span class="stat-label">Tickets Hoje</span>
+              <span class="stat-value">12</span>
             </div>
-            <div class="campo">
-              <label>Telefone</label>
-              <input type="text" value="-" readonly>
+            <div class="stat-item">
+              <span class="stat-label">Tempo Médio</span>
+              <span class="stat-value">8min</span>
             </div>
-            <div class="campo">
-              <label>Email em Atendimento</label>
-              <div class="selecao-conta">
-                <input type="text" value="conta1@example.com" readonly id="emailAtual">
-                <button class="btn btn-secondary" id="btnAlterarEmail">Alterar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid de Trabalho -->
+      <div class="atendimento-workspace hidden" id="workspaceGrid">
+        
+        <!-- COLUNA 1: CONTEXTO -->
+        <aside class="workspace-context card">
+          <div class="context-header">
+            <div class="ticket-id">
+              <span class="label">TICKET</span>
+              <span class="value" id="ticketId">MS-20251111-223841</span>
+            </div>
+            <div class="ticket-state-badge">
+              <span class="state-indicator" id="stateIndicator">NOVO</span>
+            </div>
+          </div>
+
+          <div class="context-section">
+            <div class="section-title">
+              <i class="fi fi-rr-user"></i>
+              <h4>Cliente</h4>
+            </div>
+            <div class="info-group">
+              <div class="info-item">
+                <label>Nome</label>
+                <input type="text" id="clienteNome" value="-" readonly>
+              </div>
+              <div class="info-item">
+                <label>Telefone</label>
+                <input type="text" id="clienteTelefone" value="-" readonly>
+              </div>
+              <div class="info-item">
+                <label>E-mail Principal</label>
+                <input type="text" id="clienteEmail" value="-" readonly>
               </div>
             </div>
           </div>
 
-          <div class="campo">
-            <label>Tipo de Atendimento</label>
-            <select>
-              <option value="">Selecione...</option>
-              <option>WhatsApp</option>
-              <option>Ligação</option>
-              <option>Gmail</option>
+          <div class="context-section">
+            <div class="section-title">
+              <i class="fi fi-rr-info"></i>
+              <h4>Informações</h4>
+            </div>
+            <div class="info-group">
+              <div class="info-item">
+                <label>Canal de Origem</label>
+                <div class="channel-badge" id="canalOrigem">
+                  <i class="fi fi-rr-comment-alt"></i>
+                  <span>WhatsApp</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <label>Atribuído em</label>
+                <span class="info-value" id="atribuidoEm">--:--</span>
+              </div>
+              <div class="info-item">
+                <label>Tempo Decorrido</label>
+                <span class="info-value timer" id="tempoDecorrido">00:00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Checklist de Identidade -->
+          <div class="context-section identity-section" id="identitySection">
+            <div class="section-title">
+              <i class="fi fi-rr-shield-check"></i>
+              <h4>Validação de Identidade</h4>
+            </div>
+            <div class="identity-checklist">
+              <label class="checkbox-item">
+                <input type="checkbox" id="checkNome">
+                <span>Nome completo confirmado</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="checkTelefone">
+                <span>Telefone verificado</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="checkEmail">
+                <span>E-mail validado</span>
+              </label>
+            </div>
+            <button class="btn btn-primary btn-block" id="btnValidarIdentidade" disabled>
+              <i class="fi fi-rr-check"></i>
+              Confirmar Identidade
+            </button>
+          </div>
+
+          <!-- Indicador SLA -->
+          <div class="context-section sla-section">
+            <div class="sla-indicator" id="slaIndicator">
+              <div class="sla-bar">
+                <div class="sla-progress" id="slaProgress" style="width: 30%"></div>
+              </div>
+              <div class="sla-info">
+                <span class="sla-label">SLA</span>
+                <span class="sla-time" id="slaTime">12min restantes</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- COLUNA 2: TRABALHO ATIVO -->
+        <main class="workspace-main card">
+          
+          <!-- Chat Principal -->
+          <div class="chat-container">
+            <div class="chat-header">
+              <h3>
+                <i class="fi fi-rr-messages"></i>
+                Conversação
+              </h3>
+              <div class="chat-actions">
+                <button class="btn-icon" title="Anexar arquivo">
+                  <i class="fi fi-rr-clip"></i>
+                </button>
+                <button class="btn-icon" title="Modelos de mensagem">
+                  <i class="fi fi-rr-document"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="chatbox" id="chatbox">
+              <div class="chat-day-divider">
+                <span>Hoje</span>
+              </div>
+              <div class="msg cliente">
+                <div class="msg-content">
+                  Olá! Estou com uma dúvida sobre minha fatura.
+                </div>
+                <div class="msg-time">14:32</div>
+              </div>
+              <div class="msg atendente">
+                <div class="msg-content">
+                  Claro, posso te ajudar! Qual o número da fatura?
+                </div>
+                <div class="msg-time">14:33</div>
+              </div>
+            </div>
+
+            <div class="chat-input-container">
+              <div class="chat-input-wrapper">
+                <textarea 
+                  id="chatInput" 
+                  placeholder="Digite sua mensagem..."
+                  rows="1"
+                  maxlength="1000"
+                ></textarea>
+                <div class="chat-input-tools">
+                  <button class="btn-icon-sm" title="Emoji">
+                    <i class="fi fi-rr-smile"></i>
+                  </button>
+                  <div class="char-counter" id="charCounter">0/1000</div>
+                </div>
+              </div>
+              <button class="btn-send" id="btnEnviarMensagem">
+                <i class="fi fi-rr-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Formulário Dinâmico por Estado -->
+          <div class="work-form" id="workForm">
+            
+            <!-- Estado: IDENTIDADE_VALIDADA / EM_ATENDIMENTO -->
+            <div class="form-section" id="formAtendimento">
+              <h4 class="form-title">Classificação do Atendimento</h4>
+              
+              <div class="form-row">
+                <div class="campo">
+                  <label>Tipo de Demanda</label>
+                  <select id="tipoDemanda">
+                    <option value="">Selecione...</option>
+                    <option value="conteudo">Conteúdo</option>
+                    <option value="financeiro">Financeiro</option>
+                    <option value="conta">Conta</option>
+                    <option value="strike">Strike/Copyright</option>
+                    <option value="tecnico">Técnico</option>
+                  </select>
+                </div>
+                <div class="campo">
+                  <label>Setor Responsável</label>
+                  <select id="setorResponsavel">
+                    <option value="">Selecione...</option>
+                    <option value="atendimento">Atendimento</option>
+                    <option value="conteudo">Conteúdo</option>
+                    <option value="financeiro">Financeiro</option>
+                    <option value="copyright">Copyright</option>
+                    <option value="tecnico">Técnico</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="campo">
+                <label>Descrição da Solicitação</label>
+                <textarea 
+                  id="descricaoSolicitacao" 
+                  rows="4" 
+                  placeholder="Descreva brevemente o motivo do atendimento e as informações relevantes..."
+                ></textarea>
+              </div>
+
+              <div class="campo">
+                <label>Observações Internas</label>
+                <textarea 
+                  id="observacoesInternas" 
+                  rows="3" 
+                  placeholder="Notas visíveis apenas para a equipe interna..."
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- Ações Principais por Estado -->
+            <div class="form-actions-primary">
+              
+              <!-- NOVO → IDENTIDADE_VALIDADA -->
+              <button class="btn btn-primary btn-action hidden" id="btnIniciarValidacao" data-state="NOVO">
+                <i class="fi fi-rr-play"></i>
+                Iniciar Validação
+              </button>
+
+              <!-- IDENTIDADE_VALIDADA → EM_ATENDIMENTO -->
+              <button class="btn btn-primary btn-action hidden" id="btnIniciarAtendimento" data-state="IDENTIDADE_VALIDADA">
+                <i class="fi fi-rr-headset"></i>
+                Iniciar Atendimento
+              </button>
+
+              <!-- EM_ATENDIMENTO → CONCLUIDO ou ENCAMINHADO -->
+              <div class="action-group hidden" id="actionsEmAtendimento" data-state="EM_ATENDIMENTO">
+                <button class="btn btn-success btn-action" id="btnConcluir">
+                  <i class="fi fi-rr-check-circle"></i>
+                  Concluir Atendimento
+                </button>
+                <button class="btn btn-secondary btn-action" id="btnEncaminhar">
+                  <i class="fi fi-rr-share"></i>
+                  Encaminhar para Setor
+                </button>
+              </div>
+
+              <!-- AGUARDANDO_CLIENTE -->
+              <div class="info-block hidden" id="infoAguardandoCliente" data-state="AGUARDANDO_CLIENTE">
+                <i class="fi fi-rr-time-forward"></i>
+                <p>Aguardando retorno do cliente. O ticket será reativado quando houver resposta.</p>
+              </div>
+
+              <!-- ENCAMINHADO / AGUARDANDO_SETOR -->
+              <div class="info-block hidden" id="infoEncaminhado" data-state="ENCAMINHADO">
+                <i class="fi fi-rr-inbox-out"></i>
+                <p>Ticket encaminhado para outro setor. Você não possui ações disponíveis.</p>
+              </div>
+
+            </div>
+
+          </div>
+
+        </main>
+
+        <!-- COLUNA 3: SUPORTE -->
+        <aside class="workspace-support card">
+          
+          <!-- Linha do Tempo -->
+          <div class="support-section">
+            <h4 class="support-title">
+              <i class="fi fi-rr-time-past"></i>
+              Linha do Tempo
+            </h4>
+            <div class="timeline" id="timeline">
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                  <span class="timeline-time">14:30</span>
+                  <span class="timeline-text">Ticket criado</span>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot active"></div>
+                <div class="timeline-content">
+                  <span class="timeline-time">14:32</span>
+                  <span class="timeline-text">Atribuído a você</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Atalhos Rápidos -->
+          <div class="support-section">
+            <h4 class="support-title">
+              <i class="fi fi-rr-apps"></i>
+              Ações Rápidas
+            </h4>
+            <div class="quick-actions">
+              <button class="quick-action-btn" id="btnEnviarEmail">
+                <i class="fi fi-rr-envelope"></i>
+                <span>Enviar E-mail</span>
+              </button>
+              <button class="quick-action-btn" id="btnConsultarConta">
+                <i class="fi fi-rr-search"></i>
+                <span>Consultar Conta</span>
+              </button>
+              <button class="quick-action-btn" id="btnHistoricoCliente">
+                <i class="fi fi-rr-time-past"></i>
+                <span>Histórico</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Estatísticas Rápidas -->
+          <div class="support-section">
+            <h4 class="support-title">
+              <i class="fi fi-rr-chart-line"></i>
+              Performance
+            </h4>
+            <div class="stats-grid">
+              <div class="stat-box">
+                <span class="stat-label">Hoje</span>
+                <span class="stat-value">12</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">Média</span>
+                <span class="stat-value">8min</span>
+              </div>
+            </div>
+          </div>
+
+        </aside>
+
+      </div>
+    </div>
+
+    <!-- ==================== ABA: E-MAILS ==================== -->
+    <div class="aba-conteudo aba-emails">
+      <div class="emails-workspace">
+        
+        <div class="emails-header">
+          <h3>
+            <i class="fi fi-rr-envelope"></i>
+            E-mails do Ticket Atual
+          </h3>
+          <button class="btn btn-primary" id="btnNovoEmail">
+            <i class="fi fi-rr-plus"></i>
+            Novo E-mail
+          </button>
+        </div>
+
+        <div class="emails-empty" id="emailsEmpty">
+          <i class="fi fi-rr-envelope-open"></i>
+          <p>Nenhum e-mail associado a este ticket.</p>
+        </div>
+
+        <div class="emails-grid hidden" id="emailsGrid">
+          
+          <div class="emails-list card">
+            <div class="emails-list-header">
+              <span>Caixa de Entrada</span>
+            </div>
+            <div class="emails-items" id="emailsItems">
+              <div class="email-item ativa">
+                <div class="email-subject">Confirmação de pedido</div>
+                <div class="email-preview">Olá, o pedido #1234 foi confirmado...</div>
+                <div class="email-meta">
+                  <span class="email-time">12/11/2025 14:30</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="email-viewer card">
+            <div class="email-header-view">
+              <div class="email-from">
+                <strong>De:</strong> loja@exemplo.com
+              </div>
+              <div class="email-to">
+                <strong>Para:</strong> cliente@exemplo.com
+              </div>
+              <div class="email-subject-view">
+                <strong>Assunto:</strong> Confirmação de pedido
+              </div>
+            </div>
+            <div class="email-body" id="emailBody">
+              <p>Olá, o pedido #1234 foi confirmado com sucesso.</p>
+              <p>Previsão de entrega: 15/11/2025.</p>
+              <p>Obrigado por escolher a Lujo Network.</p>
+            </div>
+            <div class="email-actions">
+              <button class="btn btn-primary">
+                <i class="fi fi-rr-reply"></i>
+                Responder
+              </button>
+              <button class="btn btn-secondary">
+                <i class="fi fi-rr-forward"></i>
+                Encaminhar
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== ABA: DEMANDAS EXTERNAS ==================== -->
+    <div class="aba-conteudo aba-demandas">
+      <div class="demandas-container">
+        
+        <div class="demandas-header">
+          <div class="header-info">
+            <h3>
+              <i class="fi fi-rr-inbox"></i>
+              Demandas Externas
+            </h3>
+            <p class="header-subtitle">Tarefas originadas de outros setores</p>
+          </div>
+          <div class="demandas-filters">
+            <select id="filterSetor">
+              <option value="">Todos os Setores</option>
+              <option value="financeiro">Financeiro</option>
+              <option value="copyright">Copyright</option>
+              <option value="tecnico">Técnico</option>
             </select>
-          </div>
-
-          <div class="campo">
-            <label>Demanda</label>
-            <select>
-              <option value="">Selecione...</option>
-              <option>Conteúdo</option>
-              <option>Financeira</option>
-              <option>Conta</option>
-              <option>Strike</option>
-              <option>Canal</option>
-            </select>
-          </div>
-
-          <div class="campo">
-            <label>Setor Responsável</label>
-            <select>
-              <option value="">Selecione...</option>
-              <option>Atendimento</option>
-              <option>Conteúdo</option>
-              <option>Financeiro</option>
-              <option>Técnico</option>
-            </select>
-          </div>
-
-          <div class="campo">
-            <label>Descrição da Solicitação</label>
-            <textarea rows="5" placeholder="Descreva brevemente o motivo do atendimento..."></textarea>
-          </div>
-
-          <div class="acoes">
-            <button class="btn btn-primary">Salvar Atendimento</button>
-            <button class="btn btn-primary">Enviar Email</button>
-            <button class="btn btn-primary">Direcionar Demanda</button>
-            <button class="btn btn-primary">Finalizar Atendimento</button>
           </div>
         </div>
 
-        <!-- COLUNA 2 -->
-        <div class="col-chat card">
-          <h3>💬 Chat</h3>
-          <div class="chatbox" id="chatbox">
-            <div class="msg cliente">Olá! Estou com uma dúvida sobre minha fatura.</div>
-            <div class="msg atendente">Claro, posso te ajudar! Qual o número da fatura?</div>
-          </div>
-          <div class="chat-input">
-            <input type="text" id="chatInput" placeholder="Digite sua mensagem...">
-            <button class="btn-enviar" id="btnEnviarMensagem">Enviar</button>
-          </div>
+        <div class="demandas-empty" id="demandasEmpty">
+          <i class="fi fi-rr-inbox"></i>
+          <h4>Nenhuma Demanda Atribuída</h4>
+          <p>Você será notificado quando houver tarefas de outros setores.</p>
         </div>
 
-        <!-- COLUNA 3 -->
-        <div class="col-lista card">
-          <h3>📋 Lista de Atendimentos</h3>
-          <ul class="lista-atendimentos" id="listaAtendimentos">
-            <li class="item ativo" data-id="1">
-              <strong>Maria Souza</strong><br>
-              <small>Em atendimento - 14:32</small>
-            </li>
-            <li class="item" data-id="2">
-              <strong>João Silva</strong><br>
-              <small>Pendente - 13:58</small>
-            </li>
-            <li class="item" data-id="3">
-              <strong>Pedro Costa</strong><br>
-              <small>Encerrado - 11:45</small>
-            </li>
-          </ul>
+        <div class="demandas-list hidden" id="demandasList">
+          <div class="demanda-card">
+            <div class="demanda-header">
+              <span class="demanda-origin">Financeiro</span>
+              <span class="demanda-priority high">Alta</span>
+            </div>
+            <h4 class="demanda-title">Contatar cliente sobre pagamento pendente</h4>
+            <p class="demanda-description">Cliente com fatura vencida há 5 dias. Necessário contato para regularização.</p>
+            <div class="demanda-meta">
+              <span><i class="fi fi-rr-user"></i> João Silva</span>
+              <span><i class="fi fi-rr-calendar"></i> Criado em 10/01/2025</span>
+            </div>
+            <div class="demanda-actions">
+              <button class="btn btn-primary btn-sm">
+                <i class="fi fi-rr-check"></i>
+                Executar Tarefa
+              </button>
+              <button class="btn btn-secondary btn-sm">
+                <i class="fi fi-rr-eye"></i>
+                Ver Detalhes
+              </button>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -128,18 +505,23 @@
     <div class="aba-conteudo aba-historico">
       <div class="historico-container">
 
+        <div class="historico-header">
+          <h3>
+            <i class="fi fi-rr-time-past"></i>
+            Histórico de Atendimentos
+          </h3>
+        </div>
+
         <div class="historico-filtros">
           <div class="filtro-busca">
             <i class="fi fi-rr-search"></i>
-            <input type="text" placeholder="Buscar atendimento...">
+            <input type="text" placeholder="Buscar por ID, cliente ou descrição...">
           </div>
-
           <div class="filtro-opcoes">
             <select>
               <option>Todos os status</option>
-              <option>Finalizado</option>
-              <option>Pendente</option>
-              <option>Em andamento</option>
+              <option>Concluído</option>
+              <option>Cancelado</option>
             </select>
             <select>
               <option>Hoje</option>
@@ -151,82 +533,44 @@
         </div>
 
         <div class="historico-lista">
-
           <div class="historico-card">
-            <div class="historico-header">
-              <span class="id">#4523</span>
-              <span class="status finalizado">Finalizado</span>
+            <div class="historico-card-header">
+              <span class="historico-id">#MS-4523</span>
+              <span class="status-badge status-active">Concluído</span>
             </div>
             <h4>Dúvida sobre produto</h4>
             <div class="historico-detalhes">
               <span><i class="fi fi-rr-user"></i> Ana Costa</span>
-              <span><i class="fi fi-rr-comment-alt"></i> 8</span>
+              <span><i class="fi fi-rr-comment-alt"></i> 8 mensagens</span>
+              <span><i class="fi fi-rr-clock"></i> 15 min</span>
             </div>
             <div class="historico-footer">
               <span><i class="fi fi-rr-calendar"></i> 31/10/2025 - 10:30</span>
-              <span><i class="fi fi-rr-time-fast"></i> 15 min</span>
+              <button class="btn btn-sm btn-secondary">
+                <i class="fi fi-rr-eye"></i>
+                Ver Detalhes
+              </button>
             </div>
           </div>
 
           <div class="historico-card">
-            <div class="historico-header">
-              <span class="id">#4522</span>
-              <span class="status pendente">Pendente</span>
+            <div class="historico-card-header">
+              <span class="historico-id">#MS-4522</span>
+              <span class="status-badge status-pendente">Cancelado</span>
             </div>
             <h4>Reclamação - Entrega atrasada</h4>
             <div class="historico-detalhes">
               <span><i class="fi fi-rr-user"></i> João Silva</span>
-              <span><i class="fi fi-rr-comment-alt"></i> 3</span>
+              <span><i class="fi fi-rr-comment-alt"></i> 3 mensagens</span>
+              <span><i class="fi fi-rr-clock"></i> 25 min</span>
             </div>
             <div class="historico-footer">
               <span><i class="fi fi-rr-calendar"></i> 31/10/2025 - 08:45</span>
-              <span><i class="fi fi-rr-time-fast"></i> 25 min</span>
+              <button class="btn btn-sm btn-secondary">
+                <i class="fi fi-rr-eye"></i>
+                Ver Detalhes
+              </button>
             </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- ==================== ABA: E-MAILS ==================== -->
-    <div class="aba-conteudo aba-emails">
-      <div class="emails-container">
-
-        <div class="emails-lista">
-          <div class="emails-header">
-            <h2>E-mails</h2>
-            <button class="btn btn-primary">Finalizar E-mail</button>
-          </div>
-
-          <div class="emails-itens">
-            <div class="email-item ativa">
-              <p class="assunto">Confirmação de pedido</p>
-              <span class="data">12/11/2025</span>
-            </div>
-            <div class="email-item">
-              <p class="assunto">Atualização de status</p>
-              <span class="data">11/11/2025</span>
-            </div>
-            <div class="email-item">
-              <p class="assunto">Suporte técnico</p>
-              <span class="data">09/11/2025</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="emails-detalhes">
-          <div class="detalhes-corpo">
-            <p><strong>De:</strong> loja@exemplo.com</p>
-            <p><strong>Para:</strong> cliente@exemplo.com</p>
-            <p><strong>Cc:</strong> financeiro@exemplo.com</p>
-            <p><strong>Assunto:</strong> Confirmação de pedido</p>
-            <hr>
-            <p>Olá, o pedido #1234 foi confirmado com sucesso.</p>
-            <p>Previsão de entrega: 15/11/2025.</p>
-            <p>Obrigado por escolher a Lujo Network.</p>
-          </div>
-          <div class="detalhes-footer">
-            <button class="btn-responder">Responder</button>
           </div>
         </div>
 
@@ -235,21 +579,31 @@
 
   </div>
 
-  <!-- ==================== POP-UP ==================== -->
-  <div class="popup-atendimento" id="popupAtendimento">
-    <div class="popup-content">
-      <h3>📞 Novo Atendimento Disponível</h3>
+  <!-- ==================== POP-UP NOVO ATENDIMENTO ==================== -->
+  <div class="popup-overlay" id="popupAtendimento">
+    <div class="popup-content popup-atendimento">
+      <div class="popup-icon">
+        <i class="fi fi-rr-bell-ring"></i>
+      </div>
+      <h3>Novo Atendimento Disponível</h3>
       <p>Você tem um novo cliente aguardando atendimento!</p>
-
-      <div class="popup-info">
-        <strong>Cliente:</strong> <span id="popupCliente">Carregando...</span><br>
-        <strong>Canal:</strong> <span id="popupCanal">WhatsApp</span>
+      <div class="popup-info-grid">
+        <div class="popup-info-item">
+          <span class="popup-label">Cliente:</span>
+          <span class="popup-value" id="popupCliente">Carregando...</span>
+        </div>
+        <div class="popup-info-item">
+          <span class="popup-label">Canal:</span>
+          <span class="popup-value" id="popupCanal">WhatsApp</span>
+        </div>
       </div>
-
       <div class="popup-actions">
-        <button class="btn btn-primary" id="btnIniciarAtendimento">Iniciar Atendimento</button>
+        <button class="btn btn-primary btn-block" id="btnIniciarAtendimentoPopup">
+          <i class="fi fi-rr-check"></i>
+          Aceitar Atendimento
+        </button>
       </div>
     </div>
   </div>
-</section>
 
+</section>
