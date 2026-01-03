@@ -1,147 +1,987 @@
-/* ==================== ATENDIMENTO.CSS ==================== */
+/* ==================== ATENDIMENTO.CSS - CORRIGIDO ==================== */
 
+/* ============================= */
+/* PAINEL PRINCIPAL              */
+/* ============================= */
 .modulo-painel-atendimento .painel-atendimento {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 120px);
-    background: #f0f2f5;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 120px);
+  background: var(--color-secondary);
 }
 
-/* ABAS SUPERIORES */
-.abas-container {
-    display: flex;
-    background: #fff;
-    padding: 10px 20px 0;
-    border-bottom: 1px solid #ddd;
-    gap: 5px;
-    align-items: center;
+/* ============================= */
+/* ABAS SUPERIORES               */
+/* ============================= */
+.modulo-painel-atendimento .abas-container {
+  display: flex;
+  background: #fff;
+  padding: 0;
+  border-bottom: 2px solid var(--color-border);
+  gap: 0;
+  align-items: center;
 }
 
-.aba-btn {
-    padding: 12px 20px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 500;
-    color: #666;
-    border-radius: 8px 8px 0 0;
-    transition: 0.3s;
+.modulo-painel-atendimento .aba-btn {
+  padding: 14px 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #666;
+  border-bottom: 3px solid transparent;
+  transition: var(--transition);
+  font-size: 14px;
 }
 
-.aba-btn.ativa {
-    background: #f0f2f5;
-    color: var(--color-primary);
-    box-shadow: inset 0 -2px 0 var(--color-primary);
+.modulo-painel-atendimento .aba-btn:hover {
+  color: var(--color-primary);
+  background: rgba(0, 102, 255, 0.05);
 }
 
-.ticket-status-indicator {
-    margin-left: auto;
-    padding-bottom: 10px;
+.modulo-painel-atendimento .aba-btn.ativa {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background: transparent;
 }
 
-.status-badge {
-    background: #ff9800;
-    color: white;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: bold;
+.modulo-painel-atendimento .ticket-status-indicator {
+  margin-left: auto;
+  padding-right: 20px;
 }
 
-/* WORKSPACE GRID */
-.atendimento-workspace {
-    display: grid;
-    grid-template-columns: 300px 1fr 280px;
-    gap: 15px;
-    padding: 15px;
-    height: 100%;
-    overflow: hidden;
+.modulo-painel-atendimento .status-badge {
+  background: var(--color-warning);
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.card {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+/* ============================= */
+/* CONTEÚDO DAS ABAS             */
+/* ============================= */
+.modulo-painel-atendimento .aba-conteudo {
+  display: none;
+  flex: 1;
+  overflow: hidden;
 }
 
-/* COLUNA 1: CONTEXTO */
-.workspace-context { padding: 15px; overflow-y: auto; }
-
-.context-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
+.modulo-painel-atendimento .aba-conteudo.ativa {
+  display: flex;
+  flex-direction: column;
 }
 
-.ticket-id .label { font-size: 10px; color: #999; display: block; }
-.ticket-id .value { font-weight: bold; font-size: 13px; }
-
-.context-section { margin-bottom: 20px; }
-.section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: #444; }
-.section-title h4 { font-size: 14px; margin: 0; }
-
-.info-group { display: flex; flex-direction: column; gap: 10px; }
-.info-item label { font-size: 11px; color: #777; display: block; }
-.info-item input { width: 100%; border: 1px solid #eee; padding: 6px; border-radius: 4px; background: #f9f9f9; }
-
-/* CHECKLIST */
-.identity-checklist {
-    background: #fff9e6;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 10px;
+/* ============================= */
+/* ESTADO VAZIO                  */
+/* ============================= */
+.modulo-painel-atendimento .empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  margin: 15px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
 }
-.checkbox-item { display: flex; align-items: center; gap: 10px; font-size: 13px; margin-bottom: 8px; cursor: pointer; }
 
-/* SLA */
-.sla-bar { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
-.sla-progress { height: 100%; background: var(--color-success); transition: 0.5s; }
-.sla-info { display: flex; justify-content: space-between; font-size: 11px; }
-
-/* COLUNA 2: CHAT */
-.chat-container { flex: 1; display: flex; flex-direction: column; background: #fff; }
-.chatbox { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #fdfdfd; }
-
-.msg { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 14px; position: relative; }
-.msg.cliente { align-self: flex-start; background: #f1f0f0; border-bottom-left-radius: 2px; }
-.msg.atendente { align-self: flex-end; background: #e3efff; color: #004aab; border-bottom-right-radius: 2px; }
-.msg-time { font-size: 10px; opacity: 0.6; margin-top: 4px; text-align: right; }
-
-.chat-input-container { padding: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; align-items: flex-end; }
-.chat-input-wrapper { flex: 1; background: #f5f5f5; border-radius: 10px; padding: 8px; }
-.chat-input-wrapper textarea { width: 100%; border: none; background: transparent; resize: none; outline: none; font-family: inherit; }
-
-/* COLUNA 3: SUPORTE */
-.support-section { padding: 15px; border-bottom: 1px solid #eee; }
-.support-title { font-size: 13px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
-
-.timeline { position: relative; padding-left: 20px; }
-.timeline-item { position: relative; padding-bottom: 15px; }
-.timeline-dot { position: absolute; left: -20px; width: 10px; height: 10px; background: #ddd; border-radius: 50%; top: 4px; }
-.timeline-dot.active { background: var(--color-primary); box-shadow: 0 0 0 4px rgba(0,102,255,0.2); }
-.timeline-content { font-size: 12px; }
-.timeline-time { color: #999; font-size: 10px; display: block; }
-
-.quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.quick-action-btn { 
-    display: flex; flex-direction: column; align-items: center; gap: 5px; 
-    padding: 10px; border: 1px solid #eee; border-radius: 8px; background: #fff;
-    cursor: pointer; transition: 0.2s; font-size: 11px;
+.modulo-painel-atendimento .empty-state-content {
+  text-align: center;
+  max-width: 400px;
+  padding: 40px;
 }
-.quick-action-btn:hover { background: #f0f7ff; border-color: var(--color-primary); }
 
-/* ESTADOS E POPUP */
-.hidden { display: none !important; }
-.popup-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-    display: none; align-items: center; justify-content: center; z-index: 9999;
+.modulo-painel-atendimento .empty-state-content i {
+  font-size: 64px;
+  color: #ddd;
+  margin-bottom: 20px;
 }
-.popup-content { background: #fff; padding: 30px; border-radius: 15px; width: 400px; text-align: center; }
+
+.modulo-painel-atendimento .empty-state-content h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: var(--color-text);
+}
+
+.modulo-painel-atendimento .empty-state-content p {
+  color: #666;
+  margin-bottom: 25px;
+}
+
+.modulo-painel-atendimento .empty-state-stats {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.modulo-painel-atendimento .stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.modulo-painel-atendimento .stat-label {
+  font-size: 12px;
+  color: #999;
+  text-transform: uppercase;
+}
+
+.modulo-painel-atendimento .stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* ============================= */
+/* WORKSPACE GRID                */
+/* ============================= */
+/* min-height:0 para permitir que filhos com overflow funcionem corretamente */
+.modulo-painel-atendimento .atendimento-workspace {
+  display: grid;
+  grid-template-columns: 300px 1fr 280px;
+  gap: 15px;
+  padding: 15px;
+  height: 100%;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.modulo-painel-atendimento .card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ============================= */
+/* COLUNA 1: CONTEXTO            */
+/* ============================= */
+.modulo-painel-atendimento .workspace-context {
+  padding: 20px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.modulo-painel-atendimento .context-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modulo-painel-atendimento .ticket-id .label {
+  font-size: 11px;
+  color: #999;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modulo-painel-atendimento .ticket-id .value {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.modulo-painel-atendimento .ticket-state-badge {
+  padding: 4px 12px;
+  background: var(--color-secondary);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-transform: uppercase;
+}
+
+.modulo-painel-atendimento .context-section {
+  margin-bottom: 20px;
+}
+
+.modulo-painel-atendimento .section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--color-text);
+}
+
+.modulo-painel-atendimento .section-title i {
+  font-size: 16px;
+  color: var(--color-primary);
+}
+
+.modulo-painel-atendimento .section-title h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modulo-painel-atendimento .info-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modulo-painel-atendimento .info-item label {
+  font-size: 11px;
+  color: #666;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.modulo-painel-atendimento .info-item input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--color-secondary);
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.modulo-painel-atendimento .info-value {
+  font-size: 13px;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.modulo-painel-atendimento .channel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #e6f6ea;
+  color: #1a7b3f;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.modulo-painel-atendimento .timer {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* CHECKLIST DE IDENTIDADE */
+.modulo-painel-atendimento .identity-section {
+  background: #fff9e6;
+  padding: 15px;
+  border-radius: var(--radius);
+  border: 1px solid #ffd54f;
+}
+
+.modulo-painel-atendimento .identity-checklist {
+  background: white;
+  padding: 12px;
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  border: 1px solid var(--color-border);
+}
+
+.modulo-painel-atendimento .checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.modulo-painel-atendimento .checkbox-item:last-child {
+  margin-bottom: 0;
+}
+
+.modulo-painel-atendimento .checkbox-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.modulo-painel-atendimento .btn-block {
+  width: 100%;
+  justify-content: center;
+}
+
+/* SLA INDICATOR */
+.modulo-painel-atendimento .sla-section {
+  padding: 12px;
+  background: var(--color-secondary);
+  border-radius: var(--radius);
+}
+
+.modulo-painel-atendimento .sla-bar {
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.modulo-painel-atendimento .sla-progress {
+  height: 100%;
+  background: var(--color-success);
+  transition: width 0.5s ease;
+}
+
+.modulo-painel-atendimento .sla-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.modulo-painel-atendimento .sla-label {
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.modulo-painel-atendimento .sla-time {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+/* ============================= */
+/* COLUNA 2: TRABALHO PRINCIPAL  */
+/* ============================= */
+.modulo-painel-atendimento .workspace-main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* BARRA DE AÇÕES SUPERIOR */
+.modulo-painel-atendimento .action-bar {
+  padding: 15px 20px;
+  background: white;
+  border-bottom: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 60px;
+}
+
+.modulo-painel-atendimento .action-bar-left {
+  flex: 1;
+}
+
+.modulo-painel-atendimento .action-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.modulo-painel-atendimento .action-bar .btn {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.modulo-painel-atendimento .action-bar .info-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  background: var(--color-secondary);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: #666;
+}
+
+.modulo-painel-atendimento .action-bar .info-block i {
+  font-size: 20px;
+  color: var(--color-primary);
+}
+
+/* CHAT CONTAINER - ALTURA FIXA */
+.modulo-painel-atendimento .chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  min-height: 0; /* CRÍTICO para scroll funcionar */
+}
+
+.modulo-painel-atendimento .chat-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-secondary);
+  flex-shrink: 0;
+}
+
+.modulo-painel-atendimento .chat-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text);
+}
+
+.modulo-painel-atendimento .chat-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.modulo-painel-atendimento .btn-icon {
+  background: none;
+  border: 1px solid var(--color-border);
+  padding: 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  color: #666;
+}
+
+.modulo-painel-atendimento .btn-icon:hover {
+  background: var(--color-secondary);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ÁREA DE MENSAGENS - SCROLLÁVEL */
+.modulo-painel-atendimento .chatbox {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8f9fa;
+  min-height: 240px;
+}
+
+.modulo-painel-atendimento .chat-day-divider {
+  text-align: center;
+  margin: 10px 0;
+}
+
+.modulo-painel-atendimento .chat-day-divider span {
+  background: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  color: #999;
+  border: 1px solid var(--color-border);
+  text-transform: uppercase;
+}
+
+.modulo-painel-atendimento .msg {
+  max-width: 70%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  position: relative;
+  word-wrap: break-word;
+}
+
+.modulo-painel-atendimento .msg.cliente {
+  align-self: flex-start;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-bottom-left-radius: 2px;
+}
+
+.modulo-painel-atendimento .msg.atendente {
+  align-self: flex-end;
+  background: var(--color-primary);
+  color: white;
+  border-bottom-right-radius: 2px;
+}
+
+.modulo-painel-atendimento .msg-content {
+  line-height: 1.4;
+}
+
+.modulo-painel-atendimento .msg-time {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 4px;
+  text-align: right;
+}
+
+/* INPUT DE CHAT - FIXO NA BASE */
+.modulo-painel-atendimento .chat-input-container {
+  padding: 15px 20px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  background: white;
+  flex-shrink: 0;
+}
+
+.modulo-painel-atendimento .chat-input-wrapper {
+  flex: 1;
+  background: var(--color-secondary);
+  border-radius: 10px;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+}
+
+.modulo-painel-atendimento .chat-input-wrapper textarea {
+  width: 100%;
+  border: none;
+  background: transparent;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--color-text);
+  max-height: 120px;
+}
+
+.modulo-painel-atendimento .chat-input-tools {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.modulo-painel-atendimento .btn-icon-sm {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #666;
+  font-size: 16px;
+  transition: var(--transition);
+}
+
+.modulo-painel-atendimento .btn-icon-sm:hover {
+  color: var(--color-primary);
+}
+
+.modulo-painel-atendimento .char-counter {
+  font-size: 11px;
+  color: #999;
+}
+
+.modulo-painel-atendimento .btn-send {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  font-size: 16px;
+}
+
+.modulo-painel-atendimento .btn-send:hover {
+  background: #0052cc;
+}
+
+/* FORMULÁRIO DE ATENDIMENTO */
+.modulo-painel-atendimento .work-form {
+  padding: 20px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-secondary);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.modulo-painel-atendimento .form-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: var(--color-text);
+}
+
+.modulo-painel-atendimento .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.modulo-painel-atendimento .campo {
+  display: flex;
+  flex-direction: column;
+}
+
+.modulo-painel-atendimento .campo label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.modulo-painel-atendimento .campo select,
+.modulo-painel-atendimento .campo textarea {
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: inherit;
+  background: white;
+  color: var(--color-text);
+}
+
+.modulo-painel-atendimento .campo select:focus,
+.modulo-painel-atendimento .campo textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* ============================= */
+/* COLUNA 3: SUPORTE             */
+/* ============================= */
+.modulo-painel-atendimento .workspace-support {
+  overflow-y: auto;
+  padding: 0;
+  min-height: 0;
+}
+
+.modulo-painel-atendimento .support-section {
+  padding: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modulo-painel-atendimento .support-section:last-child {
+  border-bottom: none;
+}
+
+.modulo-painel-atendimento .support-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text);
+}
+
+.modulo-painel-atendimento .support-title i {
+  color: var(--color-primary);
+}
+
+/* TIMELINE */
+.modulo-painel-atendimento .timeline {
+  position: relative;
+  padding-left: 20px;
+}
+
+.modulo-painel-atendimento .timeline-item {
+  position: relative;
+  padding-bottom: 15px;
+}
+
+.modulo-painel-atendimento .timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.modulo-painel-atendimento .timeline-dot {
+  position: absolute;
+  left: -20px;
+  width: 10px;
+  height: 10px;
+  background: #ddd;
+  border-radius: 50%;
+  top: 4px;
+}
+
+.modulo-painel-atendimento .timeline-dot.active {
+  background: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(0,102,255,0.2);
+}
+
+.modulo-painel-atendimento .timeline-content {
+  font-size: 12px;
+}
+
+.modulo-painel-atendimento .timeline-time {
+  color: #999;
+  font-size: 11px;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.modulo-painel-atendimento .timeline-text {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+/* AÇÕES RÁPIDAS */
+.modulo-painel-atendimento .quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.modulo-painel-atendimento .quick-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: white;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 11px;
+  text-align: center;
+  color: var(--color-text);
+}
+
+.modulo-painel-atendimento .quick-action-btn:hover {
+  background: #f0f7ff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.modulo-painel-atendimento .quick-action-btn i {
+  font-size: 20px;
+}
+
+/* ESTATÍSTICAS */
+.modulo-painel-atendimento .stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.modulo-painel-atendimento .stat-box {
+  background: var(--color-secondary);
+  padding: 12px;
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.modulo-painel-atendimento .stat-label {
+  font-size: 11px;
+  color: #999;
+  display: block;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.modulo-painel-atendimento .stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* ============================= */
+/* POPUP                         */
+/* ============================= */
+.modulo-painel-atendimento .popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-popup);
+  backdrop-filter: blur(2px);
+}
+
+.modulo-painel-atendimento .popup-content {
+  background: #fff;
+  padding: 30px;
+  border-radius: var(--radius);
+  width: 400px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.modulo-painel-atendimento .popup-icon {
+  width: 60px;
+  height: 60px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  color: white;
+  font-size: 28px;
+}
+
+.modulo-painel-atendimento .popup-content h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: var(--color-text);
+}
+
+.modulo-painel-atendimento .popup-content p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.modulo-painel-atendimento .popup-info-grid {
+  background: var(--color-secondary);
+  padding: 15px;
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+}
+
+.modulo-painel-atendimento .popup-info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.modulo-painel-atendimento .popup-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.modulo-painel-atendimento .popup-value {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* ============================= */
+/* UTILITÁRIOS                   */
+/* ============================= */
+.modulo-painel-atendimento .hidden {
+  display: none !important;
+}
+
+/* ============================= */
+/* RESPONSIVIDADE                */
+/* ============================= */
+@media (max-width: 1200px) {
+  .modulo-painel-atendimento .atendimento-workspace {
+    grid-template-columns: 1fr;
+  }
+  
+  .modulo-painel-atendimento .workspace-context,
+  .modulo-painel-atendimento .workspace-support {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .modulo-painel-atendimento .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .modulo-painel-atendimento .quick-actions,
+  .modulo-painel-atendimento .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.modulo-painel-atendimento .atendimento-workspace {
+  display: grid;
+  grid-template-columns: 300px 1fr 280px;
+  gap: 15px;
+  padding: 15px;
+  height: 100%;
+  overflow: hidden;
+  min-height: 0;
+  align-items: stretch; /* importante para que colunas se estiquem em altura */
+}
+
+/* GARANTE QUE A COLUNA CENTRAL OCUPE TODA A ALTURA E DISTRIBUA OS FILHOS */
+.modulo-painel-atendimento .workspace-main {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* crítico: ocupa toda altura da célula do grid */
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* CHAT: ocupa o espaço disponível, permite scroll interno corretamente */
+.modulo-painel-atendimento .chat-container {
+  flex: 1 1 auto;       /* cresce e encolhe conforme necessário */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;        /* CRÍTICO para permitir overflow nos filhos */
+  overflow: hidden;
+}
+
+/* Chatbox (lista de mensagens) deve rolar internamente */
+.modulo-painel-atendimento .chatbox {
+  flex: 1 1 auto;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8f9fa;
+  min-height: 0;
+  /* espaço extra no final para não ficar colado ao input */
+  padding-bottom: 18px;
+}
+
+/* Input do chat permanece fixo no fluxo, não é sobreposto */
+.modulo-painel-atendimento .chat-input-container {
+  flex: 0 0 auto;
+  padding: 5px 5px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: 5px;
+  align-items: flex-end;
+  background: white;
+  z-index: 5; /* garante ficar acima de work-form se houver sobreposição visual */
+}
+
+/* Formulário (work-form) não deve crescer e invadir o chat; limita altura */
+.modulo-painel-atendimento .work-form {
+  flex: 0 0 auto;        /* não cresce; fica abaixo do chat */
+  max-height: 20vh;      /* limita a altura para evitar invadir o chat (ajuste conforme necessidade) */
+  overflow-y: auto;
+  padding: 20px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-secondary);
+  z-index: 1;
+}
+
+/* Em telas menores, manter o formulário com comportamento de rolagem */
+@media (max-width: 1200px) {
+  .modulo-painel-atendimento .work-form {
+    max-height: 40vh;
+  }
+}
+
+/* restaura qualquer regra global de hidden que poderia afetar controles */
+.modulo-painel-atendimento .btn-send,
+.modulo-painel-atendimento #chatInput {
+  display: inline-flex !important;
+}
+/* estado recolhido */
+.modulo-painel-atendimento .work-form.collapsed {
+  max-height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  overflow: hidden;
+}
