@@ -1,4 +1,4 @@
-// ==================== MAIN.JS – SPA MODULAR LIMPO ====================
+// ==================== MAIN.JS – SPA MODULAR COM CONTROLE DE ACESSO ====================
 
 /* =========================
    ESTADO GLOBAL
@@ -79,6 +79,7 @@ function updateBreadcrumb(module) {
     main: ["Início"],
     atendimento: ["Início", "Atendimento"],
     conteudo: ["Início", "Conteúdo"],
+    copyright: ["Início", "Copyright"],
     financeiro: ["Início", "Financeiro"],
     marketing: ["Início", "Marketing"],
     tecnico: ["Início", "Técnico"],
@@ -109,6 +110,7 @@ function hasPermission(module) {
   const permissions = {
     atendimento: "atendimento.view",
     conteudo: "conteudo.view",
+    copyright: "copyright.view",
     financeiro: "financeiro.view",
     marketing: "marketing.view",
     tecnico: "tecnico.view",
@@ -118,6 +120,26 @@ function hasPermission(module) {
   };
 
   return window.PermissionsSystem.hasPermission(permissions[module]);
+}
+
+/* =========================
+   🆕 FILTRAR SIDEBAR POR PERMISSÕES
+========================= */
+function filterSidebarByPermissions() {
+  const menuItems = document.querySelectorAll('.sidebar li[data-permission]');
+  
+  menuItems.forEach(item => {
+    const requiredPermission = item.dataset.permission;
+    
+    // Verifica se o usuário tem a permissão necessária
+    if (window.PermissionsSystem && window.PermissionsSystem.hasPermission(requiredPermission)) {
+      item.style.display = ''; // Mostra o item
+    } else {
+      item.style.display = 'none'; // Oculta o item
+    }
+  });
+  
+  console.log("✅ Sidebar filtrada com base nas permissões do usuário");
 }
 
 /* =========================
@@ -145,8 +167,8 @@ const ModuleRegistry = {
   atendimento: () => window.initAtendimentoModule?.(),
   gerencia: () => window.initGerenciaModule?.(),
   financeiro: () => window.initFinanceiroModule?.(),
-  admin: () => window.initAdminModule?.()
-
+  admin: () => window.initAdminModule?.(),
+  copyright: () => console.log("📄 Módulo Copyright carregado (placeholder)")
 };
 
 /* =========================
@@ -159,6 +181,7 @@ async function loadContent(section) {
     content.innerHTML = `
       <div class="card" style="text-align:center;padding:40px">
         <h3>🔒 Acesso Negado</h3>
+        <p>Você não possui permissão para acessar este módulo.</p>
         <button class="btn btn-primary" id="btnVoltar">Voltar</button>
       </div>
     `;
@@ -253,6 +276,10 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   initSidebarMenu();
+  
+  // 🆕 FILTRAR SIDEBAR BASEADO EM PERMISSÕES
+  filterSidebarByPermissions();
+  
   setModule("main");
 });
 

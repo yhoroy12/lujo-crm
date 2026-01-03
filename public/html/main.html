@@ -16,6 +16,7 @@
   <!-- MENU LATERAL -->
   <aside class="sidebar" id="sidebar">
     <ul>
+      <!-- INÍCIO (sempre visível) -->
       <li>
         <a href="#" title="Início" data-action="voltarMain">
           <i class="fi fi-rr-home"></i>
@@ -23,56 +24,72 @@
         </a>
       </li>
 
-      <li>
+      <!-- ATENDIMENTO -->
+      <li data-module="atendimento" data-permission="atendimento.view">
         <a href="#" title="Atendimento" data-module="atendimento">
           <i class="fi fi-rr-phone-call"></i>
           <span class="menu-text">Atendimento</span>
         </a>
       </li>
 
-      <li>
+      <!-- CONTEÚDO -->
+      <li data-module="conteudo" data-permission="conteudo.view">
         <a href="#" title="Conteúdo" data-module="conteudo">
           <i class="fi fi-rr-download"></i>
           <span class="menu-text">Conteúdo</span>
         </a>
       </li>
 
-      <li>
+      <!-- COPYRIGHT (NOVO) -->
+      <li data-module="copyright" data-permission="copyright.view">
+        <a href="#" title="Copyright" data-module="copyright">
+          <i class="fi fi-rr-shield-check"></i>
+          <span class="menu-text">Copyright</span>
+        </a>
+      </li>
+
+      <!-- FINANCEIRO -->
+      <li data-module="financeiro" data-permission="financeiro.view">
         <a href="#" title="Financeiro" data-module="financeiro">
           <i class="fi fi-rr-dollar"></i>
           <span class="menu-text">Financeiro</span>
         </a>
       </li>
 
-      <li>
+      <!-- MARKETING -->
+      <li data-module="marketing" data-permission="marketing.view">
         <a href="#" title="Marketing" data-module="marketing">
           <i class="fi fi-rr-star"></i>
           <span class="menu-text">Marketing</span>
         </a>
       </li>
 
-      <li>
+      <!-- TÉCNICO -->
+      <li data-module="tecnico" data-permission="tecnico.view">
         <a href="#" title="Técnico" data-module="tecnico">
           <i class="fi fi-rr-users"></i>
           <span class="menu-text">Técnico</span>
         </a>
       </li>
 
-      <li>
+      <!-- GERÊNCIA -->
+      <li data-module="gerencia" data-permission="gerencia.view">
         <a href="#" title="Gerência" data-module="gerencia">
           <i class="fi fi-rr-user"></i>
           <span class="menu-text">Gerência</span>
         </a>
       </li>
 
-      <li>
+      <!-- RELATÓRIOS -->
+      <li data-module="relatorios" data-permission="relatorios.view">
         <a href="#" title="Relatórios" data-module="relatorios">
           <i class="fi fi-rr-chart-histogram"></i>
           <span class="menu-text">Relatórios</span>
         </a>
       </li>
 
-       <li>
+      <!-- ADMINISTRAÇÃO -->
+      <li data-module="admin" data-permission="system.super_admin">
          <a href="#" title="Administração" data-module="admin">
           <i class="fi fi-rr-settings"></i>
           <span class="menu-text">Admin</span>
