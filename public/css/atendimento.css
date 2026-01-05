@@ -1,4 +1,4 @@
-/* ==================== ATENDIMENTO.CSS - CORRIGIDO ==================== */
+/* ==================== ATENDIMENTO.CSS - CORRIGIDO e MERGED (inclui estilos do painel de E-mails) ==================== */
 
 /* ============================= */
 /* PAINEL PRINCIPAL              */
@@ -144,17 +144,12 @@
 /* ============================= */
 /* WORKSPACE GRID                */
 /* ============================= */
-/* min-height:0 para permitir que filhos com overflow funcionem corretamente */
-.modulo-painel-atendimento .atendimento-workspace {
-  display: grid;
-  grid-template-columns: 300px 1fr 280px;
-  gap: 15px;
-  padding: 15px;
-  height: 100%;
-  overflow: hidden;
-  min-height: 0;
-}
+/* min-height:0 para permitir que filhos com overflow funcionem corretamente
+   (Removida duplicata anterior; mantida a versão com align-items mais abaixo) */
 
+/* ============================= */
+/* GERAL: Cartões e estrutura    */
+/* ============================= */
 .modulo-painel-atendimento .card {
   background: #fff;
   border-radius: var(--radius);
@@ -605,15 +600,34 @@
   background: #0052cc;
 }
 
-/* FORMULÁRIO DE ATENDIMENTO */
+/* -------------------------------------------------------------
+   WORK-FORM: agora horizontal (suporta várias support-section lado a lado)
+   ------------------------------------------------------------- */
+/* Removidas definições conflitantes anteriores e consolidado aqui */
 .modulo-painel-atendimento .work-form {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: nowrap;      /* use wrap se preferir quebra em múltiplas linhas em telas menores */
+  overflow: auto;         /* permite scroll horizontal/vertical interno */
   padding: 20px;
   border-top: 1px solid var(--color-border);
   background: var(--color-secondary);
-  overflow-y: auto;
   min-height: 0;
+  box-sizing: border-box;
 }
 
+/* Cada seção dentro do work-form se comporta como cartão horizontal */
+.modulo-painel-atendimento .work-form .support-section {
+  flex: 1 1 300px;    /* base 300px, cresce/encolhe */
+  min-width: 260px;   /* evita ficar muito estreito */
+  max-width: 420px;   /* evita crescer demais em telas amplas */
+  box-sizing: border-box;
+  border-bottom: none; /* evita duplicar bordas verticais no layout horizontal */
+  padding: 20px;
+}
+
+/* Formularios e campos (mantidos) */
 .modulo-painel-atendimento .form-title {
   font-size: 14px;
   font-weight: 600;
@@ -888,6 +902,12 @@
   .modulo-painel-atendimento .workspace-support {
     max-height: 300px;
   }
+
+  /* Em telas menores, permitir que work-form quebre em várias linhas */
+  .modulo-painel-atendimento .work-form {
+    flex-wrap: wrap;
+    max-height: 40vh;
+  }
 }
 
 @media (max-width: 768px) {
@@ -900,6 +920,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================= */
+/* DUPLICATED WORKSPACE (mantida versão final) */
+/* ============================= */
 .modulo-painel-atendimento .atendimento-workspace {
   display: grid;
   grid-template-columns: 300px 1fr 280px;
@@ -955,24 +979,6 @@
   z-index: 5; /* garante ficar acima de work-form se houver sobreposição visual */
 }
 
-/* Formulário (work-form) não deve crescer e invadir o chat; limita altura */
-.modulo-painel-atendimento .work-form {
-  flex: 0 0 auto;        /* não cresce; fica abaixo do chat */
-  max-height: 20vh;      /* limita a altura para evitar invadir o chat (ajuste conforme necessidade) */
-  overflow-y: auto;
-  padding: 20px;
-  border-top: 1px solid var(--color-border);
-  background: var(--color-secondary);
-  z-index: 1;
-}
-
-/* Em telas menores, manter o formulário com comportamento de rolagem */
-@media (max-width: 1200px) {
-  .modulo-painel-atendimento .work-form {
-    max-height: 40vh;
-  }
-}
-
 /* restaura qualquer regra global de hidden que poderia afetar controles */
 .modulo-painel-atendimento .btn-send,
 .modulo-painel-atendimento #chatInput {
@@ -984,4 +990,307 @@
   padding-top: 0 !important;
   padding-bottom: 0 !important;
   overflow: hidden;
+}
+
+/* ============================= */
+/* UTIL: garante altura completa  */
+/* ============================= */
+html, body {
+  height: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* ============================= */
+/* STYLES FOR EMAIL PANEL (merging atendimento-emails.css)
+   These styles are intended for the Aba "E-mails" contents (example markup).
+   If you'd like them scoped more strictly, we can prefix selectors with
+   .modulo-painel-atendimento .aba-emails in a follow-up change.
+   ============================= */
+
+/* Minimal reset / palette for email panel */
+:root{
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --muted: #8b8f98;
+  --text: #222533;
+  --primary: #0b66ff;
+  --border: #e6e9ef;
+  --success: #0ea5a4;
+  --radius: 10px;
+  --shadow-sm: 0 2px 6px rgba(16,24,40,0.04);
+}
+
+*{box-sizing:border-box}
+html,body{font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; color:var(--text)}
+
+/* Container geral da aba de emails */
+.email-panel{
+  display: grid;
+  grid-template-columns: 260px 340px 1fr;
+  gap: 18px;
+  height: calc(100vh - 180px); /* ajuste conforme seu header/topo */
+  padding: 18px;
+  align-items: start;
+  background: transparent;
+}
+
+/* cartões / colunas */
+.email-sidebar,
+.email-list,
+.email-content{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* SIDEBAR */
+.email-sidebar{
+  padding: 16px;
+  gap: 12px;
+  min-width: 200px;
+}
+
+/* Botões primários / secundários */
+.btn-primary{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  width: auto;
+}
+
+.btn-primary.full{ width: 100%; }
+
+.btn-secondary{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--text);
+  cursor:pointer;
+}
+
+/* Folders / etiquetas */
+.email-folders{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+.folder{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:8px;
+  border-radius:8px;
+  background: transparent;
+  border: none;
+  text-align:left;
+  cursor:pointer;
+  font-weight:600;
+  color:var(--muted);
+}
+.folder.active{
+  background: linear-gradient(90deg, rgba(11,102,255,0.06), rgba(11,102,255,0.02));
+  color: var(--primary);
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+.badge{
+  background:var(--primary);
+  color:#fff;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+}
+
+/* Etiquetas laterais */
+.email-labels{ margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+.email-labels h4{ margin:0 0 6px 0; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; }
+.email-labels button{ display:flex; align-items:center; gap:8px; padding:8px; border-radius:8px; background:transparent; border:none; cursor:pointer; color:var(--text); font-size:14px; }
+.email-labels .dot{ width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
+.email-labels .dot.blue{ background:#3b82f6; }
+.email-labels .dot.green{ background:#10b981; }
+.email-labels .dot.orange{ background:#fb923c; }
+
+/* LISTA DE EMAILS */
+.email-list{ min-width: 280px; display:flex; flex-direction:column; }
+.email-search{ padding:12px; border-bottom:1px solid var(--border); background:var(--bg); }
+.email-search input{
+  width:100%;
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:transparent;
+  outline:none;
+}
+
+/* Lista rolável de emails */
+.emails{
+  overflow-y:auto;
+  padding:6px 6px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  height:100%;
+}
+
+/* Item de email */
+.email-item{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  padding:12px;
+  text-align:left;
+  border-radius:8px;
+  background:transparent;
+  border:1px solid transparent;
+  cursor:pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.email-item:hover{
+  background: rgba(11,102,255,0.03);
+  border-color: rgba(11,102,255,0.06);
+}
+.email-item header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+}
+.email-item header strong{ font-size:14px; display:block; color:var(--text); }
+.email-item header span{ font-size:12px; color:var(--muted); white-space:nowrap; }
+.email-item h5{ margin:0; font-size:13px; color:var(--text); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
+.email-item p{ margin:0; font-size:13px; color:var(--muted); overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+
+/* tag/label no item */
+.tag{
+  display:inline-block;
+  margin-top:8px;
+  padding:4px 8px;
+  font-size:11px;
+  border-radius:999px;
+  font-weight:600;
+  text-transform:capitalize;
+}
+.tag.financeiro{ background: #ecfdf5; color: #065f46; border:1px solid rgba(6,95,70,0.06); }
+.tag.comercial{ background: #eff6ff; color: #1e3a8a; border:1px solid rgba(30,58,138,0.06); }
+.tag.suporte{ background: #fff7ed; color: #92400e; border:1px solid rgba(146,64,14,0.06); }
+
+/* item ativo */
+.email-item.active{
+  background: linear-gradient(90deg, rgba(11,102,255,0.04), rgba(11,102,255,0.02));
+  border-color: rgba(11,102,255,0.12);
+  position:relative;
+}
+.email-item.active::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:4px;
+  background:var(--primary);
+  border-top-left-radius:8px;
+  border-bottom-left-radius:8px;
+}
+
+/* CONTEÚDO DO EMAIL */
+.email-content{ min-width:0; display:flex; flex-direction:column; }
+
+/* toolbar superior */
+.email-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+  background:transparent;
+}
+.email-toolbar > div{ display:flex; gap:8px; align-items:center; }
+.email-toolbar button{ border:none; background:transparent; padding:6px; border-radius:6px; cursor:pointer; }
+.email-toolbar span{ color:var(--muted); font-size:13px }
+
+/* corpo rolável do email */
+.email-body{
+  padding:22px 28px;
+  overflow:auto;
+  flex:1;
+  min-height:0; /* importante para scroll dentro do flex */
+}
+.email-body h2{ margin:0 0 6px 0; font-size:20px; color:var(--text) }
+.email-body small{ display:block; color:var(--muted); margin-bottom:12px; font-size:13px }
+.email-body hr{ border:none; height:1px; background:var(--border); margin:12px 0 }
+
+/* Prose / parágrafos */
+.email-body p{ color:rgba(34,37,51,0.9); line-height:1.6; margin:6px 0; font-size:14px }
+
+/* anexos */
+.attachments{ margin-top:18px; }
+.attachments h4{ margin:0 0 10px 0; font-size:13px; color:var(--muted) }
+.attachments .file{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  padding:10px;
+  border-radius:10px;
+  background:var(--bg);
+  border:1px solid var(--border);
+  max-width:420px;
+}
+.attachments .file .pdf{
+  width:44px;
+  height:44px;
+  background:#fee2e2;
+  color:#b91c1c;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:8px;
+  font-weight:700;
+  font-size:12px;
+}
+
+/* footer com ações */
+.email-actions{
+  padding:12px 16px;
+  border-top:1px solid var(--border);
+  background:var(--card);
+  display:flex;
+  justify-content:flex-start;
+  gap:12px;
+}
+.email-actions .btn-primary,
+.email-actions .btn-secondary{ padding:10px 14px; border-radius:8px; font-weight:600; }
+
+/* RESPONSIVO: empilha colunas para telas pequenas */
+@media (max-width: 1024px){
+  .email-panel{
+    grid-template-columns: 1fr;
+    height: auto;
+    padding: 12px;
+  }
+  .email-list{ order: 2; }
+  .email-content{ order: 3; }
+  .email-sidebar{ order: 1; }
+  .email-list, .email-content, .email-sidebar{ width:100%; }
+  .emails{ max-height: 40vh; overflow:auto; }
+  .email-body{ max-height: 50vh; }
+}
+
+/* Acessibilidade e pequenas melhorias */
+.email-item:focus, .folder:focus, .btn-primary:focus, .btn-secondary:focus{
+  outline: 3px solid rgba(11,102,255,0.14);
+  outline-offset: 2px;
 }
