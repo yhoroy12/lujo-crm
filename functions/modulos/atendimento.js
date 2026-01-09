@@ -1,4 +1,4 @@
-// ==================== ATENDIMENTO.JS (CORRIGIDO) ====================//
+// ==================== ATENDIMENTO.JS (ATUALIZADO COM EMAILS) ====================//
 window.initAtendimentoModule = function() {
     console.log("🔧 Inicializando Workspace de Atendimento");
     
@@ -9,6 +9,10 @@ window.initAtendimentoModule = function() {
     initPopupLogic();
     initAutoResize();
     initTopValidationButton();
+    initEmailsTab(); // NOVO: Inicializa funcionalidades de emails
+    initTicketTimer();
+
+    
     // Define estado inicial visível
     updateTicketFlow('NOVO');
 };
@@ -30,6 +34,11 @@ function initAtendimentoTabs() {
             btn.classList.add('ativa');
             const targetContent = document.querySelector(`.modulo-painel-atendimento .${abaAlvo}`);
             if (targetContent) targetContent.classList.add('ativa');
+            
+            // Se ativou a aba de emails, carrega emails
+            if (abaAlvo === 'aba-emails') {
+                loadEmails();
+            }
         });
     });
 }
@@ -56,31 +65,20 @@ function initIdentityCheck() {
         if (el) el.addEventListener('change', validarInputs);
     });
 
-    // CRÍTICO: Confirmar Identidade muda o estado
     btnValidar.addEventListener('click', async () => {
-        // Aqui você pode chamar a API de verificação se necessário (await)
-        // Simulação de ação assíncrona (se precisar)
         try {
             btnValidar.disabled = true;
             btnValidar.textContent = 'Confirmando...';
-            // Simular pequena espera (remova se for chamada real)
             await new Promise(r => setTimeout(r, 400));
         } finally {
-            // Muda fluxo após validação funcional
             updateTicketFlow('IDENTIDADE_VALIDADA');
 
-            // Trava checks para evitar alteração após validação
             checks.forEach(id => {
                 const el = document.getElementById(id);
-                if (el) {
-                    el.disabled = true;
-                }
+                if (el) el.disabled = true;
             });
 
-            // Esconde o botão lateral de confirmar identidade
             btnValidar.classList.add('hidden');
-
-            // Atualiza timeline e badge
             addTimelineItem(getCurrentTime(), "Identidade validada");
             const statusBadge = document.getElementById('statusBadge');
             if (statusBadge) statusBadge.textContent = 'IDENTIDADE VALIDADA';
@@ -98,7 +96,6 @@ function updateTicketFlow(novoEstado) {
     if (statusBadge) statusBadge.textContent = novoEstado.replace(/_/g, ' ');
     if (stateIndicator) stateIndicator.textContent = novoEstado.replace(/_/g, ' ');
 
-    // Só escondemos/mostramos elementos da action-bar-right (evita impactar botões do chat)
     const actionBarRight = document.querySelector('.action-bar-right');
     if (actionBarRight) {
         actionBarRight.querySelectorAll('button, .info-block').forEach(el => {
@@ -125,34 +122,30 @@ function updateTicketFlow(novoEstado) {
             break;
     }
 
-    // Garante visibilidade do input e do botão de envio caso alguém tenha aplicado .hidden globalmente
     const chatInputContainer = document.getElementById('chatInputContainer');
     if (chatInputContainer) chatInputContainer.classList.remove('hidden');
 
     const sendBtn = document.getElementById('btnEnviarMensagem');
     if (sendBtn) sendBtn.classList.remove('hidden');
 }
+
 function showActionButton(buttonId) {
     const button = document.getElementById(buttonId);
     if (button) {
         button.classList.remove('hidden');
-        // garantir que botões fiquem habilitados por padrão
         button.disabled = false;
     }
 }
 
 function showActionElement(elementId) {
     const element = document.getElementById(elementId);
-    if (element) {
-        element.classList.remove('hidden');
-    }
+    if (element) element.classList.remove('hidden');
 }
 
 // ============================= //
 // 4. AÇÕES DE TRANSIÇÃO         //
 // ============================= //
 function initStateTransitions() {
-    // IDENTIDADE_VALIDADA -> EM_ATENDIMENTO
     const btnIniciar = document.getElementById('btnIniciarAtendimento');
     if (btnIniciar) {
         btnIniciar.addEventListener('click', () => {
@@ -161,17 +154,14 @@ function initStateTransitions() {
         });
     }
 
-    // EM_ATENDIMENTO -> CONCLUIDO
     const btnConcluir = document.getElementById('btnConcluir');
     if (btnConcluir) {
         btnConcluir.addEventListener('click', () => {
             if (confirm("Deseja realmente concluir este atendimento?")) {
                 addTimelineItem(getCurrentTime(), "Ticket concluído");
                 
-                // Limpa timer
                 if (timerInterval) clearInterval(timerInterval);
                 
-                // Volta para tela de aguardando
                 setTimeout(() => {
                     const workspace = document.getElementById('workspaceGrid');
                     const emptyState = document.getElementById('emptyState');
@@ -179,18 +169,15 @@ function initStateTransitions() {
                     if (workspace) workspace.classList.add('hidden');
                     if (emptyState) emptyState.classList.remove('hidden');
                     
-                    // Atualiza badge
                     const statusBadge = document.getElementById('statusBadge');
                     if (statusBadge) statusBadge.textContent = 'AGUARDANDO';
                     
-                    // Reset estado
                     updateTicketFlow('NOVO');
                 }, 500);
             }
         });
     }
 
-    // EM_ATENDIMENTO -> ENCAMINHADO
     const btnEncaminhar = document.getElementById('btnEncaminhar');
     if (btnEncaminhar) {
         btnEncaminhar.addEventListener('click', () => {
@@ -202,10 +189,8 @@ function initStateTransitions() {
             if (confirm(`Encaminhar ticket para o setor: ${setor}?`)) {
                 addTimelineItem(getCurrentTime(), `Encaminhado para ${setor}`);
                 
-                // Limpa timer
                 if (timerInterval) clearInterval(timerInterval);
                 
-                // Volta para tela de aguardando
                 setTimeout(() => {
                     const workspace = document.getElementById('workspaceGrid');
                     const emptyState = document.getElementById('emptyState');
@@ -213,7 +198,6 @@ function initStateTransitions() {
                     if (workspace) workspace.classList.add('hidden');
                     if (emptyState) emptyState.classList.remove('hidden');
                     
-                    // Atualiza badge
                     const statusBadge = document.getElementById('statusBadge');
                     if (statusBadge) statusBadge.textContent = 'AGUARDANDO';
                     
@@ -232,7 +216,6 @@ function initChatActions() {
     const input = document.getElementById('chatInput');
     const charCounter = document.getElementById('charCounter');
 
-    // Contador de caracteres
     if (input && charCounter) {
         input.addEventListener('input', () => {
             charCounter.textContent = `${input.value.length}/1000`;
@@ -259,8 +242,6 @@ function initChatActions() {
         input.value = '';
         if (charCounter) charCounter.textContent = '0/1000';
         input.style.height = 'auto';
-
-        // TODO: enviar ao servidor (WebSocket / API) se aplicável
     };
 
     if (btnEnviar) btnEnviar.addEventListener('click', enviar);
@@ -295,7 +276,6 @@ function addTimelineItem(hora, texto) {
     const timeline = document.getElementById('timeline');
     if (!timeline) return;
 
-    // Remove active de todos os dots
     timeline.querySelectorAll('.timeline-dot').forEach(dot => {
         dot.classList.remove('active');
     });
@@ -319,7 +299,6 @@ function initPopupLogic() {
     const popup = document.getElementById('popupAtendimento');
     const btnAceitar = document.getElementById('btnIniciarAtendimentoPopup');
 
-    // Simula novo ticket em 3 segundos (apenas demo)
     setTimeout(() => {
         if (popup) {
             const nomeCliente = "Marcos Oliveira";
@@ -344,7 +323,6 @@ function initPopupLogic() {
             if (emptyState) emptyState.classList.add('hidden');
             if (workspace) workspace.classList.remove('hidden');
             
-            // Preenche dados do cliente
             const clienteNome = document.getElementById('clienteNome');
             const clienteTelefone = document.getElementById('clienteTelefone');
             const clienteEmail = document.getElementById('clienteEmail');
@@ -357,21 +335,14 @@ function initPopupLogic() {
             if (clienteEmail) clienteEmail.value = "marcos@email.com";
             if (atribuidoEm) atribuidoEm.textContent = getCurrentTime();
 
-            // Limpa mensagens de teste se necessário e adiciona mensagem inicial
             if (chatbox) {
-                // opcional: limpar, ou manter mensagens de demo
-                // chatbox.innerHTML = '';
                 addSystemMessage("Novo ticket atribuído a você.");
                 scrollChatToBottom();
             }
             
-            // Inicia no estado NOVO
             updateTicketFlow('NOVO');
-            
-            // Inicia timer do ticket
             initTicketTimer();
 
-            // Dar foco no chat input (usabilidade)
             if (chatInput) chatInput.focus();
         });
     }
@@ -406,7 +377,6 @@ function initTopValidationButton() {
     if (!btnTopValidacao) return;
 
     btnTopValidacao.addEventListener('click', () => {
-        // rola para a seção de identidade e foca no primeiro checkbox
         const identitySection = document.getElementById('identitySection');
         if (identitySection) {
             identitySection.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -414,6 +384,367 @@ function initTopValidationButton() {
             if (primeiroCheck) primeiroCheck.focus();
         }
     });
+}
+
+// ============================= //
+// 11. FUNCIONALIDADES DE EMAILS //
+// ============================= //
+
+// Dados mockados de emails
+const MOCK_EMAILS = [
+    {
+        id: 1,
+        remetente: "Marcos Oliveira",
+        email: "marcos@email.com",
+        assunto: "Dúvida sobre Fatura #99281",
+        preview: "Olá, gostaria de entender o valor cobrado...",
+        conteudo: `<p>Olá,</p>
+                   <p>Gostaria de entender o valor cobrado na minha última fatura. Notei uma diferença em relação ao mês anterior.</p>
+                   <br>
+                   <p>Att,<br>Marcos Oliveira</p>`,
+        data: "14:30",
+        etiqueta: "financeiro",
+        lido: false,
+        anexos: [
+            { nome: "Fatura_Janeiro.pdf", tamanho: "2.4 MB", tipo: "pdf" }
+        ]
+    },
+    {
+        id: 2,
+        remetente: "Ana Silva",
+        email: "ana.silva@email.com",
+        assunto: "Solicitação de Orçamento",
+        preview: "Boa tarde, gostaria de um orçamento...",
+        conteudo: `<p>Boa tarde,</p>
+                   <p>Gostaria de solicitar um orçamento para os serviços de consultoria em marketing digital.</p>
+                   <br>
+                   <p>Aguardo retorno,<br>Ana Silva</p>`,
+        data: "Ontem",
+        etiqueta: "comercial",
+        lido: true,
+        anexos: []
+    },
+    {
+        id: 3,
+        remetente: "Carlos Mendes",
+        email: "carlos.mendes@email.com",
+        assunto: "Problema com Acesso ao Sistema",
+        preview: "Não consigo acessar minha conta desde ontem...",
+        conteudo: `<p>Olá,</p>
+                   <p>Não consigo acessar minha conta desde ontem. Quando tento fazer login, aparece uma mensagem de erro.</p>
+                   <p>Já tentei redefinir a senha mas não recebi o email.</p>
+                   <br>
+                   <p>Obrigado,<br>Carlos Mendes</p>`,
+        data: "Ontem",
+        etiqueta: "suporte",
+        lido: false,
+        anexos: []
+    },
+    {
+        id: 4,
+        remetente: "Patricia Costa",
+        email: "patricia@email.com",
+        assunto: "Renovação de Contrato",
+        preview: "Gostaria de renovar meu contrato anual...",
+        conteudo: `<p>Prezados,</p>
+                   <p>Gostaria de renovar meu contrato anual. Poderia me enviar as opções disponíveis?</p>
+                   <br>
+                   <p>Atenciosamente,<br>Patricia Costa</p>`,
+        data: "2 dias",
+        etiqueta: "comercial",
+        lido: true,
+        anexos: []
+    },
+    {
+        id: 5,
+        remetente: "Roberto Santos",
+        email: "roberto@email.com",
+        assunto: "Feedback sobre Atendimento",
+        preview: "Queria parabenizar a equipe pelo excelente atendimento...",
+        conteudo: `<p>Boa tarde,</p>
+                   <p>Queria parabenizar a equipe pelo excelente atendimento que recebi na semana passada. Todos foram muito prestativos e resolveram meu problema rapidamente.</p>
+                   <br>
+                   <p>Obrigado,<br>Roberto Santos</p>`,
+        data: "3 dias",
+        etiqueta: "suporte",
+        lido: true,
+        anexos: []
+    }
+];
+
+let currentEmailId = 1;
+let currentFolder = 'inbox';
+let emailSearchTerm = '';
+
+function initEmailsTab() {
+    console.log("📧 Inicializando aba de Emails");
+    
+    // Folders
+    initEmailFolders();
+    
+    // Labels/Etiquetas
+    initEmailLabels();
+    
+    // Pesquisa
+    initEmailSearch();
+    
+    // Botão Nova Mensagem
+    initNewEmailButton();
+    
+    // Ações do email (responder, encaminhar, etc)
+    initEmailActions();
+    
+    // Toolbar actions
+    initEmailToolbar();
+}
+
+function initEmailFolders() {
+    const folders = document.querySelectorAll('.email-folders .folder');
+    
+    folders.forEach(folder => {
+        folder.addEventListener('click', function() {
+            folders.forEach(f => f.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Atualizar filtro baseado na pasta
+            const folderText = this.textContent.toLowerCase();
+            if (folderText.includes('caixa de entrada')) {
+                currentFolder = 'inbox';
+            } else if (folderText.includes('favoritos')) {
+                currentFolder = 'starred';
+            } else if (folderText.includes('arquivados')) {
+                currentFolder = 'archived';
+            } else if (folderText.includes('lixeira')) {
+                currentFolder = 'trash';
+            }
+            
+            loadEmails();
+        });
+    });
+}
+
+function initEmailLabels() {
+    const labels = document.querySelectorAll('.email-labels button');
+    
+    labels.forEach(label => {
+        label.addEventListener('click', function() {
+            const labelText = this.textContent.toLowerCase();
+            
+            // Filtrar emails por etiqueta
+            if (labelText.includes('comercial')) {
+                filterEmailsByLabel('comercial');
+            } else if (labelText.includes('financeiro')) {
+                filterEmailsByLabel('financeiro');
+            } else if (labelText.includes('suporte')) {
+                filterEmailsByLabel('suporte');
+            }
+        });
+    });
+}
+
+function initEmailSearch() {
+    const searchInput = document.querySelector('.email-search input');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            emailSearchTerm = e.target.value.toLowerCase();
+            loadEmails();
+        });
+    }
+}
+
+function initNewEmailButton() {
+    const btnNewEmail = document.querySelector('.btn-primary.full');
+    
+    if (btnNewEmail) {
+        btnNewEmail.addEventListener('click', () => {
+            alert('📧 Funcionalidade de nova mensagem em desenvolvimento!\n\nEm breve você poderá:\n• Compor emails\n• Adicionar anexos\n• Usar templates');
+        });
+    }
+}
+
+function initEmailActions() {
+    // Botão Responder
+    const btnReply = document.querySelector('.email-actions .btn-primary');
+    if (btnReply) {
+        btnReply.addEventListener('click', () => {
+            const email = MOCK_EMAILS.find(e => e.id === currentEmailId);
+            if (email) {
+                alert(`📧 Respondendo para: ${email.remetente}\n\nEm desenvolvimento: editor de resposta.`);
+            }
+        });
+    }
+    
+    // Botão Encaminhar
+    const btnForward = document.querySelector('.email-actions .btn-secondary');
+    if (btnForward) {
+        btnForward.addEventListener('click', () => {
+            alert('📧 Funcionalidade de encaminhar em desenvolvimento!');
+        });
+    }
+}
+
+function initEmailToolbar() {
+    const toolbarButtons = document.querySelectorAll('.email-toolbar button');
+    
+    toolbarButtons.forEach((btn, index) => {
+        btn.addEventListener('click', () => {
+            if (index === 0) {
+                // Arquivar
+                alert('🗄 Email arquivado com sucesso!');
+                // Remover da lista
+                const emailItems = document.querySelectorAll('.email-item');
+                emailItems.forEach(item => {
+                    if (item.classList.contains('active')) {
+                        item.remove();
+                    }
+                });
+            } else if (index === 1) {
+                // Deletar
+                if (confirm('🗑 Tem certeza que deseja excluir este email?')) {
+                    alert('Email movido para lixeira!');
+                    const emailItems = document.querySelectorAll('.email-item');
+                    emailItems.forEach(item => {
+                        if (item.classList.contains('active')) {
+                            item.remove();
+                        }
+                    });
+                }
+            }
+        });
+    });
+}
+
+function loadEmails() {
+    const emailsContainer = document.querySelector('.emails');
+    if (!emailsContainer) return;
+    
+    // Filtrar emails
+    let filteredEmails = [...MOCK_EMAILS];
+    
+    // Aplicar filtro de pesquisa
+    if (emailSearchTerm) {
+        filteredEmails = filteredEmails.filter(email => 
+            email.remetente.toLowerCase().includes(emailSearchTerm) ||
+            email.assunto.toLowerCase().includes(emailSearchTerm) ||
+            email.preview.toLowerCase().includes(emailSearchTerm)
+        );
+    }
+    
+    // Renderizar lista
+    emailsContainer.innerHTML = filteredEmails.map(email => `
+        <article class="email-item ${email.id === currentEmailId ? 'active' : ''}" data-id="${email.id}">
+            <header>
+                <strong>${escapeHtml(email.remetente)}</strong>
+                <span>${email.data}</span>
+            </header>
+            <h5>${escapeHtml(email.assunto)}</h5>
+            <p>${escapeHtml(email.preview)}</p>
+            <span class="tag ${email.etiqueta}">${email.etiqueta}</span>
+        </article>
+    `).join('');
+    
+    // Adicionar event listeners aos itens
+    const emailItems = document.querySelectorAll('.email-item');
+    emailItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const emailId = parseInt(this.dataset.id);
+            selectEmail(emailId);
+        });
+    });
+    
+    // Carregar primeiro email por padrão
+    if (filteredEmails.length > 0 && currentEmailId) {
+        displayEmail(currentEmailId);
+    }
+}
+
+function selectEmail(emailId) {
+    currentEmailId = emailId;
+    
+    // Atualizar classe active
+    document.querySelectorAll('.email-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    const selectedItem = document.querySelector(`.email-item[data-id="${emailId}"]`);
+    if (selectedItem) {
+        selectedItem.classList.add('active');
+    }
+    
+    // Exibir conteúdo
+    displayEmail(emailId);
+}
+
+function displayEmail(emailId) {
+    const email = MOCK_EMAILS.find(e => e.id === emailId);
+    if (!email) return;
+    
+    const emailBody = document.querySelector('.email-body');
+    if (!emailBody) return;
+    
+    emailBody.innerHTML = `
+        <h2>${escapeHtml(email.assunto)}</h2>
+        <small>${escapeHtml(email.remetente)} &lt;${escapeHtml(email.email)}&gt;</small>
+        
+        <hr>
+        
+        ${email.conteudo}
+        
+        ${email.anexos.length > 0 ? `
+            <div class="attachments">
+                <h4>Anexos</h4>
+                ${email.anexos.map(anexo => `
+                    <div class="file">
+                        <span class="${anexo.tipo}">${anexo.tipo.toUpperCase()}</span>
+                        <div>
+                            <strong>${escapeHtml(anexo.nome)}</strong>
+                            <small>${anexo.tamanho}</small>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        ` : ''}
+    `;
+    
+    // Atualizar contador na toolbar
+    const toolbarCounter = document.querySelector('.email-toolbar span');
+    if (toolbarCounter) {
+        const currentIndex = MOCK_EMAILS.findIndex(e => e.id === emailId) + 1;
+        toolbarCounter.textContent = `${currentIndex} de ${MOCK_EMAILS.length}`;
+    }
+}
+
+function filterEmailsByLabel(label) {
+    const filteredEmails = MOCK_EMAILS.filter(email => email.etiqueta === label);
+    
+    const emailsContainer = document.querySelector('.emails');
+    if (!emailsContainer) return;
+    
+    emailsContainer.innerHTML = filteredEmails.map(email => `
+        <article class="email-item ${email.id === currentEmailId ? 'active' : ''}" data-id="${email.id}">
+            <header>
+                <strong>${escapeHtml(email.remetente)}</strong>
+                <span>${email.data}</span>
+            </header>
+            <h5>${escapeHtml(email.assunto)}</h5>
+            <p>${escapeHtml(email.preview)}</p>
+            <span class="tag ${email.etiqueta}">${email.etiqueta}</span>
+        </article>
+    `).join('');
+    
+    // Re-adicionar event listeners
+    const emailItems = document.querySelectorAll('.email-item');
+    emailItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const emailId = parseInt(this.dataset.id);
+            selectEmail(emailId);
+        });
+    });
+    
+    if (filteredEmails.length > 0) {
+        selectEmail(filteredEmails[0].id);
+    }
 }
 
 // ============================= //
@@ -426,7 +757,6 @@ function getCurrentTime() {
 function scrollChatToBottom() {
     const chatbox = document.getElementById('chatbox');
     if (!chatbox) return;
-    // garantir que scroll funcione em containers flex
     chatbox.scrollTop = chatbox.scrollHeight;
 }
 
@@ -443,7 +773,6 @@ function addSystemMessage(text) {
     scrollChatToBottom();
 }
 
-// simples escape para evitar injeção de HTML ao inserir mensagens
 function escapeHtml(str) {
     return String(str)
       .replace(/&/g, '&amp;')
@@ -458,4 +787,4 @@ function showElementById(id) {
     if (el) el.classList.remove('hidden');
 }
 
-console.log("✅ Módulo de Atendimento carregado");
+console.log("✅ Módulo de Atendimento carregado com funcionalidade de Emails");
