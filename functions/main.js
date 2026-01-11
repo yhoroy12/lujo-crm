@@ -168,7 +168,11 @@ const ModuleRegistry = {
   gerencia: () => window.initGerenciaModule?.(),
   financeiro: () => window.initFinanceiroModule?.(),
   admin: () => window.initAdminModule?.(),
-  copyright: () => console.log("📄 Módulo Copyright carregado (placeholder)")
+  copyright: () => console.log("📄 Módulo Copyright carregado (placeholder)"),
+  conteudo: () => window.initConteudoModule?.(),
+  marketing: () => window.initMarketingModule?.(),
+  tecnico: () => window.initTecnicoModule?.(),
+  relatorios: () => window.initRelatoriosModule?.()
 };
 
 /* =========================
