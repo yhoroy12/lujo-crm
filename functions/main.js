@@ -211,7 +211,10 @@ async function loadContent(section) {
     await loadModuleJS(section);
 
     // INIT
-    ModuleRegistry[section]?.();
+    window.ModuleLifecycle.init(section, () => {
+      ModuleRegistry[section]?.();
+    });
+    
     console.log(`✅ Módulo ${section} inicializado`);
   } catch (e) {
     console.error(e);
