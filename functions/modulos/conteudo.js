@@ -1,10 +1,37 @@
-(function() {
+/* ===============================
+   CONTEUDO MODULE - REFATORADO
+================================ */
 
+const MODULE_ID = 'conteudo';
+
+window.initConteudoModule = function() {
+  console.log("🎵 Inicializando módulo Conteúdos & Aprovações");
+
+  // Inicializar estado
+  window.StateManager.init(MODULE_ID, {
+    conteudos: [...MOCK_CONTEUDOS],
+    currentEditingId: null,
+    currentEncaminhamentoArea: null,
+    filters: {
+      status: '',
+      etapa: ''
+    }
+  });
+
+  initTabs();
+  initModals();
+  initFiltros();
+  renderFila();
+  atualizarEstatisticas();
+};
+
+/* ===============================
+   DADOS MOCK
+================================ */
 function getOperadorAtual() {
-  const user =
-    JSON.parse(sessionStorage.getItem('authUser')) ||
-    JSON.parse(sessionStorage.getItem('user'));
-
+  const user = window.PermissionsSystem?.getCurrentUser() || 
+    JSON.parse(sessionStorage.getItem('currentUser') || 'null');
+  
   return {
     nome: user?.name || user?.username || 'Operador não identificado',
     role: user?.role || 'operador'
@@ -71,231 +98,267 @@ const MOCK_CONTEUDOS = [
   }
 ];
 
-let conteudos = [...MOCK_CONTEUDOS];
-let conteudoAtual = null;
-let currentEncaminhamentoArea = null;
-
-window.initConteudoModule = function() {
-  console.log("🎵 Inicializando módulo Conteúdos & Aprovações");
-  
-  initAbas();
-  initFiltros();
-  initModais();
-  renderFila();
-  atualizarEstatisticas();
-};
-
-function initAbas() {
-  const botoes = document.querySelectorAll('.modulo-painel-conteudo .aba-btn');
-  const conteudosAba = document.querySelectorAll('.modulo-painel-conteudo .aba-conteudo');
-  
-  botoes.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const alvo = btn.dataset.aba;
+/* ===============================
+   TABS
+================================ */
+function initTabs() {
+  window.TabManager.init('.modulo-painel-conteudo', MODULE_ID, {
+    onTabChange: (tabId) => {
+      console.log(`Conteudo: aba ${tabId}`);
       
-      botoes.forEach(b => b.classList.remove('ativa'));
-      conteudosAba.forEach(c => c.classList.remove('ativa'));
-      
-      btn.classList.add('ativa');
-      const target = document.querySelector(`.modulo-painel-conteudo .${alvo}`);
-      if (target) target.classList.add('ativa');
-      
-      if (alvo === 'aba-fila') renderFila();
-      if (alvo === 'aba-aprovados') renderAprovados();
-      if (alvo === 'aba-recusados') renderRecusados();
-    });
+      if (tabId === 'aba-fila') {
+        renderFila();
+      } else if (tabId === 'aba-aprovados') {
+        renderAprovados();
+      } else if (tabId === 'aba-recusados') {
+        renderRecusados();
+      }
+    }
   });
 }
 
-function initFiltros() {
-  const filtroStatus = document.getElementById('filtroStatus');
-  const filtroEtapa = document.getElementById('filtroEtapa');
-  const searchInput = document.getElementById('searchConteudo');
-  const btnLimpar = document.getElementById('btnLimparFiltros');
-  
-  if (filtroStatus) filtroStatus.addEventListener('change', renderFila);
-  if (filtroEtapa) filtroEtapa.addEventListener('change', renderFila);
-  if (searchInput) searchInput.addEventListener('input', renderFila);
-  
-  if (btnLimpar) {
-    btnLimpar.addEventListener('click', () => {
-      if (filtroStatus) filtroStatus.value = '';
-      if (filtroEtapa) filtroEtapa.value = '';
-      if (searchInput) searchInput.value = '';
-      renderFila();
-    });
-  }
-}
+/* ===============================
+   MODALS
+================================ */
+function initModals() {
+  // Modal Avaliação
+  window.ModalManager.setup('modalAvaliacao', MODULE_ID, {
+    onClose: () => {
+      window.StateManager.set(MODULE_ID, { currentEditingId: null });
+      resetAvaliacaoUI();
+    }
+  });
 
-function initModais() {
-  const btnCloseAvaliacao = document.getElementById('btnCloseAvaliacao');
-  const btnFecharAvaliacao = document.getElementById('btnFecharAvaliacao');
-  const btnCloseEncaminhamento = document.getElementById('btnCloseEncaminhamento');
-  const btnCancelarEncaminhamento = document.getElementById('btnCancelarEncaminhamento');
-  
-  if (btnCloseAvaliacao) btnCloseAvaliacao.addEventListener('click', fecharModalAvaliacao);
-  if (btnFecharAvaliacao) btnFecharAvaliacao.addEventListener('click', fecharModalAvaliacao);
-  if (btnCloseEncaminhamento) btnCloseEncaminhamento.addEventListener('click', fecharModalEncaminhamento);
-  if (btnCancelarEncaminhamento) btnCancelarEncaminhamento.addEventListener('click', fecharModalEncaminhamento);
-  
+  // Modal Encaminhamento
+  window.ModalManager.setup('modalEncaminhamento', MODULE_ID, {
+    onClose: () => {
+      window.StateManager.set(MODULE_ID, { currentEncaminhamentoArea: null });
+    }
+  });
+
+  // Botões do modal de avaliação
   const btnAprovar1 = document.getElementById('btnAprovar1');
   const btnRecusar1 = document.getElementById('btnRecusar1');
   const btnRascunho = document.getElementById('btnRascunho');
   const btnDistribuir = document.getElementById('btnDistribuir');
   const btnRecusar2 = document.getElementById('btnRecusar2');
-  
-  if (btnAprovar1) btnAprovar1.addEventListener('click', () => avaliar1('AP'));
-  if (btnRecusar1) btnRecusar1.addEventListener('click', () => avaliar1('RE'));
-  if (btnRascunho) btnRascunho.addEventListener('click', () => avaliar1('RA'));
-  if (btnDistribuir) btnDistribuir.addEventListener('click', () => avaliar2('DI'));
-  if (btnRecusar2) btnRecusar2.addEventListener('click', () => avaliar2('RE'));
-  
+
+  if (btnAprovar1) {
+    window.ModuleLifecycle.addListener(btnAprovar1, 'click', () => avaliar1('AP'), MODULE_ID);
+  }
+  if (btnRecusar1) {
+    window.ModuleLifecycle.addListener(btnRecusar1, 'click', () => avaliar1('RE'), MODULE_ID);
+  }
+  if (btnRascunho) {
+    window.ModuleLifecycle.addListener(btnRascunho, 'click', () => avaliar1('RA'), MODULE_ID);
+  }
+  if (btnDistribuir) {
+    window.ModuleLifecycle.addListener(btnDistribuir, 'click', () => avaliar2('DI'), MODULE_ID);
+  }
+  if (btnRecusar2) {
+    window.ModuleLifecycle.addListener(btnRecusar2, 'click', () => avaliar2('RE'), MODULE_ID);
+  }
+
+  // Botões de encaminhamento
   const btnEncaminharMarketing = document.getElementById('btnEncaminharMarketing');
   const btnEncaminharAtendimento = document.getElementById('btnEncaminharAtendimento');
-  
-  if (btnEncaminharMarketing) btnEncaminharMarketing.addEventListener('click', () => abrirModalEncaminhamento('Marketing'));
-  if (btnEncaminharAtendimento) btnEncaminharAtendimento.addEventListener('click', () => abrirModalEncaminhamento('Atendimento'));
-  
+
+  if (btnEncaminharMarketing) {
+    window.ModuleLifecycle.addListener(btnEncaminharMarketing, 'click', () => abrirModalEncaminhamento('Marketing'), MODULE_ID);
+  }
+  if (btnEncaminharAtendimento) {
+    window.ModuleLifecycle.addListener(btnEncaminharAtendimento, 'click', () => abrirModalEncaminhamento('Atendimento'), MODULE_ID);
+  }
+
+  // Form Encaminhamento
   const formEncaminhamento = document.getElementById('formEncaminhamento');
   if (formEncaminhamento) {
-    formEncaminhamento.addEventListener('submit', (e) => {
+    window.ModuleLifecycle.addListener(formEncaminhamento, 'submit', (e) => {
       e.preventDefault();
       enviarEncaminhamento();
-    });
+    }, MODULE_ID);
   }
 }
 
-function renderFila() {
-  const tbody = document.getElementById('tabelaConteudos');
-  if (!tbody) return;
-  
-  let filtered = [...conteudos];
-  
-  const statusFiltro = document.getElementById('filtroStatus')?.value;
-  const etapaFiltro = document.getElementById('filtroEtapa')?.value;
-  const searchTerm = document.getElementById('searchConteudo')?.value.toLowerCase();
-  
-  if (statusFiltro) filtered = filtered.filter(c => c.status === statusFiltro);
-  if (etapaFiltro) filtered = filtered.filter(c => c.etapa === parseInt(etapaFiltro));
-  if (searchTerm) {
-    filtered = filtered.filter(c => 
-      c.artista.toLowerCase().includes(searchTerm) ||
-      c.titulo.toLowerCase().includes(searchTerm)
-    );
+/* ===============================
+   FILTROS
+================================ */
+function initFiltros() {
+  const filterConfig = window.ListManager.setupFilters({
+    filterElements: {
+      status: '#filtroStatus',
+      etapa: '#filtroEtapa'
+    },
+    searchElement: '#searchConteudo',
+    data: window.StateManager.get(MODULE_ID).conteudos,
+    onFilter: (data, filters, searchTerm) => {
+      renderFilaComFiltros(filters, searchTerm);
+    },
+    moduleId: MODULE_ID
+  });
+
+  // Botão Limpar Filtros
+  const btnLimpar = document.getElementById('btnLimparFiltros');
+  if (btnLimpar) {
+    window.ModuleLifecycle.addListener(btnLimpar, 'click', () => {
+      filterConfig.clear();
+    }, MODULE_ID);
   }
-  
-  tbody.innerHTML = filtered.map(c => `
-    <tr>
-      <td><strong>${c.id}</strong></td>
-      <td>${c.artista}${c.featuring ? ' ft. ' + c.featuring : ''}</td>
-      <td>${c.titulo}</td>
-      <td>Etapa ${c.etapa}</td>
-      <td><span class="status-badge status-${c.status}">${getStatusLabel(c.status)}</span></td>
-      <td>${c.responsavel}</td>
-      <td>${formatDate(c.data)}</td>
-      <td class="text-center">
-        <button class="btn btn-sm btn-primary" onclick="conteudoModule.avaliarConteudo('${c.id}')">
-          Avaliar Conteúdo
-        </button>
-      </td>
-    </tr>
-  `).join('');
-  
-  atualizarEstatisticas();
+}
+
+/* ===============================
+   RENDER FUNCTIONS
+================================ */
+function renderFila() {
+  renderFilaComFiltros({}, '');
+}
+
+function renderFilaComFiltros(filters, searchTerm) {
+  const state = window.StateManager.get(MODULE_ID);
+
+  window.ListManager.render({
+    data: state.conteudos,
+    container: '#tabelaConteudos',
+    template: (c) => `
+      <tr>
+        <td><strong>${c.id}</strong></td>
+        <td>${window.Utils.escapeHtml(c.artista)}${c.featuring ? ' ft. ' + window.Utils.escapeHtml(c.featuring) : ''}</td>
+        <td>${window.Utils.escapeHtml(c.titulo)}</td>
+        <td>Etapa ${c.etapa}</td>
+        <td><span class="status-badge status-${c.status}">${getStatusLabel(c.status)}</span></td>
+        <td>${window.Utils.escapeHtml(c.responsavel)}</td>
+        <td>${window.Utils.formatDate(c.data)}</td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-primary btn-avaliar" data-id="${c.id}">
+            Avaliar Conteúdo
+          </button>
+        </td>
+      </tr>
+    `,
+    filters: {
+      status: (item) => !filters.status || item.status === filters.status,
+      etapa: (item) => !filters.etapa || item.etapa === parseInt(filters.etapa)
+    },
+    searchFields: ['artista', 'titulo', 'id'],
+    searchTerm,
+    emptyMessage: 'Nenhum conteúdo encontrado',
+    onRender: () => {
+      // Adicionar listeners aos botões
+      document.querySelectorAll('.btn-avaliar').forEach(btn => {
+        window.ModuleLifecycle.addListener(btn, 'click', function() {
+          avaliarConteudo(this.dataset.id);
+        }, MODULE_ID);
+      });
+      
+      atualizarEstatisticas();
+    }
+  });
 }
 
 function renderAprovados() {
-  const tbody = document.getElementById('tabelaAprovados');
-  if (!tbody) return;
-  
-  const aprovados = conteudos.filter(c => c.status === 'distribuido');
-  
-  tbody.innerHTML = aprovados.length > 0 ? aprovados.map(c => `
-    <tr>
-      <td>${c.id}</td>
-      <td>${c.artista}${c.featuring ? ' ft. ' + c.featuring : ''}</td>
-      <td>${c.titulo}</td>
-      <td>${c.avaliacao2?.upc || '-'}</td>
-      <td>${c.avaliacao2?.data || '-'}</td>
-      <td>${c.avaliacao2?.operador || '-'}</td>
-    </tr>
-  `).join('') : '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">Nenhum conteúdo distribuído ainda</td></tr>';
+  const state = window.StateManager.get(MODULE_ID);
+  const aprovados = state.conteudos.filter(c => c.status === 'distribuido');
+
+  window.ListManager.render({
+    data: aprovados,
+    container: '#tabelaAprovados',
+    template: (c) => `
+      <tr>
+        <td>${c.id}</td>
+        <td>${window.Utils.escapeHtml(c.artista)}${c.featuring ? ' ft. ' + window.Utils.escapeHtml(c.featuring) : ''}</td>
+        <td>${window.Utils.escapeHtml(c.titulo)}</td>
+        <td>${c.avaliacao2?.upc || '-'}</td>
+        <td>${c.avaliacao2?.data || '-'}</td>
+        <td>${window.Utils.escapeHtml(c.avaliacao2?.operador || '-')}</td>
+      </tr>
+    `,
+    emptyMessage: 'Nenhum conteúdo distribuído ainda'
+  });
 }
 
 function renderRecusados() {
-  const tbody = document.getElementById('tabelaRecusados');
-  if (!tbody) return;
-  
-  const recusados = conteudos.filter(c => c.status === 'recusado');
-  
-  tbody.innerHTML = recusados.length > 0 ? recusados.map(c => {
-    const motivo = c.avaliacao1?.decisao === 'RE' ? c.avaliacao1.observacoes : c.avaliacao2?.observacoes || '-';
-    const data = c.avaliacao1?.decisao === 'RE' ? c.avaliacao1.data : c.avaliacao2?.data || '-';
-    const operador = c.avaliacao1?.decisao === 'RE' ? c.avaliacao1.operador : c.avaliacao2?.operador || '-';
-    
-    return `
-      <tr>
-        <td>${c.id}</td>
-        <td>${c.artista}${c.featuring ? ' ft. ' + c.featuring : ''}</td>
-        <td>${c.titulo}</td>
-        <td>${motivo}</td>
-        <td>${data}</td>
-        <td>${operador}</td>
-      </tr>
-    `;
-  }).join('') : '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">Nenhum conteúdo recusado</td></tr>';
+  const state = window.StateManager.get(MODULE_ID);
+  const recusados = state.conteudos.filter(c => c.status === 'recusado');
+
+  window.ListManager.render({
+    data: recusados,
+    container: '#tabelaRecusados',
+    template: (c) => {
+      const motivo = c.avaliacao1?.decisao === 'RE' ? c.avaliacao1.observacoes : c.avaliacao2?.observacoes || '-';
+      const data = c.avaliacao1?.decisao === 'RE' ? c.avaliacao1.data : c.avaliacao2?.data || '-';
+      const operador = c.avaliacao1?.decisao === 'RE' ? c.avaliacao1.operador : c.avaliacao2?.operador || '-';
+      
+      return `
+        <tr>
+          <td>${c.id}</td>
+          <td>${window.Utils.escapeHtml(c.artista)}${c.featuring ? ' ft. ' + window.Utils.escapeHtml(c.featuring) : ''}</td>
+          <td>${window.Utils.escapeHtml(c.titulo)}</td>
+          <td>${window.Utils.escapeHtml(motivo)}</td>
+          <td>${data}</td>
+          <td>${window.Utils.escapeHtml(operador)}</td>
+        </tr>
+      `;
+    },
+    emptyMessage: 'Nenhum conteúdo recusado'
+  });
 }
 
+/* ===============================
+   ESTATÍSTICAS
+================================ */
 function atualizarEstatisticas() {
-  const totalFila = document.getElementById('totalFila');
-  const totalAguardando = document.getElementById('totalAguardando');
-  const totalAnalise = document.getElementById('totalAnalise');
-  const totalDistribuidos = document.getElementById('totalDistribuidos');
-  
-  if (totalFila) totalFila.textContent = conteudos.length;
-  if (totalAguardando) totalAguardando.textContent = conteudos.filter(c => c.status === 'aguardando').length;
-  if (totalAnalise) totalAnalise.textContent = conteudos.filter(c => c.status === 'aprovado_1').length;
-  if (totalDistribuidos) totalDistribuidos.textContent = conteudos.filter(c => c.status === 'distribuido').length;
+  const state = window.StateManager.get(MODULE_ID);
+  const conteudos = state.conteudos;
+
+  setText('totalFila', conteudos.length);
+  setText('totalAguardando', conteudos.filter(c => c.status === 'aguardando').length);
+  setText('totalAnalise', conteudos.filter(c => c.status === 'aprovado_1').length);
+  setText('totalDistribuidos', conteudos.filter(c => c.status === 'distribuido').length);
 }
 
+/* ===============================
+   AVALIAÇÃO
+================================ */
 function avaliarConteudo(id) {
-  resetAvaliacaoUI
-  const conteudo = conteudos.find(c => c.id === id);
+  resetAvaliacaoUI();
+  
+  const state = window.StateManager.get(MODULE_ID);
+  const conteudo = state.conteudos.find(c => c.id === id);
   if (!conteudo) return;
-  
-  conteudoAtual = conteudo;
-  
+
+  window.StateManager.set(MODULE_ID, { currentEditingId: id });
+
   document.getElementById('conteudoId').value = conteudo.id;
-  document.getElementById('conteudoData').value = formatDate(conteudo.data);
+  document.getElementById('conteudoData').value = window.Utils.formatDate(conteudo.data);
   document.getElementById('conteudoArtista').value = conteudo.artista;
   document.getElementById('conteudoFeat').value = conteudo.featuring;
   document.getElementById('conteudoTitulo').value = conteudo.titulo;
   document.getElementById('conteudoLabel').value = conteudo.label;
   document.getElementById('conteudoEmail').value = conteudo.email;
-  
+
   const editavel = !conteudo.avaliacao1;
   document.getElementById('conteudoArtista').readOnly = !editavel;
   document.getElementById('conteudoFeat').readOnly = !editavel;
   document.getElementById('conteudoTitulo').readOnly = !editavel;
   document.getElementById('conteudoLabel').readOnly = !editavel;
   document.getElementById('conteudoEmail').readOnly = !editavel;
-  
+
   if (conteudo.avaliacao1) {
     document.getElementById('avaliacao1Pendente').classList.add('hidden');
     document.getElementById('avaliacao1Concluida').classList.remove('hidden');
-    
+
     document.getElementById('decisao1').innerHTML = `<span class="action-badge ${conteudo.avaliacao1.decisao.toLowerCase()}">${conteudo.avaliacao1.decisao}</span>`;
     document.getElementById('operador1').textContent = conteudo.avaliacao1.operador;
     document.getElementById('dataAvaliacao1').textContent = conteudo.avaliacao1.data;
     document.getElementById('obsTexto1').textContent = conteudo.avaliacao1.observacoes;
-    
+
     if (conteudo.avaliacao1.decisao === 'AP') {
       document.getElementById('blocoAvaliacao2').classList.remove('hidden');
-      
+
       if (conteudo.avaliacao2) {
         document.getElementById('avaliacao2Pendente').classList.add('hidden');
         document.getElementById('avaliacao2Concluida').classList.remove('hidden');
-        
+
         document.getElementById('decisao2').innerHTML = `<span class="action-badge ${conteudo.avaliacao2.decisao.toLowerCase()}">${conteudo.avaliacao2.decisao}</span>`;
         document.getElementById('upcFinal').textContent = conteudo.avaliacao2.upc || '-';
         document.getElementById('operador2').textContent = conteudo.avaliacao2.operador;
@@ -312,46 +375,49 @@ function avaliarConteudo(id) {
     document.getElementById('avaliacao1Concluida').classList.add('hidden');
     document.getElementById('blocoAvaliacao2').classList.add('hidden');
   }
-  
+
   renderTimeline(conteudo);
-  
-  document.getElementById('modalAvaliacao').classList.add('active');
+  window.ModalManager.open('modalAvaliacao');
 }
 
 function avaliar1(decisao) {
-  if (!conteudoAtual) return;
+  const state = window.StateManager.get(MODULE_ID);
+  const conteudo = state.conteudos.find(c => c.id === state.currentEditingId);
   
+  if (!conteudo) return;
+
   const obs = document.getElementById('obs1').value;
-  
+
   if (!obs && decisao !== 'AP') {
     alert('Por favor, adicione observações antes de ' + (decisao === 'RE' ? 'recusar' : 'retornar para rascunho'));
     return;
   }
-  
-  const confirmMsg = decisao === 'AP' ? 'Aprovar este conteúdo?' : 
+
+  const confirmMsg = decisao === 'AP' ? 'Aprovar este conteúdo?' :
                      decisao === 'RE' ? 'Recusar este conteúdo?' :
                      'Retornar para rascunho?';
-  
+
   if (!confirm(confirmMsg)) return;
-  
-  conteudoAtual.artista = document.getElementById('conteudoArtista').value;
-  conteudoAtual.featuring = document.getElementById('conteudoFeat').value;
-  conteudoAtual.titulo = document.getElementById('conteudoTitulo').value;
-  conteudoAtual.label = document.getElementById('conteudoLabel').value;
-  conteudoAtual.email = document.getElementById('conteudoEmail').value;
-  
-  conteudoAtual.avaliacao1 = {
+
+  // Atualizar dados do conteúdo
+  conteudo.artista = document.getElementById('conteudoArtista').value;
+  conteudo.featuring = document.getElementById('conteudoFeat').value;
+  conteudo.titulo = document.getElementById('conteudoTitulo').value;
+  conteudo.label = document.getElementById('conteudoLabel').value;
+  conteudo.email = document.getElementById('conteudoEmail').value;
+
+  conteudo.avaliacao1 = {
     decisao: decisao,
     observacoes: obs || 'Aprovado',
     operador: getOperadorAtual().nome,
     data: new Date().toLocaleString('pt-BR')
   };
-  
+
   if (decisao === 'AP') {
-    conteudoAtual.status = 'aprovado_1';
-    conteudoAtual.etapa = 2;
-    conteudoAtual.responsavel = getOperadorAtual().nome;
-    conteudoAtual.historico.push({
+    conteudo.status = 'aprovado_1';
+    conteudo.etapa = 2;
+    conteudo.responsavel = getOperadorAtual().nome;
+    conteudo.historico.push({
       acao: 'Aprovado na Etapa 1',
       operador: getOperadorAtual().nome,
       data: new Date().toLocaleString('pt-BR'),
@@ -359,8 +425,8 @@ function avaliar1(decisao) {
       detalhes: obs || 'Aprovado'
     });
   } else if (decisao === 'RE') {
-    conteudoAtual.status = 'recusado';
-    conteudoAtual.historico.push({
+    conteudo.status = 'recusado';
+    conteudo.historico.push({
       acao: 'Recusado na Etapa 1',
       operador: getOperadorAtual().nome,
       data: new Date().toLocaleString('pt-BR'),
@@ -368,7 +434,7 @@ function avaliar1(decisao) {
       detalhes: obs
     });
   } else {
-    conteudoAtual.historico.push({
+    conteudo.historico.push({
       acao: 'Retornado para Rascunho',
       operador: getOperadorAtual().nome,
       data: new Date().toLocaleString('pt-BR'),
@@ -376,133 +442,154 @@ function avaliar1(decisao) {
       detalhes: obs
     });
   }
-  
+
+  // Atualizar estado
+  const newConteudos = state.conteudos.map(c => c.id === conteudo.id ? conteudo : c);
+  window.StateManager.set(MODULE_ID, { 
+    conteudos: newConteudos,
+    currentEditingId: null
+  });
+
   document.getElementById('obs1').value = '';
-  
-  fecharModalAvaliacao();
+  window.ModalManager.close('modalAvaliacao');
   renderFila();
-  
   alert('Avaliação registrada com sucesso!');
 }
 
 function avaliar2(decisao) {
-  if (!conteudoAtual) return;
+  const state = window.StateManager.get(MODULE_ID);
+  const conteudo = state.conteudos.find(c => c.id === state.currentEditingId);
   
+  if (!conteudo) return;
+
   const upc = document.getElementById('upcCode').value;
   const obs = document.getElementById('obs2').value;
-  
+
   if (decisao === 'DI' && !upc) {
     alert('UPC é obrigatório para distribuir o conteúdo');
     return;
   }
-  
+
   const confirmMsg = decisao === 'DI' ? 'Distribuir este conteúdo?' : 'Recusar este conteúdo?';
-  
+
   if (!confirm(confirmMsg)) return;
-  
-  conteudoAtual.avaliacao2 = {
+
+  conteudo.avaliacao2 = {
     decisao: decisao,
     upc: upc,
     observacoes: obs || (decisao === 'DI' ? 'Distribuído' : 'Recusado'),
-    operador: 'Carlos Distribuição',
+    operador: getOperadorAtual().nome,
     data: new Date().toLocaleString('pt-BR')
   };
-  
+
   if (decisao === 'DI') {
-    conteudoAtual.status = 'distribuido';
-    conteudoAtual.historico.push({
+    conteudo.status = 'distribuido';
+    conteudo.historico.push({
       acao: 'Distribuído',
-      operador: 'Carlos Distribuição',
+      operador: getOperadorAtual().nome,
       data: new Date().toLocaleString('pt-BR'),
       tipo: 'di',
       detalhes: `UPC: ${upc}`
     });
   } else {
-    conteudoAtual.status = 'recusado';
-    conteudoAtual.historico.push({
+    conteudo.status = 'recusado';
+    conteudo.historico.push({
       acao: 'Recusado na Etapa 2',
-      operador: 'Carlos Distribuição',
+      operador: getOperadorAtual().nome,
       data: new Date().toLocaleString('pt-BR'),
       tipo: 're',
       detalhes: obs || 'Recusado'
     });
   }
-  
+
+  // Atualizar estado
+  const newConteudos = state.conteudos.map(c => c.id === conteudo.id ? conteudo : c);
+  window.StateManager.set(MODULE_ID, { 
+    conteudos: newConteudos,
+    currentEditingId: null
+  });
+
   document.getElementById('upcCode').value = '';
   document.getElementById('obs2').value = '';
-  
-  fecharModalAvaliacao();
+  window.ModalManager.close('modalAvaliacao');
   renderFila();
-  
   alert('Avaliação registrada com sucesso!');
 }
 
+/* ===============================
+   TIMELINE
+================================ */
 function renderTimeline(conteudo) {
   const container = document.getElementById('timelineConteudo');
   if (!container) return;
-  
+
   container.innerHTML = conteudo.historico.map(h => `
     <div class="timeline-item">
       <div class="timeline-dot"></div>
       <div class="timeline-content">
         <div class="timeline-header">
           <span class="timeline-action">
-            ${h.acao}
+            ${window.Utils.escapeHtml(h.acao)}
             ${h.tipo !== 'sistema' ? `<span class="action-badge ${h.tipo}">${h.tipo.toUpperCase()}</span>` : ''}
           </span>
           <span class="timeline-date">${h.data}</span>
         </div>
         <div class="timeline-details">
-          <strong>Operador:</strong> ${h.operador}
-          ${h.detalhes ? `<br><strong>Detalhes:</strong> ${h.detalhes}` : ''}
+          <strong>Operador:</strong> ${window.Utils.escapeHtml(h.operador)}
+          ${h.detalhes ? `<br><strong>Detalhes:</strong> ${window.Utils.escapeHtml(h.detalhes)}` : ''}
         </div>
       </div>
     </div>
   `).join('');
 }
 
+/* ===============================
+   ENCAMINHAMENTO
+================================ */
 function abrirModalEncaminhamento(area) {
-  currentEncaminhamentoArea = area;
+  window.StateManager.set(MODULE_ID, { currentEncaminhamentoArea: area });
+  
   document.getElementById('encaminhamentoTitulo').textContent = `Encaminhar para ${area}`;
   document.getElementById('mensagemEncaminhamento').value = '';
-  document.getElementById('modalEncaminhamento').classList.add('active');
+  window.ModalManager.open('modalEncaminhamento');
 }
 
 function enviarEncaminhamento() {
   const mensagem = document.getElementById('mensagemEncaminhamento').value;
-  
+
   if (!mensagem.trim()) {
     alert('Digite uma mensagem antes de enviar');
     return;
   }
-  
-  if (!conteudoAtual) return;
-  
-  conteudoAtual.historico.push({
-    acao: `Encaminhado para ${currentEncaminhamentoArea}`,
+
+  const state = window.StateManager.get(MODULE_ID);
+  const conteudo = state.conteudos.find(c => c.id === state.currentEditingId);
+
+  if (!conteudo) return;
+
+  conteudo.historico.push({
+    acao: `Encaminhado para ${state.currentEncaminhamentoArea}`,
     operador: 'Sistema',
     data: new Date().toLocaleString('pt-BR'),
     tipo: 'enc',
     detalhes: mensagem
   });
-  
-  renderTimeline(conteudoAtual);
-  
-  fecharModalEncaminhamento();
-  
-  alert(`Conteúdo encaminhado para ${currentEncaminhamentoArea} com sucesso!`);
+
+  // Atualizar estado
+  const newConteudos = state.conteudos.map(c => c.id === conteudo.id ? conteudo : c);
+  window.StateManager.set(MODULE_ID, { 
+    conteudos: newConteudos,
+    currentEncaminhamentoArea: null
+  });
+
+  renderTimeline(conteudo);
+  window.ModalManager.close('modalEncaminhamento');
+  alert(`Conteúdo encaminhado para ${state.currentEncaminhamentoArea} com sucesso!`);
 }
 
-function fecharModalAvaliacao() {
-  document.getElementById('modalAvaliacao').classList.remove('active');
-  conteudoAtual = null;
-}
-
-function fecharModalEncaminhamento() {
-  document.getElementById('modalEncaminhamento').classList.remove('active');
-  currentEncaminhamentoArea = null;
-}
-
+/* ===============================
+   UTILS
+================================ */
 function getStatusLabel(status) {
   const labels = {
     'aguardando': 'Aguardando',
@@ -513,14 +600,10 @@ function getStatusLabel(status) {
   return labels[status] || status;
 }
 
-function formatDate(dateStr) {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('pt-BR');
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
 }
-
-window.conteudoModule = {
-  avaliarConteudo
-};
 
 function resetAvaliacaoUI() {
   // Esconde blocos condicionais
@@ -531,7 +614,7 @@ function resetAvaliacaoUI() {
   document.querySelectorAll(
     'textarea, input[type="text"], input[type="number"]'
   ).forEach(input => {
-    input.value = '';
+    if (!input.readOnly) input.value = '';
   });
 
   // Remove status visuais ativos
@@ -550,7 +633,4 @@ function resetAvaliacaoUI() {
   });
 }
 
-
-console.log("✅ Módulo Conteúdos & Aprovações carregado");
-
-})();
+console.log("✅ Módulo Conteúdos & Aprovações refatorado carregado");
