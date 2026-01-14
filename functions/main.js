@@ -1,4 +1,4 @@
-// ==================== MAIN.JS – SPA MODULAR COM CONTROLE DE ACESSO ====================
+// ==================== MAIN.JS – SPA INTEGRADA AO FIREBASE ====================
 
 /* =========================
    ESTADO GLOBAL
@@ -21,7 +21,7 @@ const AppState = {
 };
 
 /* =========================
-   OBSERVADORES
+   OBSERVADORES DE ESTADO INTERNO
 ========================= */
 function subscribe(fn) {
   AppState.listeners.push(fn);
@@ -31,7 +31,7 @@ function notify() {
 }
 
 /* =========================
-   UI
+   UI CORE
 ========================= */
 function renderUI(state) {
   renderBreadcrumb(state.navigation.breadcrumb);
@@ -53,7 +53,7 @@ function renderLoading(show) {
 subscribe(renderUI);
 
 /* =========================
-   CONTROLE DE ESTADO
+   CONTROLE DE NAVEGAÇÃO
 ========================= */
 function setModule(module) {
   AppState.navigation.currentModule = module;
@@ -61,7 +61,7 @@ function setModule(module) {
   notify();
 }
 
-function setLoading(v) {
+window.setLoading = function(v) {
   AppState.ui.loading = v;
   notify();
 }
@@ -71,9 +71,6 @@ function toggleSidebar(open) {
   notify();
 }
 
-/* =========================
-   BREADCRUMB
-========================= */
 function updateBreadcrumb(module) {
   const map = {
     main: ["Início"],
@@ -91,23 +88,17 @@ function updateBreadcrumb(module) {
 }
 
 /* =========================
-   AUTENTICAÇÃO / PERMISSÃO
+   SEGURANÇA (FIREBASE READY)
 ========================= */
-function isAuthenticated() {
-  return sessionStorage.getItem("currentUser") !== null;
+
+// Usamos as funções globais definidas no auth.js
+function checkAuth() {
+  return window.isAuthenticated && window.isAuthenticated();
 }
 
-function getCurrentUser() {
-  const u = sessionStorage.getItem("currentUser");
-  return u ? JSON.parse(u) : null;
-}
-
-function hasPermission(module) {
-  if (!window.PermissionsSystem) return false;
-  const user = getCurrentUser();
-  if (!user) return false;
-
-  const permissions = {
+function hasModulePermission(module) {
+  // Mapeamento de Módulo para String de Permissão no Firestore
+  const permissionsMap = {
     atendimento: "atendimento.view",
     conteudo: "conteudo.view",
     copyright: "copyright.view",
@@ -116,14 +107,17 @@ function hasPermission(module) {
     tecnico: "tecnico.view",
     gerencia: "gerencia.view",
     relatorios: "relatorios.view",
-    admin: "system.super_admin"
+    admin: "admin.view" // Ajustado para bater com o padrão
   };
 
-  return window.PermissionsSystem.hasPermission(permissions[module]);
+  if (module === 'main') return true;
+
+  // Usa a função global window.hasPermission do auth.js
+  return window.hasPermission && window.hasPermission(permissionsMap[module]);
 }
 
 /* =========================
-   🆕 FILTRAR SIDEBAR POR PERMISSÕES
+   FILTRAR SIDEBAR
 ========================= */
 function filterSidebarByPermissions() {
   const menuItems = document.querySelectorAll('.sidebar li[data-permission]');
@@ -131,62 +125,33 @@ function filterSidebarByPermissions() {
   menuItems.forEach(item => {
     const requiredPermission = item.dataset.permission;
     
-    // Verifica se o usuário tem a permissão necessária
-    if (window.PermissionsSystem && window.PermissionsSystem.hasPermission(requiredPermission)) {
-      item.style.display = ''; // Mostra o item
+    // Se a função global existir e der o OK, mostramos
+    if (window.hasPermission && window.hasPermission(requiredPermission)) {
+      item.style.display = '';
     } else {
-      item.style.display = 'none'; // Oculta o item
+      item.style.display = 'none';
     }
   });
   
-  console.log("✅ Sidebar filtrada com base nas permissões do usuário");
+  console.log("🎯 Sidebar filtrada via Firebase Permissions");
 }
 
 /* =========================
-   ELEMENTOS BASE
+   SPA – CARREGAMENTO DE CONTEÚDO
 ========================= */
-const sidebar = document.getElementById("sidebar");
 const content = document.getElementById("content");
+const sidebar = document.getElementById("sidebar");
 const noticiasHTML = document.getElementById("news-section")?.outerHTML || "";
 
-/* =========================
-   HOME
-========================= */
-function voltarMain() {
-  setModule("main");
-  content.innerHTML = noticiasHTML;
-  sidebar.classList.remove("active");
-  toggleSidebar(false);
-  content.scrollTo(0, 0);
-}
-
-/* =========================
-   MAPA DE MÓDULOS (CHAVE!)
-========================= */
-const ModuleRegistry = {
-  atendimento: () => window.initAtendimentoModule?.(),
-  gerencia: () => window.initGerenciaModule?.(),
-  financeiro: () => window.initFinanceiroModule?.(),
-  admin: () => window.initAdminModule?.(),
-  copyright: () => console.log("📄 Módulo Copyright carregado (placeholder)"),
-  conteudo: () => window.initConteudoModule?.(),
-  marketing: () => window.initMarketingModule?.(),
-  tecnico: () => window.initTecnicoModule?.(),
-  relatorios: () => window.initRelatoriosModule?.()
-};
-
-/* =========================
-   SPA – LOAD CONTENT
-========================= */
 async function loadContent(section) {
   console.log(`📂 Carregando módulo: ${section}`);
 
-  if (!hasPermission(section)) {
+  if (!hasModulePermission(section)) {
     content.innerHTML = `
       <div class="card" style="text-align:center;padding:40px">
         <h3>🔒 Acesso Negado</h3>
-        <p>Você não possui permissão para acessar este módulo.</p>
-        <button class="btn btn-primary" id="btnVoltar">Voltar</button>
+        <p>Seu perfil não tem permissão para o módulo: <strong>${section}</strong></p>
+        <button class="btn btn-primary" id="btnVoltar">Voltar para o Início</button>
       </div>
     `;
     document.getElementById("btnVoltar")?.addEventListener("click", voltarMain);
@@ -199,40 +164,40 @@ async function loadContent(section) {
   toggleSidebar(false);
 
   try {
-    // HTML - CAMINHO CORRIGIDO
+    // 1. Carregar HTML
     const res = await fetch(`../html/${section}.html`);
-    if (!res.ok) throw new Error("HTML não encontrado");
+    if (!res.ok) throw new Error("Falha ao carregar estrutura do módulo.");
     content.innerHTML = await res.text();
 
-    // CSS - CAMINHO CORRIGIDO
+    // 2. Carregar CSS
     loadModuleCSS(section);
 
-    // JS - CAMINHO CORRIGIDO
+    // 3. Carregar JS
     await loadModuleJS(section);
 
-    // INIT
-    window.ModuleLifecycle.init(section, () => {
-      ModuleRegistry[section]?.();
-    });
+    // 4. Inicializar Módulo via Lifecycle
+    if (window.ModuleLifecycle) {
+        window.ModuleLifecycle.init(section, () => {
+            const initFnName = `init${section.charAt(0).toUpperCase() + section.slice(1)}Module`;
+            if (window[initFnName]) {
+                window[initFnName]();
+            } else {
+                console.warn(`Função de inicialização ${initFnName} não encontrada.`);
+            }
+        });
+    }
     
-    console.log(`✅ Módulo ${section} inicializado`);
   } catch (e) {
-    console.error(e);
-    content.innerHTML = `<div class="card"><p>${e.message}</p></div>`;
+    console.error("Erro SPA:", e);
+    content.innerHTML = `<div class="card"><p>Erro ao carregar módulo: ${e.message}</p></div>`;
   } finally {
     setLoading(false);
     content.scrollTo(0, 0);
   }
 }
 
-/* =========================
-   CSS POR MÓDULO
-========================= */
 function loadModuleCSS(section) {
-  // Remove CSS antigo
   document.querySelectorAll("link[data-module]").forEach(l => l.remove());
-
-  // Carrega CSS específico do módulo - CAMINHO CORRIGIDO
   const link = document.createElement("link");
   link.rel = "stylesheet";
   link.href = `../css/${section}.css`;
@@ -240,15 +205,10 @@ function loadModuleCSS(section) {
   document.head.appendChild(link);  
 }
 
-/* =========================
-   JS POR MÓDULO
-========================= */
 function loadModuleJS(section) {
   return new Promise((resolve, reject) => {
     document.querySelectorAll("script[data-module]").forEach(s => s.remove());
-
     const script = document.createElement("script");
-    // CAMINHO CORRIGIDO - adiciona /modulos/ para os arquivos JS dos módulos
     script.src = `../../functions/modulos/${section}.js`;
     script.dataset.module = section;
     script.defer = true;
@@ -258,9 +218,47 @@ function loadModuleJS(section) {
   });
 }
 
+function voltarMain() {
+  setModule("main");
+  content.innerHTML = noticiasHTML;
+  sidebar.classList.remove("active");
+  toggleSidebar(false);
+  content.scrollTo(0, 0);
+}
+
 /* =========================
-   MENU LATERAL
+   INICIALIZAÇÃO DO APP
 ========================= */
+window.addEventListener("DOMContentLoaded", () => {
+  // 1. Verificação rápida (apenas para não piscar conteúdo logado)
+  if (!checkAuth()) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  // 2. O Firebase decide quando a UI deve aparecer
+  if (window.FirebaseApp) {
+    window.FirebaseApp.auth.onAuthStateChanged((user) => {
+      if (user) {
+        console.log("✅ Usuário confirmado pelo Firebase. Inicializando UI...");
+        
+        // SÓ chamamos aqui dentro para garantir que temos as permissões do usuário
+        filterSidebarByPermissions();
+        initSidebarMenu();
+        
+        // Define o módulo inicial (Dashboard)
+        setModule("main");
+      } else {
+        // Se o Firebase disser que não há usuário, expulsamos para o login
+        sessionStorage.removeItem('currentUser');
+        window.location.href = 'login.html';
+      }
+    });
+  } else {
+    console.error("❌ Erro crítico: Firebase não carregado.");
+  }
+});
+
 function initSidebarMenu() {
   document.querySelectorAll(".sidebar a").forEach(link => {
     link.addEventListener("click", e => {
@@ -274,66 +272,70 @@ function initSidebarMenu() {
 }
 
 /* =========================
-   START
+   CONTROLE VISUAL SIDEBAR (VERSÃO ESTÁVEL)
 ========================= */
+
+// Inicializamos os eventos de Hover
+function initSidebarHover() {
+    const sidebarEl = document.getElementById("sidebar");
+    const triggerEl = document.getElementById("sidebar-trigger"); 
+    let hideTimeout = null;
+
+  if (!sidebarEl || !triggerEl) return;
+
+
+    triggerEl.addEventListener("mouseenter", () => {
+        if (hideTimeout) clearTimeout(hideTimeout);
+        sidebarEl.classList.add("active");
+        toggleSidebar(true);
+    });
+
+    sidebarEl.addEventListener("mouseleave", () => {
+        hideTimeout = setTimeout(() => {
+            sidebarEl.classList.remove("active");
+            toggleSidebar(false);
+        }, 300);
+    });
+
+    sidebarEl.addEventListener("mouseenter", () => {
+        if (hideTimeout) clearTimeout(hideTimeout);
+    });
+}
+
+// Botão Sair
+function initLogoutButton() {
+    const btnSair = document.getElementById("btnSair");
+    if (btnSair) {
+        btnSair.onclick = () => {
+            if (window.logout) window.logout();
+        };
+    }
+}
+
+// AJUSTE NA INICIALIZAÇÃO PARA CHAMAR TUDO NA ORDEM CERTA
 window.addEventListener("DOMContentLoaded", () => {
-  if (!isAuthenticated()) {
-    location.href = "login.html";
-    return;
-  }
+    if (!checkAuth()) {
+        window.location.href = "login.html";
+        return;
+    }
 
-  initSidebarMenu();
-  
-  // 🆕 FILTRAR SIDEBAR BASEADO EM PERMISSÕES
-  filterSidebarByPermissions();
-  
-  setModule("main");
+    if (window.FirebaseApp) {
+        window.FirebaseApp.auth.onAuthStateChanged((user) => {
+            if (user) {
+                console.log("✅ Usuário confirmado pelo Firebase.");
+                
+                filterSidebarByPermissions();
+                initSidebarMenu();
+                
+                // CHAMAR AS NOVAS FUNÇÕES AQUI DENTRO:
+                initSidebarHover(); 
+                initLogoutButton();
+                
+                setModule("main");
+            } else {
+                sessionStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            }
+        });
+    }
 });
-
-/* =========================
-   SIDEBAR – CONTROLE COMPLETO
-========================= */
-
-function atualizarPointerEvents() {
-  sidebar.style.pointerEvents =
-    sidebar.classList.contains("active") ? "auto" : "none";
-}
-
-const sidebarObserver = new MutationObserver(atualizarPointerEvents);
-sidebarObserver.observe(sidebar, {
-  attributes: true,
-  attributeFilter: ["class"]
-});
-
-atualizarPointerEvents();
-
-let hideTimeout = null;
-
-sidebar.addEventListener("mouseenter", () => {
-  if (hideTimeout) clearTimeout(hideTimeout);
-  sidebar.classList.add("active");
-  toggleSidebar(true);
-});
-
-sidebar.addEventListener("mouseleave", () => {
-  hideTimeout = setTimeout(() => {
-    sidebar.classList.remove("active");
-    toggleSidebar(false);
-  }, 500);
-});
-
-const menuTrigger = document.getElementById("menuTrigger");
-
-menuTrigger?.addEventListener("mouseenter", () => {
-  sidebar.classList.add("active");
-  toggleSidebar(true);
-});
-
-// Adicionar botão de sair
-const btnSair = document.getElementById("btnSair");
-if (btnSair) {
-  btnSair.addEventListener("click", () => {
-    sessionStorage.removeItem("currentUser");
-    window.location.href = "../html/login.html";
-  });
-}
