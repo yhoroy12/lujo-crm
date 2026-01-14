@@ -1,5 +1,5 @@
 /* ===============================
-   ADMIN MODULE - REFATORADO (FIREBASE READY)
+   ADMIN MODULE - VERSÃO MODULAR (v9/v10)
 ================================ */
 
 if (typeof MODULE_ID === 'undefined') {
@@ -7,7 +7,7 @@ if (typeof MODULE_ID === 'undefined') {
 }  
 
 window.initAdminModule = function() {
-  console.log("🧠 Inicializando módulo ADMIN (Firebase Mode)");
+  console.log("🧠 Inicializando módulo ADMIN (Firebase Modular)");
 
   window.StateManager.init(MODULE_ID, {
     users: [],
@@ -38,16 +38,21 @@ function initAdminTabs() {
    USERS (LISTAGEM REAL-TIME)
 ================================ */
 function renderUsers() {  
-  // Captura a instância do DB do FirebaseApp global
-  const db = window.FirebaseApp && window.FirebaseApp.db;
-
-  if (!db || typeof db.collection !== 'function') {
-      console.warn("⏳ Aguardando Firestore válido para renderizar usuários...");
+  const { db, fStore } = window.FirebaseApp || {};
+  
+  // Verifica se as funções modulares estão disponíveis
+  if (!db || !fStore || !fStore.collection) {
+      console.warn("⏳ Aguardando ferramentas do Firestore...");
       setTimeout(renderUsers, 1000);
       return;
   }
 
-  db.collection("users").onSnapshot((snapshot) => {
+  const { collection, onSnapshot, query, orderBy } = fStore;
+  const usersRef = collection(db, "users");
+  const q = query(usersRef, orderBy("name", "asc"));
+
+  // Escuta em tempo real usando a sintaxe funcional
+  onSnapshot(q, (snapshot) => {
     const users = [];
     snapshot.forEach(doc => users.push({ id: doc.id, ...doc.data() }));
     
@@ -61,8 +66,8 @@ function renderUsers() {
         return `
           <tr>
             <td>${user.name || 'Sem nome'}</td>
-            <td>${user.email || '---'}</td>
-            <td><span class="role-badge">${user.role || 'USER'}</span></td>
+            <td>${user.email}</td>
+            <td><span class="role-badge">${user.role}</span></td>
             <td><span class="status-badge ${statusClass}">${user.active ? "Ativo" : "Inativo"}</span></td>
             <td>${user.createdAt ? window.Utils.formatDate(user.createdAt) : '--'}</td>
             <td class="action-btns">
@@ -78,10 +83,9 @@ function renderUsers() {
       }
     });
   }, (error) => {
-      console.error("Erro no onSnapshot:", error);
+      console.error("Erro no Firestore:", error);
   });
 }
-
 function editUser(userId) {
   const state = window.StateManager.get(MODULE_ID);
   const user = state.users.find(u => u.id === userId);
@@ -113,13 +117,12 @@ function editUser(userId) {
 ================================ */
 async function saveUser() {
   const state = window.StateManager.get(MODULE_ID);
-  const auth = window.FirebaseApp && window.FirebaseApp.auth;
-  const db = window.FirebaseApp && window.FirebaseApp.db;
+  const { db, auth, fStore, fAuth } = window.FirebaseApp || {};
   
-  if (!db || !auth) {
-      alert("Erro: Conexão com Firebase não inicializada.");
-      return;
-  }
+  if (!db || !fStore) return alert("Erro: Firestore não carregado.");
+
+  const { doc, setDoc, updateDoc } = fStore;
+  const { createUserWithEmailAndPassword } = fAuth;
 
   const email = document.getElementById("userEmail").value;
   const password = document.getElementById("userPassword").value;
@@ -138,25 +141,23 @@ async function saveUser() {
     if (window.setLoading) window.setLoading(true);
 
     if (state.currentEditingUserId) {
-      await db.collection("users").doc(state.currentEditingUserId).update(userData);
-      alert("Usuário atualizado com sucesso!");
+      // ATUALIZAÇÃO: updateDoc(referencia, dados)
+      const userRef = doc(db, "users", state.currentEditingUserId);
+      await updateDoc(userRef, userData);
+      alert("Usuário atualizado!");
     } else {
-      if (!password || password.length < 6) {
-        alert("A senha deve ter pelo menos 6 caracteres.");
-        if (window.setLoading) window.setLoading(false);
-        return;
-      }
-
-      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-      await db.collection("users").doc(userCredential.user.uid).set({
-        uid: userCredential.user.uid,
+      // CRIAÇÃO AUTH
+      if (!password || password.length < 6) throw new Error("Senha deve ter 6+ caracteres.");
+      const userCred = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // CRIAÇÃO FIRESTORE: setDoc(doc(db, colecao, id), dados)
+      await setDoc(doc(db, "users", userCred.user.uid), {
+        uid: userCred.user.uid,
         ...userData,
         createdAt: new Date().toISOString()
       });
-      
       alert("Usuário criado com sucesso!");
     }
-
     window.ModalManager.close('userModal');
   } catch (error) {
     console.error("Erro ao salvar:", error);
@@ -165,58 +166,33 @@ async function saveUser() {
     if (window.setLoading) window.setLoading(false);
   }
 }
-
 /* ===============================
    FUNÇÕES DE UI E AUXILIARES
 ================================ */
 
 function initUserModal() {
   window.ModalManager.setup('userModal', MODULE_ID);
-
   const btnNovo = document.getElementById("btnNovoUsuario");
   if (btnNovo) {
-    window.ModuleLifecycle.addListener(btnNovo, 'click', () => {
+    btnNovo.onclick = () => {
       window.StateManager.set(MODULE_ID, { currentEditingUserId: null });
-      document.getElementById("modalTitle").textContent = "Novo Usuário";
       document.getElementById("userForm").reset();
-      document.querySelectorAll('#customPermissionsCheckboxes .checkbox-item')
-              .forEach(item => item.style.backgroundColor = "white");
       window.ModalManager.open('userModal');
       renderPermissionsCheckboxes();
-    }, MODULE_ID);
+    };
   }
-
-  const selectRole = document.getElementById("userRole");
-  if (selectRole) {
-    window.ModuleLifecycle.addListener(selectRole, 'change', (e) => {
-      const selectedRole = e.target.value;
-      const roles = window.PermissionsSystem?.ROLES;
-      if (roles && roles[selectedRole]) {
-        marcarPermissoesAutomaticas(roles[selectedRole].permissions);
-      }
-    }, MODULE_ID);
-  }
-
-  const form = document.getElementById("userForm");
-  if (form) {
-    window.ModuleLifecycle.addListener(form, 'submit', (e) => {
-      e.preventDefault();
-      saveUser();
-    }, MODULE_ID);
-  }
+  document.getElementById("userForm").onsubmit = (e) => { e.preventDefault(); saveUser(); };
 }
 
-function marcarPermissoesAutomaticas(permissoesPermitidas) {
-  const checkboxes = document.querySelectorAll('#customPermissionsCheckboxes input[type="checkbox"]');
-  checkboxes.forEach(cb => {
-    if (permissoesPermitidas.includes(cb.value)) {
-      cb.checked = true;
-      cb.parentElement.style.backgroundColor = "rgba(var(--color-primary-rgb), 0.1)";
-    } else {
-      cb.checked = false;
-      cb.parentElement.style.backgroundColor = "white";
-    }
+function groupPermissionsByModule(permissions) {
+  const grouped = {};
+  Object.entries(permissions).forEach(([key, value]) => {
+    const module = value.split('.')[0];
+    const moduleName = module.charAt(0).toUpperCase() + module.slice(1);
+    if (!grouped[moduleName]) grouped[moduleName] = [];
+    grouped[moduleName].push({ key, value, label: key.replace(/_/g, ' ') });
   });
+  return grouped;
 }
 
 function renderRoles() {
@@ -327,12 +303,11 @@ function renderPermissionsMatrix() {
 function initSearch() {
   const searchInput = document.getElementById("searchUser");
   if (!searchInput) return;
-  window.ModuleLifecycle.addListener(searchInput, 'input', window.Utils.debounce((e) => {
+  searchInput.oninput = (e) => {
     const query = e.target.value.toLowerCase();
     document.querySelectorAll("#usersTableBody tr").forEach(row => {
       row.style.display = row.textContent.toLowerCase().includes(query) ? "" : "none";
     });
-  }, 300), MODULE_ID);
+  };
 }
-
 console.log("✅ Admin module carregado com correções definitivas");
