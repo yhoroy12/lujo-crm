@@ -8,18 +8,32 @@
 
   <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css">
   <link rel="stylesheet" href="../css/global.css">
+  
+  <!-- ORDEM CRÍTICA DE CARREGAMENTO -->
+  
+  <!-- 1. Core Utilities (sem dependências) -->
+  <script src="/functions/core/utils.js"></script>
+  
+  <!-- 2. Core Managers (dependem de Utils) -->
   <script src="/functions/core/module-lifecycle.js"></script>
+  <script src="/functions/core/state-manager.js"></script>
   <script src="/functions/core/tab-manager.js"></script>
   <script src="/functions/core/modal-manager.js"></script>
-  <script src="/functions/core/utils.js"></script>
   <script src="/functions/core/list-manager.js"></script>
-  <script src="/functions/core/state-manager.js"></script>
 
+  <!-- 3. Firebase Config (DEVE vir antes do auth.js) -->
   <script type="module" src="/functions/firebase-config.js"></script>
 
+  <!-- 4. Sistema de Permissões (DEVE vir antes do auth.js) -->
   <script src="/functions/permissions.js"></script>
   
+  <!-- 5. Autenticação (depende de Firebase e Permissions) -->
   <script type="module" src="/functions/auth.js"></script>
+  
+  <!-- 6. Filtro de Permissões (depende de Auth) -->
+  <script src="/functions/core/permission-filter.js"></script>
+  
+  <!-- 7. Main App Logic (último) -->
   <script type="module" src="/functions/main.js"></script>
 </head>
 
@@ -29,7 +43,7 @@
   <div class="sidebar-trigger" id="sidebar-trigger"></div>
   <aside class="sidebar" id="sidebar">
     <ul>
-      <!-- INÍCIO (sempre visível) -->
+      <!-- INÍCIO -->
       <li>
         <a href="#" title="Início" data-action="voltarMain">
           <i class="fi fi-rr-home"></i>

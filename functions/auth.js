@@ -1,6 +1,25 @@
-// ==================== AUTH.JS - INTEGRADO COM FIREBASE ====================
+// ==================== AUTH.JS - SISTEMA DE PERMISSÕES CORRIGIDO ====================
+      // ==================== HIERARQUIA DO SISTEMA ====================
 
-// 1. Importações do Firebase (CDN) - USANDO AS MESMAS VERSÕES DO CONFIG
+const ROLE_LEVELS = {
+  ADMIN: 999, // somente sistema
+  CEO: 100, // jeff
+  GERENTE_MASTER: 80, // mauricio
+  GERENTE: 60, // lisbeth
+  SUPERVISOR: 40, // cesar
+  OPERADOR: 20, // matheus,carlos,reginaldo...
+  ESTAGIARIO: 0
+};
+
+// Cargos autorizados a criar perfis e usuários
+const ROLE_CAN_MANAGE_USERS = [
+  'ADMIN',
+  'CEO',
+  'GERENTE_MASTER',
+  'GERENTE'
+];
+
+
 import { 
   signInWithEmailAndPassword, 
   signOut, 
@@ -19,24 +38,127 @@ const passwordInput = document.getElementById('password');
 const loginBtn = document.getElementById('loginBtn');
 const loading = document.getElementById('loading');
 
-// ===== INICIALIZAÇÃO E MONITORAMENTO =====
+// ===== SISTEMA DE PERMISSÕES GLOBAL =====
+window.AuthSystem = {
+  /**
+   * Verifica se usuário está autenticado
+   */
+  isAuthenticated: () => {
+    return sessionStorage.getItem('currentUser') !== null;
+  },
+
+  /**
+   * Retorna dados do usuário atual
+   */
+  getCurrentUser: () => {
+    const userData = sessionStorage.getItem('currentUser');
+    return userData ? JSON.parse(userData) : null;
+  },
+
+  /**
+   * Verifica se usuário tem uma permissão específica
+   * ADMIN tem acesso a tudo
+   */
+  hasPermission: (permission) => {
+    const user = window.AuthSystem.getCurrentUser();
+    
+    if (!user) {
+      console.warn('🚫 Nenhum usuário logado');
+      return false;
+    }
+
+    // ADMIN tem acesso total
+    if (user.role === 'ADMIN') {
+      console.log('✅ Permissão concedida (ADMIN):', permission);
+      return true;
+    }
+
+    // Verifica permissões customizadas
+    const hasCustomPermission = user.permissions && 
+                                user.permissions.includes(permission);
+    
+    // Verifica permissões do role base (do permissions.js)
+    const rolePermissions = window.PermissionsSystem?.ROLES[user.role]?.permissions || [];
+    const hasRolePermission = rolePermissions.includes(permission);
+
+    const hasAccess = hasCustomPermission || hasRolePermission;
+    
+    console.log(hasAccess ? '✅' : '❌', 
+                'Permissão:', permission, 
+                '| Role:', user.role,
+                '| Custom:', hasCustomPermission,
+                '| Role Base:', hasRolePermission);
+    
+    return hasAccess;
+  },
+
+  /**
+   * Faz logout
+   */
+  logout: async () => {
+    try {
+      if (window.FirebaseApp?.auth) {
+        await signOut(window.FirebaseApp.auth);
+      }
+      sessionStorage.removeItem('currentUser');
+      window.location.href = 'login.html';
+    } catch (error) {
+      console.error('Erro no logout:', error);
+      // Força logout mesmo com erro
+      sessionStorage.removeItem('currentUser');
+      window.location.href = 'login.html';
+    }
+  }
+};
+
+// Expor funções globais (compatibilidade)
+window.logout = window.AuthSystem.logout;
+window.isAuthenticated = window.AuthSystem.isAuthenticated;
+window.hasPermission = window.AuthSystem.hasPermission;
+window.AuthHierarchy = {
+  ROLE_LEVELS,
+  getRoleLevel,
+  canManageUsers,
+  canCreateRole,
+  canAssignRole,
+  isAdminSystem
+};
+
+// ===== INICIALIZAÇÃO =====
 window.addEventListener('DOMContentLoaded', () => {
   if (window.location.pathname.includes('login.html')) {
     initLoginPage();
   }
 
-  // Monitora o estado - Usamos um pequeno delay para garantir que o config carregou o window.FirebaseApp
-  const checkAuth = setInterval(() => {
-    if (window.FirebaseApp?.auth) {
-      onAuthStateChanged(window.FirebaseApp.auth, (user) => {
-        if (user) console.log("🔥 Firebase: Usuário conectado:", user.email);
-        else console.log("❄️ Firebase: Nenhum usuário ativo");
-      });
-      clearInterval(checkAuth);
-    }
-  }, 500);
+  // Monitora estado do Firebase Auth
+  waitForFirebase().then(() => {
+    onAuthStateChanged(window.FirebaseApp.auth, (user) => {
+      if (user) {
+        console.log("🔥 Firebase: Usuário conectado:", user.email);
+      } else {
+        console.log("❄️ Firebase: Nenhum usuário ativo");
+      }
+    });
+  });
 });
 
+/**
+ * Aguarda Firebase estar pronto
+ */
+function waitForFirebase() {
+  return new Promise((resolve) => {
+    const check = setInterval(() => {
+      if (window.FirebaseApp?.auth && window.FirebaseApp?.db) {
+        clearInterval(check);
+        resolve();
+      }
+    }, 100);
+  });
+}
+
+/**
+ * Inicializa página de login (chips de teste)
+ */
 function initLoginPage() {
   document.querySelectorAll('.profile-chip').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -48,7 +170,7 @@ function initLoginPage() {
   });
 }
 
-// ===== LÓGICA DE LOGIN (CORREÇÃO DO INVALID-ARGUMENT) =====
+// ===== PROCESSO DE LOGIN =====
 if (loginForm) {
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -56,19 +178,23 @@ if (loginForm) {
     const email = usernameInput.value.trim();
     const password = passwordInput.value;
 
-    // Validação de segurança para não enviar undefined ao Firebase
+    // Validação
     if (!window.FirebaseApp?.auth || !window.FirebaseApp?.db) {
-      alert('Erro: Sistema Firebase não inicializado.');
+      alert('⚠️ Sistema Firebase não inicializado. Recarregue a página.');
       return;
     }
 
-    // Feedback UI
+    if (!email || !password) {
+      alert('⚠️ Preencha todos os campos.');
+      return;
+    }
+
+    // UI Feedback
     if (loginBtn) loginBtn.disabled = true;
     if (loading) loading.classList.add('show');
 
     try {
-      // O ERRO ESTAVA AQUI: Passamos a instância correta (window.FirebaseApp.auth)
-      // e os argumentos de string (email, password)
+      // 1. Autenticar no Firebase Auth
       const userCredential = await signInWithEmailAndPassword(
         window.FirebaseApp.auth, 
         email, 
@@ -76,62 +202,118 @@ if (loginForm) {
       );
       
       const fbUser = userCredential.user;
+      console.log('🔑 Usuário autenticado:', fbUser.email);
 
-      // Buscar Perfil no Firestore
+      // 2. Buscar dados do Firestore
       const userDocRef = doc(window.FirebaseApp.db, "users", fbUser.uid);
       const userDoc = await getDoc(userDocRef);
-      
+
       if (!userDoc.exists()) {
-        throw new Error('auth/profile-not-found');
+        throw new Error('Perfil não encontrado no sistema. Contate o administrador.');
       }
 
       const userData = userDoc.data();
+      console.log('📄 Dados do Firestore:', userData);
 
-      // Sincronizar Sessão
+      // 3. Montar objeto de sessão
+      const resolvedRole = AuthHierarchy.getRoleLevel(userData.role) >= 0
+        ? userData.role
+        : 'ATENDENTE';
+
       const sessionData = {
         uid: fbUser.uid,
         name: userData.name || 'Usuário',
-        username: fbUser.email,
-        role: userData.role || 'ATENDENTE',
-        permissions: userData.customPermissions || userData.permissions || []
+        username: userData.username || fbUser.email.split('@')[0],
+        email: fbUser.email,
+        role: resolvedRole,
+        roleLevel: AuthHierarchy.getRoleLevel(resolvedRole),
+        permissions: userData.customPermissions || []
       };
 
+      // 4. Salvar no sessionStorage
       sessionStorage.setItem('currentUser', JSON.stringify(sessionData));
+      console.log('💾 Sessão salva:', sessionData);
+
+      // 5. Redirecionar para dashboard
+      console.log('✅ Login bem-sucedido! Redirecionando...');
       window.location.href = 'Main.html';
 
     } catch (error) {
-      console.error("Erro no processo de login:", error.code, error.message);
+      console.error("❌ Erro no login:", error.code, error.message);
       
-      // Feedback visual
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
-        usernameInput.classList.add('error');
-      } else if (error.code === 'auth/wrong-password') {
-        passwordInput.classList.add('error');
-      } else {
-        alert("Falha: " + error.message);
+      // Feedback de erro
+      let errorMessage = 'Erro ao fazer login. ';
+      
+      switch(error.code) {
+        case 'auth/invalid-credential':
+        case 'auth/user-not-found':
+          errorMessage += 'Usuário não encontrado.';
+          usernameInput.classList.add('error');
+          break;
+        case 'auth/wrong-password':
+          errorMessage += 'Senha incorreta.';
+          passwordInput.classList.add('error');
+          break;
+        case 'auth/too-many-requests':
+          errorMessage += 'Muitas tentativas. Aguarde alguns minutos.';
+          break;
+        case 'auth/network-request-failed':
+          errorMessage += 'Erro de conexão. Verifique sua internet.';
+          break;
+        default:
+          errorMessage += error.message;
       }
 
+      alert(errorMessage);
+
+      // Resetar UI
       if (loginBtn) loginBtn.disabled = false;
       if (loading) loading.classList.remove('show');
     }
   });
+
+  // Limpar erros ao digitar
+  [usernameInput, passwordInput].forEach(input => {
+    if (input) {
+      input.addEventListener('input', () => {
+        input.classList.remove('error');
+      });
+    }
+  });
 }
 
-// ===== FUNÇÕES GLOBAIS =====
-window.logout = async function() {
-  if (window.FirebaseApp?.auth) {
-    await signOut(window.FirebaseApp.auth);
-  }
-  sessionStorage.removeItem('currentUser');
-  window.location.href = 'login.html';
-};
+ // Utis // 
 
-window.AuthSystem = {
-    logout: window.logout,
-    isAuthenticated: () => sessionStorage.getItem('currentUser') !== null,
-    getCurrentUser: () => JSON.parse(sessionStorage.getItem('currentUser')),
-    hasPermission: (perm) => {
-      const user = JSON.parse(sessionStorage.getItem('currentUser'));
-      return user?.role === 'ADMIN' || user?.permissions?.includes(perm);
-    }
-};
+ function getRoleLevel(role) {
+  return ROLE_LEVELS[role] ?? -1;
+}
+
+function isAdminSystem(user) {
+  return user?.role === 'ADMIN';
+}
+
+function canManageUsers(user) {
+  if (!user) return false;
+  if (isAdminSystem(user)) return true;
+  return ROLE_CAN_MANAGE_USERS.includes(user.role);
+}
+
+function canCreateRole(user, targetLevel) {
+  if (!user) return false;
+  if (isAdminSystem(user)) return true;
+
+  const userLevel = getRoleLevel(user.role);
+  return userLevel > targetLevel;
+}
+
+function canAssignRole(user, targetRole) {
+  if (!user) return false;
+  if (isAdminSystem(user)) return true;
+
+  const userLevel = getRoleLevel(user.role);
+  const targetLevel = getRoleLevel(targetRole);
+
+  return userLevel > targetLevel;
+}
+
+console.log('✅ Auth.js carregado - Sistema de Permissões inicializado');
