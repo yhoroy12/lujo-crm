@@ -170,50 +170,71 @@ function initLoginPage() {
   });
 }
 
-// ===== PROCESSO DE LOGIN =====
+// ===== PROCESSO DE LOGIN ATUALIZADO (E-MAIL OU USERNAME) =====
 if (loginForm) {
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const email = usernameInput.value.trim();
+    // Captura o valor do input (que pode ser e-mail ou username)
+    const identificador = usernameInput.value.trim().toLowerCase();
     const password = passwordInput.value;
 
-    // Validação
     if (!window.FirebaseApp?.auth || !window.FirebaseApp?.db) {
       alert('⚠️ Sistema Firebase não inicializado. Recarregue a página.');
       return;
     }
 
-    if (!email || !password) {
+    if (!identificador || !password) {
       alert('⚠️ Preencha todos os campos.');
       return;
     }
 
-    // UI Feedback
     if (loginBtn) loginBtn.disabled = true;
     if (loading) loading.classList.add('show');
 
     try {
-      // 1. Autenticar no Firebase Auth
+      let emailFinal = identificador;
+
+      // --- LÓGICA DE USERNAME ---
+      // Se não houver '@', assumimos que é um username e buscamos o e-mail no Firestore
+      // --- LÓGICA DE USERNAME (CORRIGIDA) ---
+      if (!identificador.includes('@')) {
+        console.log('🔍 Identificador reconhecido como username. Buscando e-mail...');
+        
+        // Extração correta das funções de dentro do fStore
+        const { db, fStore } = window.FirebaseApp;
+        const { collection, query, where, getDocs, limit } = fStore; // Agora pegando de fStore
+
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("username", "==", identificador), limit(1));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          throw new Error('Username não encontrado.');
+        }
+
+        emailFinal = querySnapshot.docs[0].data().email;
+        console.log('✅ Username mapeado para:', emailFinal);
+      }
+
+      // 1. Autenticar no Firebase Auth usando o e-mail (original ou o que encontramos)
       const userCredential = await signInWithEmailAndPassword(
         window.FirebaseApp.auth, 
-        email, 
+        emailFinal, 
         password
       );
       
       const fbUser = userCredential.user;
-      console.log('🔑 Usuário autenticado:', fbUser.email);
 
-      // 2. Buscar dados do Firestore
+      // 2. Buscar dados completos do Firestore para a sessão
       const userDocRef = doc(window.FirebaseApp.db, "users", fbUser.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
-        throw new Error('Perfil não encontrado no sistema. Contate o administrador.');
+        throw new Error('Perfil não encontrado no Firestore.');
       }
 
       const userData = userDoc.data();
-      console.log('📄 Dados do Firestore:', userData);
 
       // 3. Montar objeto de sessão
       const resolvedRole = AuthHierarchy.getRoleLevel(userData.role) >= 0
@@ -230,58 +251,34 @@ if (loginForm) {
         permissions: userData.customPermissions || []
       };
 
-      // 4. Salvar no sessionStorage
       sessionStorage.setItem('currentUser', JSON.stringify(sessionData));
-      console.log('💾 Sessão salva:', sessionData);
-
-      // 5. Redirecionar para dashboard
-      console.log('✅ Login bem-sucedido! Redirecionando...');
       window.location.href = 'Main.html';
 
     } catch (error) {
-      console.error("❌ Erro no login:", error.code, error.message);
+      console.error("❌ Erro no login:", error);
       
-      // Feedback de erro
       let errorMessage = 'Erro ao fazer login. ';
-      
-      switch(error.code) {
-        case 'auth/invalid-credential':
-        case 'auth/user-not-found':
-          errorMessage += 'Usuário não encontrado.';
-          usernameInput.classList.add('error');
-          break;
-        case 'auth/wrong-password':
-          errorMessage += 'Senha incorreta.';
-          passwordInput.classList.add('error');
-          break;
-        case 'auth/too-many-requests':
-          errorMessage += 'Muitas tentativas. Aguarde alguns minutos.';
-          break;
-        case 'auth/network-request-failed':
-          errorMessage += 'Erro de conexão. Verifique sua internet.';
-          break;
-        default:
-          errorMessage += error.message;
+      if (error.message === 'Username não encontrado.') {
+        errorMessage = 'Este nome de usuário não existe.';
+      } else {
+        switch(error.code) {
+          case 'auth/invalid-credential':
+            errorMessage += 'E-mail/Usuário ou senha incorretos.';
+            break;
+          case 'auth/user-not-found':
+            errorMessage += 'Usuário não cadastrado.';
+            break;
+          default:
+            errorMessage += 'Verifique suas credenciais.';
+        }
       }
 
       alert(errorMessage);
-
-      // Resetar UI
       if (loginBtn) loginBtn.disabled = false;
       if (loading) loading.classList.remove('show');
     }
   });
-
-  // Limpar erros ao digitar
-  [usernameInput, passwordInput].forEach(input => {
-    if (input) {
-      input.addEventListener('input', () => {
-        input.classList.remove('error');
-      });
-    }
-  });
 }
-
  // Utis // 
 
  function getRoleLevel(role) {
