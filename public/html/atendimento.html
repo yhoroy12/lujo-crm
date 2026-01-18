@@ -28,7 +28,7 @@
 
     <!-- ==================== ABA: ATENDIMENTO ==================== -->
     <div class="aba-conteudo aba-atendimento ativa">
-      
+
       <!-- Mensagem quando não há ticket -->
       <div class="empty-state" id="emptyState">
         <div class="empty-state-content">
@@ -50,7 +50,7 @@
 
       <!-- Grid de Trabalho -->
       <div class="atendimento-workspace hidden" id="workspaceGrid">
-        
+
         <!-- COLUNA 1: CONTEXTO -->
         <aside class="workspace-context card">
           <div class="context-header">
@@ -150,10 +150,10 @@
 
         <!-- COLUNA 2: TRABALHO ATIVO -->
         <main class="workspace-main card">
-          
+
           <!-- BARRA DE AÇÕES SUPERIOR (CRÍTICO) -->
           <div class="action-bar" id="actionBar">
-            
+
             <div class="action-bar-left">
               <h4 class="form-title" style="margin: 0;">Classificação do Atendimento</h4>
             </div>
@@ -207,7 +207,7 @@
                 </button>
               </div>
             </div>
-            
+
             <div class="chatbox" id="chatbox" role="log" aria-live="polite" aria-atomic="false">
               <div class="chat-day-divider">
                 <span>Hoje</span>
@@ -228,13 +228,8 @@
 
             <div class="chat-input-container" id="chatInputContainer">
               <div class="chat-input-wrapper">
-                <textarea 
-                  id="chatInput" 
-                  placeholder="Digite sua mensagem..."
-                  rows="1"
-                  maxlength="1000"
-                  aria-label="Mensagem"
-                ></textarea>
+                <textarea id="chatInput" placeholder="Digite sua mensagem..." rows="1" maxlength="1000"
+                  aria-label="Mensagem"></textarea>
                 <div class="chat-input-tools">
                   <button class="btn-icon-sm" title="Emoji" type="button">
                     <i class="fi fi-rr-smile"></i>
@@ -250,7 +245,7 @@
 
           <!-- Seções de Suporte (anteriormente na coluna 3) -->
           <div class="work-form" id="workForm">
-            
+
             <!-- Linha do Tempo -->
             <div class="support-section">
               <h4 class="support-title">
@@ -321,14 +316,14 @@
 
         <!-- COLUNA 3: DETALHES DO ATENDIMENTO -->
         <aside class="workspace-support card">
-          
+
           <!-- Formulário de Detalhes -->
           <div class="support-section">
             <h4 class="support-title">
               <i class="fi fi-rr-edit"></i>
               Detalhes do Atendimento
             </h4>
-            
+
             <div class="form-row">
               <div class="campo">
                 <label>Tipo de Demanda</label>
@@ -356,134 +351,121 @@
 
             <div class="campo">
               <label>Descrição da Solicitação</label>
-              <textarea 
-                id="descricaoSolicitacao" 
-                rows="4" 
-                placeholder="Descreva brevemente o motivo do atendimento..."
-              ></textarea>
+              <textarea id="descricaoSolicitacao" rows="4"
+                placeholder="Descreva brevemente o motivo do atendimento..."></textarea>
             </div>
 
             <div class="campo">
               <label>Observações Internas</label>
-              <textarea 
-                id="observacoesInternas" 
-                rows="3" 
-                placeholder="Notas visíveis apenas para a equipe interna..."
-              ></textarea>
+              <textarea id="observacoesInternas" rows="3"
+                placeholder="Notas visíveis apenas para a equipe interna..."></textarea>
             </div>
           </div>
         </aside>
-    <!-- other tabs ... (unchanged) -->
-      </div>      
-  
+        <!-- other tabs ... (unchanged) -->
+      </div>
+
     </div>
     <!-- ==================== ABA: Emails ==================== -->
     <div class="aba-conteudo aba-emails">
-      <section class="email-panel">
-    
-        <!-- SIDEBAR -->
-        <aside class="email-sidebar">
-          <button class="btn-primary full">
-            📧 Nova Mensagem
-          </button>
-    
-          <nav class="email-folders">
-            <button class="folder active">📥 Caixa de Entrada <span class="badge">3</span></button>
-            <button class="folder">⭐ Favoritos</button>
-            <button class="folder">🗄 Arquivados</button>
-            <button class="folder">🗑 Lixeira</button>
-          </nav>
-    
-          <div class="email-labels">
-            <h4>Etiquetas</h4>
-            <button><span class="dot blue"></span> Comercial</button>
-            <button><span class="dot green"></span> Financeiro</button>
-            <button><span class="dot orange"></span> Suporte</button>
+      <div class="email-panel">
+
+        <aside class="fila-atendimento-container">
+          <div class="fila-header">
+            <span>Fila de Espera</span>
+            <span id="contador-fila" class="badge">0</span>
+          </div>
+          <div id="lista-espera-visual" class="fila-corpo">
+            <div class="fila-vazia-msg">Nenhum e-mail pendente</div>
           </div>
         </aside>
-    
-        <!-- LISTA -->
-        <div class="email-list">
-          <div class="email-search">
-            <input type="text" placeholder="Buscar emails...">
-          </div>
-    
-          <div class="emails">
-            <article class="email-item active" data-id="1">
-              <header>
-                <strong>Marcos Oliveira</strong>
-                <span>14:30</span>
-              </header>
-              <h5>Dúvida sobre Fatura #99281</h5>
-              <p>Olá, gostaria de entender o valor cobrado...</p>
-              <span class="tag financeiro">financeiro</span>
-            </article>
-    
-            <article class="email-item" data-id="2">
-              <header>
-                <strong>Ana Silva</strong>
-                <span>Ontem</span>
-              </header>
-              <h5>Solicitação de Orçamento</h5>
-              <p>Boa tarde, gostaria de um orçamento...</p>
-              <span class="tag comercial">comercial</span>
-            </article>
-          </div>
-        </div>
-    
-        <!-- CONTEÚDO -->
-        <div class="email-content">
-          <header class="email-toolbar">
-            <div>
-              <button>🗄</button>
-              <button>🗑</button>
+
+        <main class="atendimento-palco">
+
+          <div id="palco-vazio" class="palco-vazio">
+            <div class="icon-container">
+              <i class="fas fa-envelope-open-text"
+                style="font-size: 3rem; color: var(--border); margin-bottom: 20px;"></i>
             </div>
-            <span>1 de 3</span>
-          </header>
-    
-          <div class="email-body">
-            <h2>Dúvida sobre Fatura #99281</h2>
-            <small>Marcos Oliveira &lt;marcos@email.com&gt;</small>
-    
-            <hr>
-    
-            <p>Olá,</p>
-            <p>Gostaria de entender o valor cobrado na minha última fatura...</p>
-    
-            <br>
-            <p>Att,<br>Marcos Oliveira</p>
-    
-            <div class="attachments">
-              <h4>Anexos</h4>
-              <div class="file">
-                <span class="pdf">PDF</span>
-                <div>
-                  <strong>Fatura_Janeiro.pdf</strong>
-                  <small>2.4 MB</small>
+            <h2>Pronto para novos atendimentos?</h2>
+            <p style="color: var(--muted); margin-bottom: 30px;">Clique no botão abaixo para puxar o próximo e-mail da
+              fila.
+            </p>
+
+            <button id="btnChamarProximo" class="btn-chamar-proximo">
+              <i class="fas fa-sign-in-alt"></i>
+              CHAMAR PRÓXIMO ATENDIMENTO
+            </button>
+          </div>
+
+          <div id="palco-ativo" class="card-atendimento-ativo" style="display: none;">
+            <div class="atendimento-ativo-header">
+              <div class="cliente-info">
+                <h3 id="ativo-cliente-nome">Nome do Cliente</h3>
+                <span id="ativo-cliente-email" style="color: var(--muted);">email@cliente.com</span>
+              </div>
+              <div class="atendimento-timer">
+                <span class="label">Tempo em atendimento:</span>
+                <span id="timer-atendimento" class="tempo-decorrido">00:00</span>
+              </div>
+            </div>
+
+            <div class="atendimento-ativo-corpo" style="padding: 20px; flex: 1; overflow-y: auto;">
+              <div class="assunto-box"
+                style="margin-bottom: 20px; padding: 10px; background: var(--bg); border-radius: 6px;">
+                <strong>Assunto:</strong> <span id="ativo-assunto">...</span>
+              </div>
+              <div id="ativo-mensagem-conteudo" class="mensagem-original">
+              </div>
+            </div>
+
+            <div class="atendimento-ativo-footer"
+              style="padding: 20px; border-top: 1px solid var(--border); background: #fcfcfc;">
+
+              <div class="ferramentas-resposta">
+                <div class="menu-respostas-container">
+                  <button class="btn-respostas-padroes" onclick="toggleMenuRespostas()">
+                    <i class="fi fi-rr-list-check"></i> Respostas Padrões
+                  </button>
+
+                  <div id="dropdownRespostas" class="dropdown-respostas">
+                    <div
+                      style="padding: 10px; border-bottom: 1px solid #eee; background: #f8f9fa; font-size: 11px; font-weight: bold; color: #999;">
+                      SELECIONE UMA RESPOSTA
+                    </div>
+                    <div id="listaRespostasItens">
+                    </div>
+                  </div>
                 </div>
+              </div>
+
+              <textarea id="resposta-email" placeholder="Escreva sua resposta aqui..." oninput="validarResposta()"
+                style="width: 100%; height: 120px; padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; resize: none;"></textarea>
+
+              <div class="acoes-footer"
+                style="display: flex; justify-content: flex-end; gap: 12px; align-items: center;">
+                <button class="btn-devolver-fila" onclick="devolverParaFila()">
+                  <i class="fi fi-rr-undo"></i> Devolver para Fila
+                </button>
+                <button id="btnEnviarResposta" class="btn-responder-concluir" disabled>
+                  <i class="fi fi-rr-paper-plane"></i> Responder e Concluir
+                </button>
               </div>
             </div>
           </div>
-    
-          <footer class="email-actions">
-            <button class="btn-primary">↩ Responder</button>
-            <button class="btn-secondary">⋯ Encaminhar</button>
-          </footer>
-        </div>
-    
-      </section>
-    
-    
+
+        </main>
+      </div>
     </div>
     <!-- ==================== ABA: DEMANDAS EXTERNAS ==================== -->
     <div class="aba-conteudo aba-demandas">
       <div class="demandas-externas-container">
-    
+
         <!-- Sidebar com Filtros -->
         <aside class="demandas-sidebar">
           <div class="filtros-section">
             <h3>Filtros</h3>
-    
+
             <div class="filtro-group">
               <label>Área</label>
               <select id="filtroDemandaArea">
@@ -496,7 +478,7 @@
                 <option value="gerencia">Gerência</option>
               </select>
             </div>
-    
+
             <div class="filtro-group">
               <label>Status</label>
               <select id="filtroDemandaStatus">
@@ -507,7 +489,7 @@
                 <option value="concluido">Concluído</option>
               </select>
             </div>
-    
+
             <div class="filtro-group">
               <label>Prioridade</label>
               <select id="filtroDemandaPrioridade">
@@ -518,12 +500,13 @@
                 <option value="baixa">Baixa</option>
               </select>
             </div>
-    
-            <button class="btn btn-secondary btn-sm" id="btnLimparFiltrosDemandas" style="width: 100%; margin-top: 10px;">
+
+            <button class="btn btn-secondary btn-sm" id="btnLimparFiltrosDemandas"
+              style="width: 100%; margin-top: 10px;">
               Limpar Filtros
             </button>
           </div>
-    
+
           <div class="demandas-stats">
             <h4>Estatísticas</h4>
             <div class="stat-mini">
@@ -540,7 +523,7 @@
             </div>
           </div>
         </aside>
-    
+
         <!-- Lista de Demandas -->
         <div class="demandas-lista-container">
           <div class="demandas-header">
@@ -549,12 +532,12 @@
               <input type="text" id="searchDemandas" placeholder="🔍 Buscar demanda...">
             </div>
           </div>
-    
+
           <div class="demandas-lista" id="listaDemandas">
             <!-- Preenchido via JS -->
           </div>
         </div>
-    
+
         <!-- Detalhes da Demanda -->
         <div class="demanda-detalhes" id="demandaDetalhes">
           <div class="empty-state">
@@ -563,26 +546,26 @@
             <p>Clique em uma demanda para ver os detalhes</p>
           </div>
         </div>
-    
+
       </div>
     </div>
     <!-- ==================== ABA: HISTÓRICO ==================== -->
     <div class="aba-conteudo aba-historico">
       <div class="historico-container">
-    
+
         <!-- Header com filtros -->
         <div class="historico-header">
           <h2>
             <i class="fi fi-rr-time-past"></i>
             Histórico de Atendimentos
           </h2>
-    
+
           <!-- Busca -->
           <div class="historico-search">
             <i class="fi fi-rr-search"></i>
             <input type="text" id="searchHistorico" placeholder="Buscar por cliente, ticket ou tipo...">
           </div>
-    
+
           <!-- Filtros -->
           <div class="historico-filtros">
             <div class="filtro-historico">
@@ -596,17 +579,17 @@
                 <option value="customizado">Customizado</option>
               </select>
             </div>
-    
+
             <div class="filtro-historico">
               <label>Data Início</label>
               <input type="date" id="filtroDataInicio">
             </div>
-    
+
             <div class="filtro-historico">
               <label>Data Fim</label>
               <input type="date" id="filtroDataFim">
             </div>
-    
+
             <div class="filtro-historico">
               <label>Status</label>
               <select id="filtroStatus">
@@ -616,7 +599,7 @@
                 <option value="reaberto">Reaberto</option>
               </select>
             </div>
-    
+
             <div class="filtro-historico">
               <label>Área Derivada</label>
               <select id="filtroAreaDerivada">
@@ -629,7 +612,7 @@
                 <option value="atendimento">Atendimento</option>
               </select>
             </div>
-    
+
             <div class="filtro-historico">
               <label>Tipo de Demanda</label>
               <select id="filtroTipoDemanda">
@@ -642,7 +625,7 @@
               </select>
             </div>
           </div>
-    
+
           <!-- Estatísticas rápidas -->
           <div class="historico-stats">
             <div class="stat-historico">
@@ -652,7 +635,7 @@
               </div>
               <i class="fi fi-rr-headset" style="font-size: 32px; color: var(--color-primary); opacity: 0.2;"></i>
             </div>
-    
+
             <div class="stat-historico">
               <div>
                 <div class="stat-historico-label">Concluídos</div>
@@ -660,7 +643,7 @@
               </div>
               <i class="fi fi-rr-check-circle" style="font-size: 32px; color: var(--color-success); opacity: 0.2;"></i>
             </div>
-    
+
             <div class="stat-historico">
               <div>
                 <div class="stat-historico-label">Derivados</div>
@@ -668,7 +651,7 @@
               </div>
               <i class="fi fi-rr-share" style="font-size: 32px; color: var(--color-warning); opacity: 0.2;"></i>
             </div>
-    
+
             <div class="stat-historico">
               <div>
                 <div class="stat-historico-label">Tempo Médio</div>
@@ -678,14 +661,14 @@
             </div>
           </div>
         </div>
-    
+
         <!-- Lista de atendimentos -->
         <div class="historico-lista" id="listaHistorico">
           <!-- Preenchido via JS -->
         </div>
       </div>
     </div>
-    
+
     <!-- ==================== MODAL: DETALHES DO ATENDIMENTO ==================== -->
     <div class="modal-historico-overlay" id="modalHistoricoDetalhes">
       <div class="modal-historico-content">
@@ -696,9 +679,9 @@
           </div>
           <button class="modal-close-btn" id="btnFecharModalHistorico">&times;</button>
         </div>
-    
+
         <div class="modal-historico-body">
-    
+
           <!-- Informações principais -->
           <div class="modal-section">
             <div class="modal-section-title">
@@ -709,7 +692,7 @@
               <!-- Preenchido via JS -->
             </div>
           </div>
-    
+
           <!-- Validação de identidade -->
           <div class="modal-section">
             <div class="modal-section-title">
@@ -724,7 +707,7 @@
               </div>
             </div>
           </div>
-    
+
           <!-- Descrição da solicitação -->
           <div class="modal-section">
             <div class="modal-section-title">
@@ -735,7 +718,7 @@
               <p>Carregando...</p>
             </div>
           </div>
-    
+
           <!-- Observações internas -->
           <div class="modal-section" id="modalObservacoesSection">
             <div class="modal-section-title">
@@ -746,7 +729,7 @@
               <p>Sem observações registradas</p>
             </div>
           </div>
-    
+
           <!-- Setor responsável -->
           <div class="modal-section" id="modalSetorSection">
             <div class="modal-section-title">
@@ -757,7 +740,7 @@
               <!-- Preenchido via JS -->
             </div>
           </div>
-    
+
           <!-- Linha do tempo -->
           <div class="modal-section">
             <div class="modal-section-title">
@@ -768,9 +751,9 @@
               <!-- Preenchido via JS -->
             </div>
           </div>
-    
+
         </div>
-    
+
         <div class="modal-historico-footer">
           <button class="btn btn-secondary" id="btnFecharModalHistorico2">
             <i class="fi fi-rr-cross"></i>
@@ -783,30 +766,48 @@
         </div>
       </div>
     </div>
-    
+
     <!-- POPUP NOVO ATENDIMENTO (unchanged) -->
     <div class="popup-overlay" id="popupAtendimento" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="popup-content">
-      <div class="popup-icon">
-        <i class="fi fi-rr-bell-ring"></i>
-      </div>
-      <h3>Novo Atendimento Disponível</h3>
-      <p>Você tem um novo cliente aguardando atendimento!</p>
-      <div class="popup-info-grid">
-        <div class="popup-info-item">
-          <span class="popup-label">Cliente:</span>
-          <span class="popup-value" id="popupCliente">Carregando...</span>
+      <div class="popup-content">
+        <div class="popup-icon">
+          <i class="fi fi-rr-bell-ring"></i>
         </div>
-        <div class="popup-info-item">
-          <span class="popup-label">Canal:</span>
-          <span class="popup-value" id="popupCanal">WhatsApp</span>
+        <h3>Novo Atendimento Disponível</h3>
+        <p>Você tem um novo cliente aguardando atendimento!</p>
+        <div class="popup-info-grid">
+          <div class="popup-info-item">
+            <span class="popup-label">Cliente:</span>
+            <span class="popup-value" id="popupCliente">Carregando...</span>
+          </div>
+          <div class="popup-info-item">
+            <span class="popup-label">Canal:</span>
+            <span class="popup-value" id="popupCanal">WhatsApp</span>
+          </div>
         </div>
+        <button class="btn btn-primary btn-block" id="btnIniciarAtendimentoPopup">
+          <i class="fi fi-rr-check"></i>
+          Aceitar Atendimento
+        </button>
       </div>
-      <button class="btn btn-primary btn-block" id="btnIniciarAtendimentoPopup">
-        <i class="fi fi-rr-check"></i>
-        Aceitar Atendimento
-      </button>
     </div>
-  </div>
+    <!-- MODAL's -->
+    <!-- MODAL JUSTIFICATIVA DEVOLUÇÃO PARA FILA -->
+    <div id="modalJustificativa" class="modal-email-justificativa">
+      <div class="modal-email-content">
+        <h3><i class="fi fi-rr-exclamation" style="color: #f1c40f;"></i> Justificativa</h3>
+        <p style="font-size: 14px; color: #666; margin-bottom: 10px;">Por que você está devolvendo este atendimento para
+          a fila?</p>
+        <textarea id="txtJustificativa"
+          placeholder="Ex: Assunto técnico demais, cliente precisa de suporte de nível 2..."></textarea>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button class="btn-aba-secundario" onclick="fecharModalJustificativa()">Cancelar</button>
+          <button class="btn-devolver-fila" style="height: 40px; padding: 0 20px;"
+            onclick="confirmarDevolucao()">Confirmar Devolução</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
 
 </section>

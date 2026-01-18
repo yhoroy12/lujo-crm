@@ -387,365 +387,211 @@ function initTopValidationButton() {
     });
 }
 
-// ============================= //
-// 11. FUNCIONALIDADES DE EMAILS //
-// ============================= //
+// ==========================================
+// 11. FUNCIONALIDADES DE EMAILS (MODO MOCK)
+// ==========================================
 
-// Dados mockados de emails
 const MOCK_EMAILS = [
     {
         id: 1,
         remetente: "Marcos Oliveira",
         email: "marcos@email.com",
         assunto: "Dúvida sobre Fatura #99281",
-        preview: "Olá, gostaria de entender o valor cobrado...",
-        conteudo: `<p>Olá,</p>
-                   <p>Gostaria de entender o valor cobrado na minha última fatura. Notei uma diferença em relação ao mês anterior.</p>
-                   <br>
-                   <p>Att,<br>Marcos Oliveira</p>`,
+        conteudo: `<p>Olá,</p><p>Gostaria de entender o valor cobrado na minha última fatura. Notei uma diferença em relação ao mês anterior.</p><p>Att,<br>Marcos Oliveira</p>`,
         data: "14:30",
-        etiqueta: "financeiro",
-        lido: false,
-        anexos: [
-            { nome: "Fatura_Janeiro.pdf", tamanho: "2.4 MB", tipo: "pdf" }
-        ]
+        lido: false
     },
     {
         id: 2,
         remetente: "Ana Silva",
         email: "ana.silva@email.com",
         assunto: "Solicitação de Orçamento",
-        preview: "Boa tarde, gostaria de um orçamento...",
-        conteudo: `<p>Boa tarde,</p>
-                   <p>Gostaria de solicitar um orçamento para os serviços de consultoria em marketing digital.</p>
-                   <br>
-                   <p>Aguardo retorno,<br>Ana Silva</p>`,
+        conteudo: `<p>Boa tarde,</p><p>Gostaria de solicitar um orçamento para os serviços de consultoria.</p><p>Aguardo retorno,<br>Ana Silva</p>`,
         data: "Ontem",
-        etiqueta: "comercial",
-        lido: true,
-        anexos: []
-    },
-    {
-        id: 3,
-        remetente: "Carlos Mendes",
-        email: "carlos.mendes@email.com",
-        assunto: "Problema com Acesso ao Sistema",
-        preview: "Não consigo acessar minha conta desde ontem...",
-        conteudo: `<p>Olá,</p>
-                   <p>Não consigo acessar minha conta desde ontem. Quando tento fazer login, aparece uma mensagem de erro.</p>
-                   <p>Já tentei redefinir a senha mas não recebi o email.</p>
-                   <br>
-                   <p>Obrigado,<br>Carlos Mendes</p>`,
-        data: "Ontem",
-        etiqueta: "suporte",
-        lido: false,
-        anexos: []
-    },
-    {
-        id: 4,
-        remetente: "Patricia Costa",
-        email: "patricia@email.com",
-        assunto: "Renovação de Contrato",
-        preview: "Gostaria de renovar meu contrato anual...",
-        conteudo: `<p>Prezados,</p>
-                   <p>Gostaria de renovar meu contrato anual. Poderia me enviar as opções disponíveis?</p>
-                   <br>
-                   <p>Atenciosamente,<br>Patricia Costa</p>`,
-        data: "2 dias",
-        etiqueta: "comercial",
-        lido: true,
-        anexos: []
-    },
-    {
-        id: 5,
-        remetente: "Roberto Santos",
-        email: "roberto@email.com",
-        assunto: "Feedback sobre Atendimento",
-        preview: "Queria parabenizar a equipe pelo excelente atendimento...",
-        conteudo: `<p>Boa tarde,</p>
-                   <p>Queria parabenizar a equipe pelo excelente atendimento que recebi na semana passada. Todos foram muito prestativos e resolveram meu problema rapidamente.</p>
-                   <br>
-                   <p>Obrigado,<br>Roberto Santos</p>`,
-        data: "3 dias",
-        etiqueta: "suporte",
-        lido: true,
-        anexos: []
+        lido: false
     }
 ];
 
-let currentEmailId = 1;
-let currentFolder = 'inbox';
-let emailSearchTerm = '';
+const RESPOSTAS_PADROES = [
+    { titulo: "Boas-vindas", texto: "Olá! Recebemos sua mensagem e nossa equipe já está analisando. Em breve retornaremos." },
+    { titulo: "Financeiro - Boleto", texto: "Verificamos seu pagamento e ele já foi identificado em nosso sistema." },
+    { titulo: "Solicitar Print", texto: "Poderia nos enviar um print da tela onde o erro ocorre para analisarmos?" }
+];
 
+let emailTimerInterval;
+
+// --- INICIALIZADOR ---
 function initEmailsTab() {
-    console.log("📧 Inicializando aba de Emails");
-    
-    // Folders
-    initEmailFolders();
-    
-    // Labels/Etiquetas
-    initEmailLabels();
-    
-    // Pesquisa
-    initEmailSearch();
-    
-    // Botão Nova Mensagem
-    initNewEmailButton();
-    
-    // Ações do email (responder, encaminhar, etc)
-    initEmailActions();
-    
-    // Toolbar actions
-    initEmailToolbar();
-}
+    const btnChamar = document.getElementById('btnChamarProximo');
+    const btnEnviar = document.getElementById('btnEnviarResposta');
+    const txtArea = document.getElementById('resposta-email');
 
-function initEmailFolders() {
-    const folders = document.querySelectorAll('.email-folders .folder');
-    
-    folders.forEach(folder => {
-        folder.addEventListener('click', function() {
-            folders.forEach(f => f.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Atualizar filtro baseado na pasta
-            const folderText = this.textContent.toLowerCase();
-            if (folderText.includes('caixa de entrada')) {
-                currentFolder = 'inbox';
-            } else if (folderText.includes('favoritos')) {
-                currentFolder = 'starred';
-            } else if (folderText.includes('arquivados')) {
-                currentFolder = 'archived';
-            } else if (folderText.includes('lixeira')) {
-                currentFolder = 'trash';
-            }
-            
-            loadEmails();
-        });
+    atualizarFilaVisual();
+
+    if (btnChamar) btnChamar.onclick = puxarProximoEmail;
+    if (btnEnviar) btnEnviar.onclick = finalizarAtendimento;
+    if (txtArea) txtArea.oninput = validarResposta;
+
+    // Fecha menu de respostas se clicar fora
+    window.addEventListener('click', (e) => {
+        if (!e.target.matches('.btn-respostas-padroes') && !e.target.closest('.dropdown-respostas')) {
+            document.getElementById('dropdownRespostas')?.classList.remove('active');
+        }
     });
 }
 
-function initEmailLabels() {
-    const labels = document.querySelectorAll('.email-labels button');
-    
-    labels.forEach(label => {
-        label.addEventListener('click', function() {
-            const labelText = this.textContent.toLowerCase();
-            
-            // Filtrar emails por etiqueta
-            if (labelText.includes('comercial')) {
-                filterEmailsByLabel('comercial');
-            } else if (labelText.includes('financeiro')) {
-                filterEmailsByLabel('financeiro');
-            } else if (labelText.includes('suporte')) {
-                filterEmailsByLabel('suporte');
-            }
-        });
-    });
-}
+// --- NOTIFICAÇÕES (TOAST) ---
+function showToast(mensagem, tipo = 'success') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
 
-function initEmailSearch() {
-    const searchInput = document.querySelector('.email-search input');
+    const toast = document.createElement('div');
+    toast.className = `toast ${tipo}`;
     
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            emailSearchTerm = e.target.value.toLowerCase();
-            loadEmails();
-        });
-    }
-}
-
-function initNewEmailButton() {
-    const btnNewEmail = document.querySelector('.btn-primary.full');
+    // Define o ícone com base no tipo
+    const icone = tipo === 'success' ? 'fi-rr-check' : 'fi-rr-cross-circle';
     
-    if (btnNewEmail) {
-        btnNewEmail.addEventListener('click', () => {
-            alert('📧 Funcionalidade de nova mensagem em desenvolvimento!\n\nEm breve você poderá:\n• Compor emails\n• Adicionar anexos\n• Usar templates');
-        });
-    }
-}
-
-function initEmailActions() {
-    // Botão Responder
-    const btnReply = document.querySelector('.email-actions .btn-primary');
-    if (btnReply) {
-        btnReply.addEventListener('click', () => {
-            const email = MOCK_EMAILS.find(e => e.id === currentEmailId);
-            if (email) {
-                alert(`📧 Respondendo para: ${email.remetente}\n\nEm desenvolvimento: editor de resposta.`);
-            }
-        });
-    }
-    
-    // Botão Encaminhar
-    const btnForward = document.querySelector('.email-actions .btn-secondary');
-    if (btnForward) {
-        btnForward.addEventListener('click', () => {
-            alert('📧 Funcionalidade de encaminhar em desenvolvimento!');
-        });
-    }
-}
-
-function initEmailToolbar() {
-    const toolbarButtons = document.querySelectorAll('.email-toolbar button');
-    
-    toolbarButtons.forEach((btn, index) => {
-        btn.addEventListener('click', () => {
-            if (index === 0) {
-                // Arquivar
-                alert('🗄 Email arquivado com sucesso!');
-                // Remover da lista
-                const emailItems = document.querySelectorAll('.email-item');
-                emailItems.forEach(item => {
-                    if (item.classList.contains('active')) {
-                        item.remove();
-                    }
-                });
-            } else if (index === 1) {
-                // Deletar
-                if (confirm('🗑 Tem certeza que deseja excluir este email?')) {
-                    alert('Email movido para lixeira!');
-                    const emailItems = document.querySelectorAll('.email-item');
-                    emailItems.forEach(item => {
-                        if (item.classList.contains('active')) {
-                            item.remove();
-                        }
-                    });
-                }
-            }
-        });
-    });
-}
-
-function loadEmails() {
-    const emailsContainer = document.querySelector('.emails');
-    if (!emailsContainer) return;
-    
-    // Filtrar emails
-    let filteredEmails = [...MOCK_EMAILS];
-    
-    // Aplicar filtro de pesquisa
-    if (emailSearchTerm) {
-        filteredEmails = filteredEmails.filter(email => 
-            email.remetente.toLowerCase().includes(emailSearchTerm) ||
-            email.assunto.toLowerCase().includes(emailSearchTerm) ||
-            email.preview.toLowerCase().includes(emailSearchTerm)
-        );
-    }
-    
-    // Renderizar lista
-    emailsContainer.innerHTML = filteredEmails.map(email => `
-        <article class="email-item ${email.id === currentEmailId ? 'active' : ''}" data-id="${email.id}">
-            <header>
-                <strong>${escapeHtml(email.remetente)}</strong>
-                <span>${email.data}</span>
-            </header>
-            <h5>${escapeHtml(email.assunto)}</h5>
-            <p>${escapeHtml(email.preview)}</p>
-            <span class="tag ${email.etiqueta}">${email.etiqueta}</span>
-        </article>
-    `).join('');
-    
-    // Adicionar event listeners aos itens
-    const emailItems = document.querySelectorAll('.email-item');
-    emailItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const emailId = parseInt(this.dataset.id);
-            selectEmail(emailId);
-        });
-    });
-    
-    // Carregar primeiro email por padrão
-    if (filteredEmails.length > 0 && currentEmailId) {
-        displayEmail(currentEmailId);
-    }
-}
-
-function selectEmail(emailId) {
-    currentEmailId = emailId;
-    
-    // Atualizar classe active
-    document.querySelectorAll('.email-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    
-    const selectedItem = document.querySelector(`.email-item[data-id="${emailId}"]`);
-    if (selectedItem) {
-        selectedItem.classList.add('active');
-    }
-    
-    // Exibir conteúdo
-    displayEmail(emailId);
-}
-
-function displayEmail(emailId) {
-    const email = MOCK_EMAILS.find(e => e.id === emailId);
-    if (!email) return;
-    
-    const emailBody = document.querySelector('.email-body');
-    if (!emailBody) return;
-    
-    emailBody.innerHTML = `
-        <h2>${escapeHtml(email.assunto)}</h2>
-        <small>${escapeHtml(email.remetente)} &lt;${escapeHtml(email.email)}&gt;</small>
-        
-        <hr>
-        
-        ${email.conteudo}
-        
-        ${email.anexos.length > 0 ? `
-            <div class="attachments">
-                <h4>Anexos</h4>
-                ${email.anexos.map(anexo => `
-                    <div class="file">
-                        <span class="${anexo.tipo}">${anexo.tipo.toUpperCase()}</span>
-                        <div>
-                            <strong>${escapeHtml(anexo.nome)}</strong>
-                            <small>${anexo.tamanho}</small>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        ` : ''}
+    toast.innerHTML = `
+        <i class="fi ${icone}"></i>
+        <span>${mensagem}</span>
     `;
-    
-    // Atualizar contador na toolbar
-    const toolbarCounter = document.querySelector('.email-toolbar span');
-    if (toolbarCounter) {
-        const currentIndex = MOCK_EMAILS.findIndex(e => e.id === emailId) + 1;
-        toolbarCounter.textContent = `${currentIndex} de ${MOCK_EMAILS.length}`;
+
+    container.appendChild(toast);
+
+    // Remove a notificação após 3 segundos com um efeito de fade
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => {
+            if (toast.parentNode === container) {
+                container.removeChild(toast);
+            }
+        }, 500);
+    }, 3000);
+}
+
+// --- FILA E PALCO ---
+function atualizarFilaVisual() {
+    const contador = document.getElementById('contador-fila');
+    const listaVisual = document.getElementById('lista-espera-visual');
+    const pendentes = MOCK_EMAILS.filter(e => !e.lido);
+    if (contador) contador.textContent = pendentes.length;
+    if (listaVisual) {
+        listaVisual.innerHTML = pendentes.length === 0 ? 
+            '<div class="fila-vazia-msg">Fila vazia</div>' : 
+            `<div class="item-fila-proximo"><strong>${pendentes[0].remetente}</strong><br><small>${pendentes[0].data}</small></div>`;
     }
 }
 
-function filterEmailsByLabel(label) {
-    const filteredEmails = MOCK_EMAILS.filter(email => email.etiqueta === label);
-    
-    const emailsContainer = document.querySelector('.emails');
-    if (!emailsContainer) return;
-    
-    emailsContainer.innerHTML = filteredEmails.map(email => `
-        <article class="email-item ${email.id === currentEmailId ? 'active' : ''}" data-id="${email.id}">
-            <header>
-                <strong>${escapeHtml(email.remetente)}</strong>
-                <span>${email.data}</span>
-            </header>
-            <h5>${escapeHtml(email.assunto)}</h5>
-            <p>${escapeHtml(email.preview)}</p>
-            <span class="tag ${email.etiqueta}">${email.etiqueta}</span>
-        </article>
-    `).join('');
-    
-    // Re-adicionar event listeners
-    const emailItems = document.querySelectorAll('.email-item');
-    emailItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const emailId = parseInt(this.dataset.id);
-            selectEmail(emailId);
-        });
-    });
-    
-    if (filteredEmails.length > 0) {
-        selectEmail(filteredEmails[0].id);
+function puxarProximoEmail() {
+    const proximo = MOCK_EMAILS.find(e => !e.lido);
+    if (!proximo) {
+        showToast("Não há e-mails pendentes.", "error");
+        return;
     }
+    proximo.lido = true;
+    document.getElementById('palco-vazio').style.display = 'none';
+    document.getElementById('palco-ativo').style.display = 'flex';
+    document.getElementById('ativo-cliente-nome').textContent = proximo.remetente;
+    document.getElementById('ativo-cliente-email').textContent = proximo.email;
+    document.getElementById('ativo-assunto').textContent = proximo.assunto;
+    document.getElementById('ativo-mensagem-conteudo').innerHTML = proximo.conteudo;
+    document.getElementById('resposta-email').value = "";
+    validarResposta();
+    iniciarCronometroAtendimento();
+    atualizarFilaVisual();
+}
+
+// --- RESPOSTAS PADRÕES ---
+function toggleMenuRespostas() {
+    const menu = document.getElementById('dropdownRespostas');
+    menu.classList.toggle('active');
+    const lista = document.getElementById('listaRespostasItens');
+    lista.innerHTML = '';
+    RESPOSTAS_PADROES.forEach((resp, i) => {
+        const item = document.createElement('div');
+        item.className = 'item-resposta-rapida';
+        item.innerHTML = `
+            <div style="flex:1"><span class="resposta-titulo">${resp.titulo}</span><div id="preview-${i}" class="preview-expandido">${resp.texto}</div></div>
+            <div class="acoes-resposta-item">
+                <button class="btn-mini-acao" onclick="togglePreview(${i}, event)"><i class="fi fi-rr-plus"></i></button>
+                <button class="btn-mini-acao" onclick="inserirResposta(${i})"><i class="fi fi-rr-enter"></i></button>
+            </div>`;
+        lista.appendChild(item);
+    });
+}
+
+function togglePreview(index, e) {
+    e.stopPropagation();
+    const p = document.getElementById(`preview-${index}`);
+    const btn = e.currentTarget.querySelector('i');
+    const isVisible = p.style.display === 'block';
+    document.querySelectorAll('.preview-expandido').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.fi-rr-minus').forEach(i => i.classList.replace('fi-rr-minus', 'fi-rr-plus'));
+    if (!isVisible) {
+        p.style.display = 'block';
+        btn.classList.replace('fi-rr-plus', 'fi-rr-minus');
+    }
+}
+
+function inserirResposta(index) {
+    const txt = document.getElementById('resposta-email');
+    txt.value += RESPOSTAS_PADROES[index].texto;
+    validarResposta();
+    document.getElementById('dropdownRespostas').classList.remove('active');
+    txt.focus();
+}
+
+// --- VALIDAÇÃO E FINALIZAÇÃO ---
+function validarResposta() {
+    const btn = document.getElementById('btnEnviarResposta');
+    const val = document.getElementById('resposta-email').value.trim();
+    if (val.length > 5) { btn.classList.add('ativo'); btn.disabled = false; }
+    else { btn.classList.remove('ativo'); btn.disabled = true; }
+}
+
+function finalizarAtendimento() {
+    showToast("Atendimento finalizado com sucesso!");
+    resetarPalco();
+}
+
+// --- DEVOLUÇÃO COM JUSTIFICATIVA ---
+window.devolverParaFila = function() {
+    document.getElementById('modalJustificativa').style.display = 'flex';
+};
+
+window.fecharModalJustificativa = function() {
+    document.getElementById('modalJustificativa').style.display = 'none';
+    document.getElementById('txtJustificativa').value = '';
+};
+
+window.confirmarDevolucao = function() {
+    const motivo = document.getElementById('txtJustificativa').value.trim();
+    if (motivo.length < 10) { showToast("Justificativa muito curta.", "error"); return; }
+    const email = document.getElementById('ativo-cliente-email').textContent;
+    const item = MOCK_EMAILS.find(e => e.email === email);
+    if (item) item.lido = false;
+    resetarPalco();
+    fecharModalJustificativa();
+    atualizarFilaVisual();
+    showToast("Atendimento devolvido à fila.", "success");
+};
+
+function resetarPalco() {
+    if (emailTimerInterval) clearInterval(emailTimerInterval);
+    document.getElementById('palco-ativo').style.display = 'none';
+    document.getElementById('palco-vazio').style.display = 'flex';
+}
+
+function iniciarCronometroAtendimento() {
+    let seg = 0;
+    const disp = document.getElementById('timer-atendimento');
+    if (emailTimerInterval) clearInterval(emailTimerInterval);
+    emailTimerInterval = setInterval(() => {
+        seg++;
+        const m = Math.floor(seg/60).toString().padStart(2,'0');
+        const s = (seg%60).toString().padStart(2,'0');
+        disp.textContent = `${m}:${s}`;
+    }, 1000);
 }
 
 // ============================= //
