@@ -6,8 +6,8 @@
  * =====================================================
  */
 
-window.ModuleLifecycle = (function() {
-  
+window.ModuleLifecycle = (function () {
+
   const state = {
     activeModule: null,
     listeners: new Map(),
@@ -29,7 +29,7 @@ window.ModuleLifecycle = (function() {
 
     const key = `${moduleId}_${event}_${Date.now()}_${Math.random()}`;
     element.addEventListener(event, handler);
-    
+
     state.listeners.set(key, {
       element,
       event,
@@ -60,7 +60,14 @@ window.ModuleLifecycle = (function() {
       }
     }
 
-    console.log(`🧹 Cleanup ${moduleId}: ${removed} listeners removidos`);
+    // --- AS LINHAS QUE FALTAVAM ---
+    state.initialized.delete(moduleId); // PERMITE RECARREGAR
+    if (state.activeModule === moduleId) {
+      state.activeModule = null;
+    }
+    // ------------------------------
+
+    console.log(`🧹 Cleanup ${moduleId}: ${removed} listeners removidos e estado resetado.`);
     return removed;
   }
 
@@ -69,29 +76,42 @@ window.ModuleLifecycle = (function() {
    * @param {string} moduleId - ID do novo módulo
    * @param {Function} initFunction - Função de inicialização do módulo
    */
+  /**
+     * Inicializa um módulo com cleanup automático do anterior
+     * @param {string} moduleId - ID do novo módulo
+     * @param {Function} initFunction - Função de inicialização do módulo
+     */
   function init(moduleId, initFunction) {
-    console.log(`🚀 Inicializando módulo: ${moduleId}`);
+    // TRAVA 1: Se o módulo já é o ativo, ignora completamente a nova chamada
+    if (state.activeModule === moduleId) {
+      console.warn(`⚠️ Módulo ${moduleId} já está ativo. Abortando duplicata.`);
+      return;
+    }
 
-    // Limpar módulo anterior
+    console.log(`🚀 Preparando inicialização do módulo: ${moduleId}`);
+
+    // Limpar listeners do módulo anterior antes de entrar no novo
     if (state.activeModule && state.activeModule !== moduleId) {
       cleanup(state.activeModule);
     }
 
+    // TRAVA 2: Marca como ativo ANTES de executar a função para evitar condições de corrida
     state.activeModule = moduleId;
-
-    // Prevenir inicialização múltipla
-    if (state.initialized.has(moduleId)) {
-      console.warn(`⚠️ Módulo ${moduleId} já foi inicializado nesta sessão`);
-    }
-
     state.initialized.add(moduleId);
 
-    // Executar inicialização
+    // Executar inicialização com tratamento de erro
     try {
-      initFunction();
-      console.log(`✅ Módulo ${moduleId} inicializado com sucesso`);
+      if (typeof initFunction === 'function') {
+        initFunction();
+        console.log(`✅ Módulo ${moduleId} carregado no palco com sucesso`);
+      } else {
+        console.error(`❌ Erro: initFunction para ${moduleId} não é uma função válida`);
+      }
     } catch (e) {
-      console.error(`❌ Erro ao inicializar ${moduleId}:`, e);
+      console.error(`❌ Erro crítico ao processar script de ${moduleId}:`, e);
+      // Se deu erro, limpamos o estado para permitir tentar carregar de novo
+      state.activeModule = null;
+      state.initialized.delete(moduleId);
     }
   }
 
@@ -100,7 +120,7 @@ window.ModuleLifecycle = (function() {
    */
   function getStats() {
     const byModule = {};
-    
+
     for (const data of state.listeners.values()) {
       byModule[data.moduleId] = (byModule[data.moduleId] || 0) + 1;
     }
@@ -123,7 +143,7 @@ window.ModuleLifecycle = (function() {
 
     modules.forEach(cleanup);
     state.initialized.clear();
-    
+
     console.log('🧹 Cleanup completo executado');
   }
 

@@ -15,7 +15,8 @@ import {
   orderBy,
   where,    // <--- ADICIONADO
   getDocs,   // <--- ADICIONADO
-  limit
+  limit,
+  arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -49,7 +50,8 @@ window.FirebaseApp = {
         orderBy,
         where,    // <--- ADICIONADO
         getDocs,
-        limit
+        limit,
+        arrayUnion
     },
     fAuth: { 
         createUserWithEmailAndPassword,

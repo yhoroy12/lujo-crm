@@ -91,13 +91,11 @@ function updateBreadcrumb(module) {
    SEGURANÇA (FIREBASE READY)
 ========================= */
 
-// Usamos as funções globais definidas no auth.js
 function checkAuth() {
   return window.isAuthenticated && window.isAuthenticated();
 }
 
 function hasModulePermission(module) {
-  // Mapeamento de Módulo para String de Permissão no Firestore
   const permissionsMap = {
     atendimento: "atendimento.view",
     conteudo: "conteudo.view",
@@ -107,12 +105,10 @@ function hasModulePermission(module) {
     tecnico: "tecnico.view",
     gerencia: "gerencia.view",
     relatorios: "relatorios.view",
-    admin: "admin.view" // Ajustado para bater com o padrão
+    admin: "admin.view"
   };
 
   if (module === 'main') return true;
-
-  // Usa a função global window.hasPermission do auth.js
   return window.hasPermission && window.hasPermission(permissionsMap[module]);
 }
 
@@ -121,18 +117,14 @@ function hasModulePermission(module) {
 ========================= */
 function filterSidebarByPermissions() {
   const menuItems = document.querySelectorAll('.sidebar li[data-permission]');
-  
   menuItems.forEach(item => {
     const requiredPermission = item.dataset.permission;
-    
-    // Se a função global existir e der o OK, mostramos
     if (window.hasPermission && window.hasPermission(requiredPermission)) {
       item.style.display = '';
     } else {
       item.style.display = 'none';
     }
   });
-  
   console.log("🎯 Sidebar filtrada via Firebase Permissions");
 }
 
@@ -144,6 +136,16 @@ const sidebar = document.getElementById("sidebar");
 const noticiasHTML = document.getElementById("news-section")?.outerHTML || "";
 
 async function loadContent(section) {
+// Se for o mesmo módulo, não faz nada
+  if (AppState.navigation.currentModule === section && content.innerHTML !== "") {
+    return;
+  }
+
+  // --- NOVIDADE: Limpa o módulo anterior antes de carregar o próximo ---
+  if (window.ModuleLifecycle && AppState.navigation.currentModule !== 'main') {
+      window.ModuleLifecycle.cleanup(AppState.navigation.currentModule);
+  }
+
   console.log(`📂 Carregando módulo: ${section}`);
 
   if (!hasModulePermission(section)) {
@@ -172,17 +174,15 @@ async function loadContent(section) {
     // 2. Carregar CSS
     loadModuleCSS(section);
 
-    // 3. Carregar JS
+    // 3. Carregar JS de forma inteligente (evita duplicados)
     await loadModuleJS(section);
 
     // 4. Inicializar Módulo via Lifecycle
-    if (window.ModuleLifecycle) {
+if (window.ModuleLifecycle) {
         window.ModuleLifecycle.init(section, () => {
             const initFnName = `init${section.charAt(0).toUpperCase() + section.slice(1)}Module`;
             if (window[initFnName]) {
                 window[initFnName]();
-            } else {
-                console.warn(`Função de inicialização ${initFnName} não encontrada.`);
             }
         });
     }
@@ -207,18 +207,29 @@ function loadModuleCSS(section) {
 
 function loadModuleJS(section) {
   return new Promise((resolve, reject) => {
+    // 1. Sempre remove qualquer script de módulo anterior para evitar conflitos no DOM
     document.querySelectorAll("script[data-module]").forEach(s => s.remove());
+
     const script = document.createElement("script");
-    script.src = `../../functions/modulos/${section}.js`;
+    // 2. Adicionamos ?v=TIMESTAMP para forçar o recarregamento real do arquivo
+    script.src = `../../functions/modulos/${section}.js?v=${Date.now()}`;
     script.dataset.module = section;
     script.defer = true;
-    script.onload = resolve;
+    script.onload = () => {
+      console.log(`✅ Script ${section}.js carregado e pronto.`);
+      resolve();
+    };
     script.onerror = reject;
     document.body.appendChild(script);
   });
 }
 
 function voltarMain() {
+  // --- NOVIDADE: Limpa o módulo ativo antes de voltar para o início ---
+  if (window.ModuleLifecycle && AppState.navigation.currentModule !== 'main') {
+      window.ModuleLifecycle.cleanup(AppState.navigation.currentModule);
+  }
+
   setModule("main");
   content.innerHTML = noticiasHTML;
   sidebar.classList.remove("active");
@@ -227,62 +238,30 @@ function voltarMain() {
 }
 
 /* =========================
-   INICIALIZAÇÃO DO APP
+   CONTROLE VISUAL SIDEBAR
 ========================= */
-window.addEventListener("DOMContentLoaded", () => {
-  // 1. Verificação rápida (apenas para não piscar conteúdo logado)
-  if (!checkAuth()) {
-    window.location.href = "login.html";
-    return;
-  }
-
-  // 2. O Firebase decide quando a UI deve aparecer
-  if (window.FirebaseApp) {
-    window.FirebaseApp.auth.onAuthStateChanged((user) => {
-      if (user) {
-        console.log("✅ Usuário confirmado pelo Firebase. Inicializando UI...");
-        
-        // SÓ chamamos aqui dentro para garantir que temos as permissões do usuário
-        filterSidebarByPermissions();
-        initSidebarMenu();
-        
-        // Define o módulo inicial (Dashboard)
-        setModule("main");
-      } else {
-        // Se o Firebase disser que não há usuário, expulsamos para o login
-        sessionStorage.removeItem('currentUser');
-        window.location.href = 'login.html';
-      }
-    });
-  } else {
-    console.error("❌ Erro crítico: Firebase não carregado.");
-  }
-});
-
 function initSidebarMenu() {
+  // Removendo listeners antigos para evitar execução múltipla
   document.querySelectorAll(".sidebar a").forEach(link => {
-    link.addEventListener("click", e => {
+    const newLink = link.cloneNode(true);
+    link.parentNode.replaceChild(newLink, link);
+    
+    newLink.addEventListener("click", e => {
       e.preventDefault();
-      const module = link.dataset.module;
-      const action = link.dataset.action;
+      const module = newLink.dataset.module;
+      const action = newLink.dataset.action;
       if (action === "voltarMain") voltarMain();
       if (module) loadContent(module);
     });
   });
 }
 
-/* =========================
-   CONTROLE VISUAL SIDEBAR (VERSÃO ESTÁVEL)
-========================= */
-
-// Inicializamos os eventos de Hover
 function initSidebarHover() {
     const sidebarEl = document.getElementById("sidebar");
     const triggerEl = document.getElementById("sidebar-trigger"); 
     let hideTimeout = null;
 
-  if (!sidebarEl || !triggerEl) return;
-
+    if (!sidebarEl || !triggerEl) return;
 
     triggerEl.addEventListener("mouseenter", () => {
         if (hideTimeout) clearTimeout(hideTimeout);
@@ -302,7 +281,6 @@ function initSidebarHover() {
     });
 }
 
-// Botão Sair
 function initLogoutButton() {
     const btnSair = document.getElementById("btnSair");
     if (btnSair) {
@@ -312,30 +290,40 @@ function initLogoutButton() {
     }
 }
 
-// AJUSTE NA INICIALIZAÇÃO PARA CHAMAR TUDO NA ORDEM CERTA
+/* =========================
+   INICIALIZAÇÃO ÚNICA DO APP
+========================= */
 window.addEventListener("DOMContentLoaded", () => {
+    // 1. Verificação básica
     if (!checkAuth()) {
         window.location.href = "login.html";
         return;
     }
 
+    // 2. Observer do Firebase (Única instância para evitar carga dupla)
     if (window.FirebaseApp) {
         window.FirebaseApp.auth.onAuthStateChanged((user) => {
             if (user) {
-                console.log("✅ Usuário confirmado pelo Firebase.");
+                // Se já estivermos carregando, ignora chamadas redundantes
+                if (AppState.ui.loading) return;
+
+                console.log("✅ Usuário confirmado. Inicializando Interface...");
                 
                 filterSidebarByPermissions();
                 initSidebarMenu();
-                
-                // CHAMAR AS NOVAS FUNÇÕES AQUI DENTRO:
                 initSidebarHover(); 
                 initLogoutButton();
                 
-                setModule("main");
+                // Se o módulo atual ainda for o padrão, carrega a dashboard inicial
+                if (AppState.navigation.currentModule === "main") {
+                    voltarMain();
+                }
             } else {
                 sessionStorage.removeItem('currentUser');
                 window.location.href = 'login.html';
             }
         });
+    } else {
+        console.error("❌ Erro: FirebaseApp não detectado.");
     }
 });
