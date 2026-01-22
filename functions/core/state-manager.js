@@ -1,7 +1,7 @@
 /**
  * =====================================================
- * STATE MANAGER
- * Gerenciador de estado por módulo
+ * STATE MANAGER (CORRIGIDO)
+ * Gerenciador de estado por módulo com proteção contra reinit
  * =====================================================
  */
 
@@ -10,14 +10,15 @@ window.StateManager = (function() {
   const states = new Map();
 
   /**
-   * Inicializa estado de um módulo
+   * Inicializa estado de um módulo (com proteção contra duplicatas)
    * @param {string} moduleId - ID do módulo
    * @param {Object} initialState - Estado inicial
    */
   function init(moduleId, initialState = {}) {
+    // ✅ PROTEÇÃO: Verificar se já foi inicializado
     if (states.has(moduleId)) {
-      console.warn(`StateManager: módulo ${moduleId} já tem estado inicializado`);
-      return;
+      console.log(`ℹ️ StateManager: módulo ${moduleId} já tem estado. Reutilizando...`);
+      return states.get(moduleId).data;
     }
 
     states.set(moduleId, {
@@ -26,6 +27,7 @@ window.StateManager = (function() {
     });
 
     console.log(`✅ Estado inicializado: ${moduleId}`);
+    return states.get(moduleId).data;
   }
 
   /**
@@ -94,12 +96,26 @@ window.StateManager = (function() {
   }
 
   /**
-   * Reseta estado de um módulo
+   * Reseta estado de um módulo (mantém estrutura, limpa dados)
    * @param {string} moduleId
    */
   function reset(moduleId) {
+    const state = states.get(moduleId);
+    if (state) {
+      // Limpar data mas manter estrutura
+      state.data = {};
+      state.listeners.clear();
+      console.log(`🔄 Estado resetado: ${moduleId}`);
+    }
+  }
+
+  /**
+   * Remove completamente um módulo (use com cuidado)
+   * @param {string} moduleId
+   */
+  function destroy(moduleId) {
     states.delete(moduleId);
-    console.log(`🔄 Estado resetado: ${moduleId}`);
+    console.log(`🗑️ Módulo destruído: ${moduleId}`);
   }
 
   /**
@@ -111,11 +127,26 @@ window.StateManager = (function() {
     for (const [moduleId, state] of states.entries()) {
       stats[moduleId] = {
         keys: Object.keys(state.data),
-        listeners: state.listeners.size
+        listeners: state.listeners.size,
+        dataSize: JSON.stringify(state.data).length
       };
     }
 
     return stats;
+  }
+
+  /**
+   * Debug: imprime todo o estado (cuidado em produção!)
+   */
+  function debug() {
+    console.group('🔍 STATE MANAGER DEBUG');
+    for (const [moduleId, state] of states.entries()) {
+      console.log(`📦 ${moduleId}:`, {
+        data: state.data,
+        listeners: state.listeners.size
+      });
+    }
+    console.groupEnd();
   }
 
   return {
@@ -124,9 +155,11 @@ window.StateManager = (function() {
     set,
     subscribe,
     reset,
-    getStats
+    destroy,
+    getStats,
+    debug
   };
 
 })();
 
-console.log('✅ StateManager carregado');
+console.log('✅ StateManager carregado (com proteção contra reinit)');

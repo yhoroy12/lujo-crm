@@ -1,4 +1,4 @@
-// ==================== MAIN.JS – SPA INTEGRADA AO FIREBASE (CORRIGIDA) ====================
+// ==================== MAIN.JS – SPA INTEGRADA AO FIREBASE ====================
 
 /* =========================
    ESTADO GLOBAL
@@ -19,122 +19,6 @@ const AppState = {
   },
   listeners: []
 };
-
-/* =========================
-   GERENCIADOR DE CARREGAMENTO DE MÓDULOS (NOVO)
-========================= */
-const ModuleLoader = (() => {
-  let loadingModule = null;
-  let loadedScripts = new Set();
-  let scriptPromises = new Map();
-
-  return {
-    /**
-     * Carrega um script de módulo com segurança contra duplicatas
-     * @param {string} section - Nome do módulo (copyright, atendimento, etc)
-     * @returns {Promise}
-     */
-    async loadScript(section) {
-      // 1. TRAVA: Se já está carregando este módulo, retorna a promise existente
-      if (scriptPromises.has(section)) {
-        console.log(`⏳ Módulo ${section} já está sendo carregado. Aguardando...`);
-        return scriptPromises.get(section);
-      }
-
-      // 2. TRAVA: Se já foi carregado, retorna imediatamente
-      if (loadedScripts.has(section)) {
-        console.log(`✅ Módulo ${section} já está em memória. Reutilizando...`);
-        return Promise.resolve();
-      }
-
-      // 3. Criar promise para este carregamento
-      const promise = new Promise((resolve, reject) => {
-        try {
-          // 4. Limpar qualquer script anterior do mesmo módulo
-          const oldScripts = document.querySelectorAll(`script[data-module="${section}"]`);
-          oldScripts.forEach(s => {
-            try {
-              s.remove();
-              console.log(`🗑️ Removido script antigo: ${section}`);
-            } catch (e) {
-              console.warn(`⚠️ Erro ao remover script: ${e.message}`);
-            }
-          });
-
-          // 5. Pequeno delay para garantir que o DOM foi atualizado
-          setTimeout(() => {
-            const script = document.createElement("script");
-            
-            // SEM ?v=timestamp (mais abaixo usamos versão inteligente)
-            script.src = `../../functions/modulos/${section}.js`;
-            script.dataset.module = section;
-            script.defer = false; // Executar imediatamente
-            script.type = "text/javascript";
-
-            script.onload = () => {
-              loadedScripts.add(section);
-              loadingModule = null;
-              scriptPromises.delete(section);
-              console.log(`✅ Script ${section}.js carregado e pronto.`);
-              resolve();
-            };
-
-            script.onerror = (error) => {
-              loadingModule = null;
-              scriptPromises.delete(section);
-              console.error(`❌ Erro ao carregar ${section}.js:`, error);
-              reject(new Error(`Falha ao carregar módulo: ${section}`));
-            };
-
-            // 6. Adicionar ao DOM
-            document.body.appendChild(script);
-            loadingModule = section;
-          }, 50);
-
-        } catch (e) {
-          loadingModule = null;
-          scriptPromises.delete(section);
-          reject(e);
-        }
-      });
-
-      // 7. Armazenar promise para evitar carregamentos simultâneos
-      scriptPromises.set(section, promise);
-      return promise;
-    },
-
-    /**
-     * Limpa os dados de um módulo (chamado no cleanup)
-     * @param {string} section - Nome do módulo
-     */
-    cleanup(section) {
-      // Não remover do loadedScripts (reutiliza em memória)
-      // Apenas notify que saiu da tela
-      console.log(`🧹 Módulo ${section} saiu do palco (mantido em cache)`);
-    },
-
-    /**
-     * Limpa TUDO quando fazer logout (opcional)
-     */
-    clearAll() {
-      loadedScripts.clear();
-      scriptPromises.clear();
-      loadingModule = null;
-      console.log(`🧹 Todos os módulos foram limpos do cache`);
-    },
-
-    /**
-     * Retorna estado atual
-     */
-    getStats() {
-      return {
-        loadingModule,
-        loadedScripts: Array.from(loadedScripts),
-        pendingPromises: Array.from(scriptPromises.keys())
-      };
-    }
-  };
-})();
 
 /* =========================
    OBSERVADORES DE ESTADO INTERNO
@@ -221,7 +105,7 @@ function hasModulePermission(module) {
     tecnico: "tecnico.view",
     gerencia: "gerencia.view",
     relatorios: "relatorios.view",
-    admin: "system.super_admin"
+    admin: "admin.view"
   };
 
   if (module === 'main') return true;
@@ -245,17 +129,21 @@ function filterSidebarByPermissions() {
 }
 
 /* =========================
-   SPA – CARREGAMENTO DE CONTEÚDO (REFATORADO)
+   SPA – CARREGAMENTO DE CONTEÚDO
 ========================= */
 const content = document.getElementById("content");
 const sidebar = document.getElementById("sidebar");
 const noticiasHTML = document.getElementById("news-section")?.outerHTML || "";
 
 async function loadContent(section) {
-  // TRAVA 1: Se for o mesmo módulo, não faz nada
+// Se for o mesmo módulo, não faz nada
   if (AppState.navigation.currentModule === section && content.innerHTML !== "") {
-    console.log(`ℹ️ Módulo ${section} já está ativo. Ignorando click duplicado.`);
     return;
+  }
+
+  // --- NOVIDADE: Limpa o módulo anterior antes de carregar o próximo ---
+  if (window.ModuleLifecycle && AppState.navigation.currentModule !== 'main') {
+      window.ModuleLifecycle.cleanup(AppState.navigation.currentModule);
   }
 
   console.log(`📂 Carregando módulo: ${section}`);
@@ -286,32 +174,22 @@ async function loadContent(section) {
     // 2. Carregar CSS
     loadModuleCSS(section);
 
-    // 3. Carregar JS com segurança contra duplicatas
-    await ModuleLoader.loadScript(section);
+    // 3. Carregar JS de forma inteligente (evita duplicados)
+    await loadModuleJS(section);
 
     // 4. Inicializar Módulo via Lifecycle
-    if (window.ModuleLifecycle) {
-      window.ModuleLifecycle.init(section, () => {
-        const initFnName = `init${section.charAt(0).toUpperCase() + section.slice(1)}Module`;
-        if (window[initFnName]) {
-          console.log(`🚀 Executando: ${initFnName}()`);
-          window[initFnName]();
-        } else {
-          console.warn(`⚠️ Função ${initFnName} não encontrada`);
-        }
-      });
+if (window.ModuleLifecycle) {
+        window.ModuleLifecycle.init(section, () => {
+            const initFnName = `init${section.charAt(0).toUpperCase() + section.slice(1)}Module`;
+            if (window[initFnName]) {
+                window[initFnName]();
+            }
+        });
     }
     
   } catch (e) {
     console.error("Erro SPA:", e);
-    content.innerHTML = `
-      <div class="card" style="text-align:center;padding:40px">
-        <h3>❌ Erro ao Carregar Módulo</h3>
-        <p>${e.message}</p>
-        <button class="btn btn-secondary" id="btnVoltarErro">Voltar para o Início</button>
-      </div>
-    `;
-    document.getElementById("btnVoltarErro")?.addEventListener("click", voltarMain);
+    content.innerHTML = `<div class="card"><p>Erro ao carregar módulo: ${e.message}</p></div>`;
   } finally {
     setLoading(false);
     content.scrollTo(0, 0);
@@ -327,10 +205,29 @@ function loadModuleCSS(section) {
   document.head.appendChild(link);  
 }
 
+function loadModuleJS(section) {
+  return new Promise((resolve, reject) => {
+    // 1. Sempre remove qualquer script de módulo anterior para evitar conflitos no DOM
+    document.querySelectorAll("script[data-module]").forEach(s => s.remove());
+
+    const script = document.createElement("script");
+    // 2. Adicionamos ?v=TIMESTAMP para forçar o recarregamento real do arquivo
+    script.src = `../../functions/modulos/${section}.js?v=${Date.now()}`;
+    script.dataset.module = section;
+    script.defer = true;
+    script.onload = () => {
+      console.log(`✅ Script ${section}.js carregado e pronto.`);
+      resolve();
+    };
+    script.onerror = reject;
+    document.body.appendChild(script);
+  });
+}
+
 function voltarMain() {
-  // Cleanup do módulo anterior
+  // --- NOVIDADE: Limpa o módulo ativo antes de voltar para o início ---
   if (window.ModuleLifecycle && AppState.navigation.currentModule !== 'main') {
-    window.ModuleLifecycle.cleanup(AppState.navigation.currentModule);
+      window.ModuleLifecycle.cleanup(AppState.navigation.currentModule);
   }
 
   setModule("main");
@@ -344,7 +241,7 @@ function voltarMain() {
    CONTROLE VISUAL SIDEBAR
 ========================= */
 function initSidebarMenu() {
-  // Remover listeners antigos para evitar execução múltipla
+  // Removendo listeners antigos para evitar execução múltipla
   document.querySelectorAll(".sidebar a").forEach(link => {
     const newLink = link.cloneNode(true);
     link.parentNode.replaceChild(newLink, link);
@@ -388,8 +285,6 @@ function initLogoutButton() {
     const btnSair = document.getElementById("btnSair");
     if (btnSair) {
         btnSair.onclick = () => {
-            // Limpar cache de módulos ao deslogar
-            ModuleLoader.clearAll();
             if (window.logout) window.logout();
         };
     }
@@ -424,7 +319,6 @@ window.addEventListener("DOMContentLoaded", () => {
                     voltarMain();
                 }
             } else {
-                ModuleLoader.clearAll();
                 sessionStorage.removeItem('currentUser');
                 window.location.href = 'login.html';
             }
@@ -433,5 +327,3 @@ window.addEventListener("DOMContentLoaded", () => {
         console.error("❌ Erro: FirebaseApp não detectado.");
     }
 });
-
-console.log("✅ Main.js carregado com ModuleLoader seguro");

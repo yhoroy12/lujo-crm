@@ -247,6 +247,7 @@ if (loginForm) {
         username: userData.username || fbUser.email.split('@')[0],
         email: fbUser.email,
         role: resolvedRole,
+        setor: userData.setor || 'triagem',
         roleLevel: AuthHierarchy.getRoleLevel(resolvedRole),
         permissions: userData.customPermissions || []
       };
@@ -312,5 +313,25 @@ function canAssignRole(user, targetRole) {
 
   return userLevel > targetLevel;
 }
+
+window.AuthSystem.ensureUserLoaded = function () {
+  return new Promise((resolve) => {
+    const check = () => {
+      const user = window.AuthSystem?.getCurrentUser();
+
+      if (
+        user &&
+        user.uid &&
+        Array.isArray(user.setor)
+      ) {
+        resolve(user);
+      } else {
+        setTimeout(check, 100);
+      }
+    };
+
+    check();
+  });
+};
 
 console.log('✅ Auth.js carregado - Sistema de Permissões inicializado');

@@ -16,7 +16,8 @@ import {
   where,    // <--- ADICIONADO
   getDocs,   // <--- ADICIONADO
   limit,
-  arrayUnion
+  arrayUnion,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -51,7 +52,8 @@ window.FirebaseApp = {
         where,    // <--- ADICIONADO
         getDocs,
         limit,
-        arrayUnion
+        arrayUnion,
+        runTransaction
     },
     fAuth: { 
         createUserWithEmailAndPassword,

@@ -5,8 +5,10 @@ if (typeof window.currentEmailData === 'undefined') {
 if (typeof window.currentEmailId === 'undefined') {
     window.currentEmailId = null;
 }
-window.initAtendimentoModule = function () {
+window.initAtendimentoModule = async function () {
     console.log("🔧 Inicializando Workspace de Atendimento");
+
+    await AuthSystem.ensureUserLoaded();
 
     initAtendimentoTabs();
     initIdentityCheck();
@@ -19,38 +21,81 @@ window.initAtendimentoModule = function () {
     initTicketTimer();
     initHistoricoTab()
 
+    updateTicketFlow('NOVO'); // Define estado inicial visível
+};
+// ============================= //
+// CONFIGURAÇÃO DE TRANSAÇÕES    //
+// ============================= //
 
-    // Define estado inicial visível
-    updateTicketFlow('NOVO');
-
-
+const TRANSACTION_CONFIG = {
+    maxAttempts: 3,
+    retryDelay: 300,
+    timeoutMs: 5000
 };
 
+async function executeTransaction(transactionFn, options = {}) {
+    const config = { ...TRANSACTION_CONFIG, ...options };
+    let lastError;
+
+    for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
+        try {
+            console.log(`🔄 Tentativa ${attempt}/${config.maxAttempts}`);
+
+            const result = await Promise.race([
+                transactionFn(),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Transaction timeout')), config.timeoutMs)
+                )
+            ]);
+
+            console.log('✅ Transação concluída com sucesso');
+            return result;
+
+        } catch (error) {
+            lastError = error;
+            console.warn(`⚠️ Tentativa ${attempt} falhou:`, error.message);
+
+            if (attempt === config.maxAttempts) break;
+            await new Promise(resolve => setTimeout(resolve, config.retryDelay));
+        }
+    }
+
+    throw new Error(`Transação falhou após ${config.maxAttempts} tentativas: ${lastError.message}`);
+}
 // ============================= //
 // 1. GERENCIAMENTO DE ABAS      //
 // ============================= //
 function initAtendimentoTabs() {
-    const botoesAba = document.querySelectorAll('.modulo-painel-atendimento .aba-btn');
-    const conteudosAba = document.querySelectorAll('.modulo-painel-atendimento .aba-conteudo');
+    const container = document.querySelector('.modulo-painel-atendimento');
+    if (!container) {
+        console.warn('⚠️ Módulo Atendimento ainda não está no DOM');
+        return;
+    }
+
+    const botoesAba = container.querySelectorAll('.aba-btn');
+    const conteudosAba = container.querySelectorAll('.aba-conteudo');
+
+    if (!botoesAba.length || !conteudosAba.length) return;
 
     botoesAba.forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.onclick = () => {
             const abaAlvo = btn.dataset.aba;
 
             botoesAba.forEach(b => b.classList.remove('ativa'));
             conteudosAba.forEach(c => c.classList.remove('ativa'));
 
             btn.classList.add('ativa');
-            const targetContent = document.querySelector(`.modulo-painel-atendimento .${abaAlvo}`);
+
+            const targetContent = container.querySelector(`.${abaAlvo}`);
             if (targetContent) targetContent.classList.add('ativa');
 
-            // Se funcionar sem esse if podemos apagar depois
             if (abaAlvo === 'aba-emails') {
-                console.log("Aba de e-mails ativa. O monitoramento real-time já está operando.");
+                console.log("📨 Aba de e-mails ativa");
             }
-        });
+        };
     });
 }
+
 
 // ============================= //
 // 2. VALIDAÇÃO DE IDENTIDADE    //
@@ -412,7 +457,17 @@ let emailTimerInterval;
 // --- INICIALIZADOR ---
 function initEmailsTab() {
     const { db, fStore } = window.FirebaseApp;
-    const userUID = window.AuthSystem?.getCurrentUser()?.uid || "9K3d5OoOpON6pAG452jxFD1Twgx2";
+    const userUID = window.AuthSystem?.getCurrentUser()?.uid;
+    const userSetor = window.AuthSystem?.getCurrentUser()?.setor;
+
+    if (!Array.isArray(userSetor) || userSetor.length === 0) {
+        console.warn("⚠️ Setor do usuário ainda não carregado");
+        return;
+    }
+    if (!userUID) {
+        console.error("❌ Usuário não autenticado");
+        return;
+    }
 
     const countBadge = document.getElementById('emailFilaCount');
     const listaEspera = document.getElementById('emailFilaLista');
@@ -421,81 +476,113 @@ function initEmailsTab() {
     const btnEnviar = document.getElementById('btnEnviarResposta');
 
     console.log("📨 Módulo de E-mails iniciado para o operador:", userUID);
+    console.log("🏢 Setor do operador:", userSetor);
 
-    // --- ESCUTADOR 1: FILA DE ESPERA (Monitora e-mails novos para todos) ---
-    const qFila = fStore.query(
-        fStore.collection(db, "atend_emails_fila"),
-        fStore.where("status", "==", "novo"),
-        fStore.where("grupo", "==", "triagem"),
-        fStore.orderBy("metadata_recebido_em", "asc")
-    );
+    // --- ESCUTADOR 1: FILA DE ESPERA (Simplificado) ---
+    const setoresFiltro = Array.isArray(userSetor) ? userSetor : [userSetor];
+    try {
+        const qFila = fStore.query(
+            fStore.collection(db, "atend_emails_fila"),
+            fStore.where("status", "==", "novo"),
+            fStore.where("grupo", "in", setoresFiltro),
+            fStore.where("grupo", "!=", null),
+            fStore.orderBy("metadata_recebido_em", "asc"),
+            fStore.limit(20)
+        );
 
-    fStore.onSnapshot(qFila, (snap) => {
-        // Atualiza o contador
-        const countBadge = document.getElementById('emailFilaCount');
-        if (countBadge) {
-            countBadge.textContent = snap.size;
-            countBadge.style.transform = "scale(1.2)";
-            setTimeout(() => countBadge.style.transform = "scale(1)", 200);
-        }
+        fStore.onSnapshot(qFila, (snap) => {
+            console.log("📊 Fila atualizada:", snap.size, "e-mails");
 
-        // 2. Atualiza a Lista Visual
-        const listaEspera = document.getElementById('emailFilaLista');
-        if (!listaEspera) return;
+            // Atualiza o contador
+            if (countBadge) {
+                countBadge.textContent = snap.size;
+                countBadge.style.transform = "scale(1.2)";
+                setTimeout(() => countBadge.style.transform = "scale(1)", 200);
+            }
 
-        if (snap.empty) {
-            listaEspera.innerHTML = '<div class="item-espera vazia">Fila vazia</div>';
-        } else {
-            // Limpamos a lista antes de reconstruir
-            listaEspera.innerHTML = '';
+            // Atualiza a Lista Visual
+            if (!listaEspera) return;
 
-            snap.forEach(doc => {
-                const dados = doc.data();
-                listaEspera.innerHTML += `
-                    <div class="item-espera">
-                        <div class="item-info">
-                            <strong>${dados.assunto || 'Sem Assunto'}</strong>
-                            <span>${dados.remetente_email || 'Sem E-mail'}</span>
+            if (snap.empty) {
+                listaEspera.innerHTML = '<div class="item-espera vazia">Fila vazia</div>';
+            } else {
+                listaEspera.innerHTML = '';
+
+                snap.forEach(doc => {
+                    const dados = doc.data();
+                    listaEspera.innerHTML += `
+                        <div class="item-espera">
+                            <div class="item-info">
+                                <strong>${dados.assunto || 'Sem Assunto'}</strong>
+                                <span>${dados.remetente_email || 'Sem E-mail'}</span>
+                            </div>
+                            <span class="badge-setor">${(dados.grupo || 'Geral').toUpperCase()}</span>
                         </div>
-                        <span class="badge-setor">${(dados.grupo || 'Geral').toUpperCase()}</span>
-                    </div>
-                `;
-            });
-        }
-    }, (error) => {
-        console.error("Erro no Listener da Fila:", error);
-    });
-    // --- ESCUTADOR 2: RETOMADA (Monitora o que já está no SEU nome) ---
-    const qAtivo = fStore.query(
-        fStore.collection(db, "atend_emails_atribuido"),
-        fStore.where("atribuido_para_uid", "==", userUID),
-        fStore.where("status", "==", "em_atendimento"),
-        fStore.limit(1)
-    );
+                    `;
+                });
+            }
+        }, (error) => {
+            console.error("❌ Erro no Listener da Fila:", error);
 
-    fStore.onSnapshot(qAtivo, (snap) => {
-        if (!snap.empty) {
-            const docAtivo = snap.docs[0];
-            const dados = docAtivo.data();
-            currentEmailId = docAtivo.id; // Define o ID global para poder finalizar depois
+            // Se for erro de índice, mostra link
+            if (error.code === 'failed-precondition') {
+                console.error("🔗 Crie o índice usando este link:", error.message);
+            }
 
-            console.log("📌 Atendimento ativo (KPuVslw...) recuperado.");
-            exibirEmailNoPalco({
-                remetente_email: dados.remetente_email,
-                remetente_nome: dados.remetente_nome || "Cliente",
-                assunto: dados.assunto,
-                corpo_html: dados.corpo_html
-            });
-        } else {
-            // Se não houver nada atribuído a você, garante que o palco esteja limpo
-            // (Opcional: você pode decidir se limpa a tela aqui ou não)
-        }
-    }, (error) => console.error("Erro na Retomada:", error));
+            // Se for erro de permissão, mostra alerta
+            if (error.code === 'permission-denied') {
+                console.error("🔒 Erro de permissão. Verifique se o campo 'setor' existe no seu usuário.");
+                showToast("Erro de configuração. Contate o administrador.", "error");
+            }
+        });
+    } catch (error) {
+        console.error("❌ Erro ao configurar listener da fila:", error);
+    }
+
+    // --- ESCUTADOR 2: RETOMADA (Simplificado) ---
+    try {
+        const qAtivo = fStore.query(
+            fStore.collection(db, "atend_emails_atribuido"),
+            fStore.where("atribuido_para_uid", "==", userUID),
+            fStore.where("status", "==", "em_atendimento"),
+            fStore.limit(1)
+        );
+
+        fStore.onSnapshot(qAtivo, (snap) => {
+            if (!snap.empty) {
+                const docAtivo = snap.docs[0];
+                const dados = docAtivo.data();
+                window.currentEmailId = docAtivo.id;
+
+                console.log("📌 Atendimento ativo recuperado:", docAtivo.id);
+
+                exibirEmailNoPalco({
+                    id: docAtivo.id,
+                    remetente_email: dados.remetente_email,
+                    remetente_nome: dados.remetente_nome || "Cliente",
+                    assunto: dados.assunto,
+                    corpo_html: dados.corpo_html,
+                    threadId: dados.threadId || docAtivo.id
+                });
+            } else {
+                console.log("ℹ️ Nenhum atendimento ativo no momento");
+            }
+        }, (error) => {
+            console.error("❌ Erro na Retomada:", error);
+
+            if (error.code === 'failed-precondition') {
+                console.error("🔗 Crie o índice usando este link:", error.message);
+            }
+        });
+    } catch (error) {
+        console.error("❌ Erro ao configurar listener de retomada:", error);
+    }
 
     // --- VÍNCULOS DE EVENTOS ---
     if (btnPuxar) btnPuxar.onclick = puxarProximoEmailReal;
     if (txtArea) txtArea.oninput = validarResposta;
     if (btnEnviar) btnEnviar.onclick = finalizarAtendimentoEmail;
+
     // Dropdown Logic
     window.addEventListener('click', (e) => {
         if (!e.target.matches('.btn-respostas-padroes') && !e.target.closest('.dropdown-respostas')) {
@@ -504,18 +591,26 @@ function initEmailsTab() {
     });
 }
 
+
 async function puxarProximoEmailReal() {
     const { db, fStore, auth } = window.FirebaseApp;
-    const userUID = window.AuthSystem?.getCurrentUser()?.uid || "9K3d5OoOpON6pAG452jxFD1Twgx2";
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+        showToast("Erro: Usuário não autenticado.", "error");
+        return;
+    }
+
+    const operadorUID = currentUser.uid;
     const agora = new Date();
 
     try {
-        // Busca o primeiro e-mail disponível
+        // 1. Buscar candidatos (fora da transação para melhor performance)
         const q = fStore.query(
             fStore.collection(db, "atend_emails_fila"),
             fStore.where("status", "==", "novo"),
             fStore.orderBy("metadata_recebido_em", "asc"),
-            fStore.limit(1)
+            fStore.limit(5) // Busca 5 candidatos para aumentar chances
         );
 
         const querySnapshot = await fStore.getDocs(q);
@@ -525,76 +620,108 @@ async function puxarProximoEmailReal() {
             return;
         }
 
-        const docFila = querySnapshot.docs[0];
-        const emailData = docFila.data();
-        const emailId = docFila.id;
+        // 2. Executar transação para o primeiro e-mail válido
+        let emailAtribuido = null;
 
-        const eTriagemInicial = !emailData.tracking_marcos?.triagem_inicio;
-        const eSetorFinal = emailData.grupo !== "triagem";
+        for (const docCandidate of querySnapshot.docs) {
+            try {
+                emailAtribuido = await executeTransaction(async () => {
+                    return await fStore.runTransaction(db, async (transaction) => {
+                        const docRef = fStore.doc(db, "atend_emails_fila", docCandidate.id);
+                        const freshDoc = await transaction.get(docRef);
 
-        // Prepara o novo evento de histórico
-        const novoEvento = {
-            timestamp: agora,
-            acao: "puxou_fila",
-            operador_uid: userUID,
-            setor: emailData.grupo || "triagem"
-        };
+                        // VALIDAÇÃO CRÍTICA
+                        if (!freshDoc.exists()) {
+                            throw new Error('EMAIL_NAO_EXISTE');
+                        }
 
-        console.log("📨 Puxando e-mail ID:", emailId);
+                        const dados = freshDoc.data();
 
-        // 1. Atualização dos campos de controle e Tracking
-        const updates = {
-            status: "em_atendimento",
-            atribuido_para_uid: userUID,
-            puxado_em: agora,
-            historico_custodia: fStore.arrayUnion(novoEvento)
-        };
+                        // VERIFICAÇÃO DE RACE CONDITION
+                        if (dados.status !== "novo") {
+                            throw new Error('EMAIL_JA_ATRIBUIDO');
+                        }
 
-        // Se for triagem inicial, grava o marco. Se for setor final, grava o marco de recebimento do setor
-        if (eTriagemInicial) {
-            // Usando a notação de objeto para garantir o aninhamento
-            updates.tracking_marcos = {
-                ...emailData.tracking_marcos,
-                triagem_inicio: agora
-            };
-        } else if (eSetorFinal && !emailData.tracking_marcos?.setor_recebido_em) {
-            updates.tracking_marcos = {
-                ...emailData.tracking_marcos,
-                setor_recebido_em: agora
-            };
+                        if (dados.atribuido_para_uid && dados.atribuido_para_uid !== operadorUID) {
+                            throw new Error('EMAIL_JA_ATRIBUIDO');
+                        }
+
+                        // CÁLCULO DE TRACKING
+                        const eTriagemInicial = !dados.tracking_marcos?.triagem_inicio;
+                        const eSetorFinal = dados.grupo !== "triagem";
+
+                        // EVENTO DE HISTÓRICO
+                        const eventoPosse = {
+                            timestamp: agora,
+                            acao: "puxou_fila",
+                            operador_uid: operadorUID,
+                            setor: dados.grupo || "triagem"
+                        };
+
+                        // PAYLOAD DE ATUALIZAÇÃO
+                        const updates = {
+                            status: "em_atendimento",
+                            atribuido_para_uid: operadorUID,
+                            puxado_em: agora,
+                            historico_custodia: fStore.arrayUnion(eventoPosse),
+                            versao_documento: (dados.versao_documento || 0) + 1
+                        };
+
+                        // MARCOS DE TRACKING
+                        if (eTriagemInicial) {
+                            updates["tracking_marcos.triagem_inicio"] = agora;
+                        } else if (eSetorFinal && !dados.tracking_marcos?.setor_recebido_em) {
+                            updates["tracking_marcos.setor_recebido_em"] = agora;
+                        }
+
+                        // MOVIMENTAÇÃO ATÔMICA
+                        const novoDocRef = fStore.doc(db, "atend_emails_atribuido", docCandidate.id);
+                        const dadosCompletos = { ...dados, ...updates };
+
+                        transaction.set(novoDocRef, dadosCompletos);
+                        transaction.delete(docRef);
+
+                        console.log('✅ E-mail atribuído via transação:', docCandidate.id);
+
+                        return {
+                            id: docCandidate.id,
+                            dados: dadosCompletos
+                        };
+                    });
+                }, {
+                    maxAttempts: 2,
+                    retryDelay: 200
+                });
+
+                break; // Conseguiu atribuir
+
+            } catch (error) {
+                console.warn(`⚠️ Candidato ${docCandidate.id} não disponível:`, error.message);
+                continue;
+            }
         }
 
-        // 2. Salvar os dados completos na nova coleção (atribuídos)
-        const novoDocRef = fStore.doc(db, "atend_emails_atribuido", emailId);
-        await fStore.setDoc(novoDocRef, {
-            ...emailData,
-            ...updates
-        });
+        // 3. RESULTADO
+        if (!emailAtribuido) {
+            showToast("Todos os e-mails foram atribuídos. Tente novamente.", "warning");
+            return;
+        }
 
-        // 3. Deletamos da fila original
-        await fStore.deleteDoc(fStore.doc(db, "atend_emails_fila", emailId));
-
-        // 4. Seta o ID na memória global
-        window.currentEmailId = emailId;
-        window.currentEmailData = { ...emailData, ...updates, threadId: emailData.threadId || emailId };
-
-        console.log("✅ E-mail atribuído com sucesso:", emailId);
+        // 4. ATUALIZAÇÃO DA UI
+        window.currentEmailId = emailAtribuido.id;
+        window.currentEmailData = {
+            ...emailAtribuido.dados,
+            threadId: emailAtribuido.dados.threadId || emailAtribuido.id
+        };
 
         setTimeout(() => {
-            exibirEmailNoPalco({
-                id: emailId,
-                ...emailData,
-                ...updates,
-                threadId: emailData.threadId || emailId
-            });
-            if (typeof setLoading === 'function') setLoading(false);
-            showToast("E-mail puxado com sucesso!", "success");
+            exibirEmailNoPalco(window.currentEmailData);
+            showToast("✓ E-mail atribuído com sucesso!", "success");
         }, 150);
 
     } catch (error) {
-        console.error("❌ Erro ao puxar e-mail:", error);
-        if (typeof setLoading === 'function') setLoading(false);
-        showToast("Erro técnico ao tentar puxar o e-mail: " + error.message);
+        console.error("❌ Erro crítico:", error);
+        showToast("Erro ao processar solicitação.", "error");
     }
 }
 
@@ -819,88 +946,109 @@ function validarResposta() {
 }
 // --- FINALIZAÇÃO DO ATENDIMENTO ---
 async function finalizarAtendimentoEmail() {
-    const { db, fStore } = window.FirebaseApp;
-    const resposta = document.getElementById('resposta-email').value;
-    const currentUser = window.FirebaseApp.auth.currentUser;
+    const { db, fStore, auth } = window.FirebaseApp;
+    const resposta = document.getElementById('resposta-email')?.value;
+    const currentUser = auth.currentUser;
     const agora = new Date();
 
-    if (!resposta.trim()) {
+    if (!resposta?.trim()) {
         showToast("Por favor, escreva uma resposta antes de finalizar.", "warning");
         return;
     }
 
+    if (!window.currentEmailId) {
+        showToast("Erro: ID do e-mail atual não encontrado.", "error");
+        return;
+    }
+
+    const operadorUID = currentUser?.uid;
+
     try {
-        if (!currentEmailId) {
-            showToast("Erro: ID do e-mail atual não encontrado.", "error");
-            return;
+        const resultado = await executeTransaction(async () => {
+            return await fStore.runTransaction(db, async (transaction) => {
+                const docRef = fStore.doc(db, "atend_emails_atribuido", window.currentEmailId);
+                const docSnap = await transaction.get(docRef);
+
+                // VALIDAÇÕES
+                if (!docSnap.exists()) {
+                    throw new Error('DOCUMENTO_NAO_ENCONTRADO');
+                }
+
+                const dados = docSnap.data();
+
+                if (dados.atribuido_para_uid !== operadorUID) {
+                    throw new Error('SEM_PERMISSAO_OWNERSHIP');
+                }
+
+                if (dados.status !== "em_atendimento") {
+                    throw new Error('STATUS_INVALIDO');
+                }
+
+                // CÁLCULO DE TEMPO
+                const tempoRetencaoMs = dados.puxado_em
+                    ? agora.getTime() - dados.puxado_em.toDate().getTime()
+                    : 0;
+
+                // EVENTO FINAL
+                const eventoFinal = {
+                    timestamp: agora,
+                    acao: "finalizou",
+                    operador_uid: operadorUID,
+                    setor: dados.grupo || "atendimento",
+                    tempo_retencao_ms: tempoRetencaoMs,
+                    resposta_corpo: resposta
+                };
+
+                // DOSSIÊ PARA HISTÓRICO
+                const payloadHistorico = {
+                    ...dados,
+                    status: 'finalizado',
+                    resposta_enviada: resposta,
+                    operador_finalizador_uid: operadorUID,
+                    tracking_marcos: {
+                        ...(dados.tracking_marcos || {}),
+                        finalizado_em: agora
+                    },
+                    historico_custodia: fStore.arrayUnion(eventoFinal),
+                    enviar_agora: true,
+                    email_enviado: false,
+                    versao_documento: (dados.versao_documento || 0) + 1
+                };
+
+                // MOVIMENTAÇÃO ATÔMICA
+                const historicoRef = fStore.doc(db, "atend_emails_historico", window.currentEmailId);
+                transaction.set(historicoRef, payloadHistorico);
+                transaction.delete(docRef);
+
+                return { success: true };
+            });
+        });
+
+        if (resultado.success) {
+            showToast("✓ Atendimento finalizado! A resposta será enviada.", "success");
+
+            window.currentEmailData = null;
+            window.currentEmailId = null;
+            window.emailSelecionadoId = null;
+
+            if (typeof resetarPalco === 'function') resetarPalco();
         }
-
-        console.log("🏁 Finalizando e preparando envio para:", currentEmailData.remetente_email);
-
-        const docRef = fStore.doc(db, "atend_emails_atribuido", currentEmailId);
-        const docSnap = await fStore.getDoc(docRef);
-
-        if (!docSnap.exists()) {
-            showToast("Documento não encontrado no banco.", "error");
-            return;
-        }
-
-        const dadosParaFinalizar = docSnap.data();
-
-        // 1. Cálculo de tempo de retenção do último operador
-        const tempoRetencaoMs = dadosParaFinalizar.puxado_em
-            ? agora.getTime() - dadosParaFinalizar.puxado_em.toDate().getTime()
-            : 0;
-
-        // 2. Prepara o evento final para o histórico de custódia
-        const eventoFinal = {
-            timestamp: agora,
-            acao: "finalizou",
-            operador_uid: currentUser?.uid || "sistema",
-            setor: dadosParaFinalizar.grupo || "atendimento",
-            tempo_retencao_ms: tempoRetencaoMs,
-            resposta_corpo: resposta // Guarda uma cópia da resposta no log também
-        };
-        // 3. Monta o Dossiê Final para a coleção de HISTÓRICO
-        const payloadHistorico = {
-            ...dadosParaFinalizar, // Usa a variável corrigida (currentUser/userLogado)
-            status: 'finalizado',
-            resposta_enviada: resposta,
-            operador_finalizador_uid: currentUser?.uid || "sistema",
-
-            // CORREÇÃO: Garante que finalizado_em entre dentro do map tracking_marcos
-            tracking_marcos: {
-                ...(dadosParaFinalizar.tracking_marcos || {}),
-                finalizado_em: agora
-            },
-
-            historico_custodia: fStore.arrayUnion(eventoFinal),
-            enviar_agora: true,
-            email_enviado: false
-        };
-
-        // 4. Salva no Histórico (usando o mesmo ID para consistência)
-        const historicoRef = fStore.doc(db, "atend_emails_historico", currentEmailId);
-        await fStore.setDoc(historicoRef, payloadHistorico);
-
-        // 5. Remove da "mesa" do operador (Atribuídos)
-        await fStore.deleteDoc(docRef);
-
-        showToast("Atendimento finalizado! A resposta será enviada pelo sistema.", "success");
-
-        // 6. Limpa memória e interface
-        window.currentEmailData = null;
-        window.currentEmailId = null;
-        window.emailSelecionadoId = null;
-
-        if (typeof resetarPalco === 'function') resetarPalco();
-        if (typeof carregarFilaEmails === 'function') carregarFilaEmails();
 
     } catch (error) {
-        console.error("Erro ao finalizar atendimento:", error);
-        showToast("Falha técnica ao processar resposta.", "error");
+        console.error("❌ Erro ao finalizar:", error);
+
+        if (error.message === 'SEM_PERMISSAO_OWNERSHIP') {
+            showToast("⚠️ Este atendimento não pertence mais a você.", "warning");
+            resetarPalco();
+        } else if (error.message === 'DOCUMENTO_NAO_ENCONTRADO') {
+            showToast("⚠️ Este atendimento já foi processado.", "warning");
+            resetarPalco();
+        } else {
+            showToast("Erro ao processar finalização.", "error");
+        }
     }
 }
+
 // --- DIRECIONAR PARA OUTRO SETOR ---
 // Abre o modal de escolha
 function abrirModalDirecionamento() {
@@ -1014,67 +1162,89 @@ window.confirmarDevolucao = async function () {
     const userUID = auth.currentUser?.uid;
     const agora = new Date();
 
-    // Validação de segurança
     if (motivo.length < 10) {
         showToast("A justificativa deve ter pelo menos 10 caracteres.", "warning");
         return;
     }
 
-    if (!currentEmailId) {
+    if (!window.currentEmailId) {
         showToast("ID do e-mail não identificado.", "error");
         return;
     }
 
     try {
-        const docRef = fStore.doc(db, "atend_emails_atribuido", currentEmailId);
-        const docSnap = await fStore.getDoc(docRef);
+        const resultado = await executeTransaction(async () => {
+            return await fStore.runTransaction(db, async (transaction) => {
+                const docRef = fStore.doc(db, "atend_emails_atribuido", window.currentEmailId);
+                const docSnap = await transaction.get(docRef);
 
-        if (!docSnap.exists()) {
-            showToast("Erro: O atendimento não foi encontrado para devolução.", "error");
-            return;
+                // VALIDAÇÕES
+                if (!docSnap.exists()) {
+                    throw new Error('DOCUMENTO_NAO_ENCONTRADO');
+                }
+
+                const dados = docSnap.data();
+
+                if (dados.atribuido_para_uid !== userUID) {
+                    throw new Error('SEM_PERMISSAO_OWNERSHIP');
+                }
+
+                if (dados.status !== "em_atendimento") {
+                    throw new Error('STATUS_INVALIDO');
+                }
+
+                // EVENTO DE DEVOLUÇÃO
+                const eventoDevolver = {
+                    timestamp: agora,
+                    acao: "devolveu",
+                    operador_uid: userUID,
+                    setor: dados.grupo || "triagem",
+                    justificativa: motivo
+                };
+
+                // DADOS PARA FILA
+                const dadosAtualizados = {
+                    ...dados,
+                    status: 'novo',
+                    atribuido_para_uid: null,
+                    puxado_em: null,
+                    motivo_devolucao: motivo,
+                    devolvido_uid: userUID,
+                    tracking_marcos: {
+                        ...(dados.tracking_marcos || {}),
+                        devolvido_em: agora
+                    },
+                    historico_custodia: fStore.arrayUnion(eventoDevolver),
+                    versao_documento: (dados.versao_documento || 0) + 1
+                };
+
+                // MOVIMENTAÇÃO ATÔMICA
+                const filaRef = fStore.doc(db, "atend_emails_fila", window.currentEmailId);
+                transaction.set(filaRef, dadosAtualizados);
+                transaction.delete(docRef);
+
+                return { success: true };
+            });
+        });
+
+        if (resultado.success) {
+            showToast("✓ Atendimento devolvido à fila com sucesso.", "success");
+            fecharModalJustificativa();
+            resetarPalco();
         }
 
-        const dadosOriginal = docSnap.data();
-
-        // 1. Prepara o novo evento de histórico para o array
-        const novoEvento = {
-            timestamp: agora,
-            acao: "devolveu",
-            operador_uid: userUID,
-            setor: dadosOriginal.grupo || "triagem",
-            justificativa: motivo
-        };
-        // 2. Prepara os dados atualizados para a FILA
-        const dadosAtualizados = {
-            ...dadosOriginal,
-            status: 'novo',
-            atribuido_para_uid: null,
-            puxado_em: null,
-            motivo_devolucao: motivo,
-            devolvido_uid: userUID,
-            // CORREÇÃO: Atualiza o objeto tracking_marcos preservando os outros campos
-            tracking_marcos: {
-                ...(dadosOriginal.tracking_marcos || {}),
-                devolvido_em: agora
-            },
-            historico_custodia: fStore.arrayUnion(novoEvento)
-        };
-
-
-        // 3. Volta o documento para a FILA GERAL
-        await fStore.setDoc(fStore.doc(db, "atend_emails_fila", currentEmailId), dadosAtualizados);
-
-        // 4. Deleta da coleção de Atribuídos (Mesa do operador)
-        await fStore.deleteDoc(docRef);
-
-        showToast("Atendimento devolvido à fila com sucesso.", "success");
-
-        fecharModalJustificativa();
-        resetarPalco();
-
     } catch (error) {
-        console.error("Erro na devolução:", error);
-        showToast("Erro ao tentar devolver para a fila.", "error");
+        console.error("❌ Erro na devolução:", error);
+
+        if (error.message === 'SEM_PERMISSAO_OWNERSHIP') {
+            showToast("⚠️ Você não pode devolver este atendimento.", "warning");
+            resetarPalco();
+        } else if (error.message === 'DOCUMENTO_NAO_ENCONTRADO') {
+            showToast("⚠️ Este atendimento já foi processado.", "warning");
+            resetarPalco();
+        } else {
+            showToast("Erro ao processar devolução.", "error");
+        }
     }
 };
 
@@ -1119,6 +1289,7 @@ function iniciarCronometroAtendimento() {
 // ============================= //
 // UTILITÁRIOS                   //
 // ============================= //
+
 function getCurrentTime() {
     return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
