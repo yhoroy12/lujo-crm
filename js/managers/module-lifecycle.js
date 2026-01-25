@@ -1,6 +1,6 @@
 /**
  * =====================================================
- * MODULE LIFECYCLE MANAGER
+ * MODULE LIFECYCLE MANAGER (CORRIGIDO)
  * Gerencia ciclo de vida dos módulos SPA
  * Previne vazamento de memória e duplicação de eventos
  * =====================================================
@@ -60,12 +60,11 @@ window.ModuleLifecycle = (function () {
       }
     }
 
-    // --- AS LINHAS QUE FALTAVAM ---
-    state.initialized.delete(moduleId); // PERMITE RECARREGAR
+    // Limpar state do módulo
+    state.initialized.delete(moduleId);
     if (state.activeModule === moduleId) {
       state.activeModule = null;
     }
-    // ------------------------------
 
     console.log(`🧹 Cleanup ${moduleId}: ${removed} listeners removidos e estado resetado.`);
     return removed;
@@ -73,16 +72,20 @@ window.ModuleLifecycle = (function () {
 
   /**
    * Inicializa um módulo com cleanup automático do anterior
+   * 
+   * ⚠️ ERRO CRÍTICO CORRIGIDO:
+   * Antes: A TRAVA 1 verificava se activeModule === moduleId ANTES do cleanup
+   * Depois: cleanupAtendimentoModule() é chamada DEPOIS, o que deletava
+   *        initialized.delete(moduleId) DENTRO do cleanup, permitindo reinit
+   * 
+   * Solução: Mover state.initialized.add() ANTES de cleanup
+   * Assim se init() for chamado múltiplas vezes, a TRAVA 1 vai pegar na segunda
+   * 
    * @param {string} moduleId - ID do novo módulo
    * @param {Function} initFunction - Função de inicialização do módulo
    */
-  /**
-     * Inicializa um módulo com cleanup automático do anterior
-     * @param {string} moduleId - ID do novo módulo
-     * @param {Function} initFunction - Função de inicialização do módulo
-     */
   function init(moduleId, initFunction) {
-    // TRAVA 1: Se o módulo já é o ativo, ignora completamente a nova chamada
+    // ===== TRAVA 1: Se já é o módulo ativo, ignora reinit =====
     if (state.activeModule === moduleId) {
       console.warn(`⚠️ Módulo ${moduleId} já está ativo. Abortando duplicata.`);
       return;
@@ -90,26 +93,46 @@ window.ModuleLifecycle = (function () {
 
     console.log(`🚀 Preparando inicialização do módulo: ${moduleId}`);
 
-    // Limpar listeners do módulo anterior antes de entrar no novo
-    if (state.activeModule && state.activeModule !== moduleId) {
-      cleanup(state.activeModule);
-    }
-
-    // TRAVA 2: Marca como ativo ANTES de executar a função para evitar condições de corrida
+    // ===== MARCAR COMO ATIVO ANTES DE CLEANUP (CRÍTICO!) =====
+    // Isso previne que o módulo anterior seja reiniciado durante seu cleanup
     state.activeModule = moduleId;
     state.initialized.add(moduleId);
 
-    // Executar inicialização com tratamento de erro
+    // ===== LIMPAR LISTENERS DO MÓDULO ANTERIOR =====
+    const previousModule = Array.from(state.listeners.values())
+      .find(listener => listener.moduleId !== moduleId);
+    
+    if (previousModule) {
+      const prevModuleId = previousModule.moduleId;
+      console.log(`🔄 Limpando módulo anterior: ${prevModuleId}`);
+      cleanup(prevModuleId);
+      
+      // Chamar função de cleanup customizada (se existir)
+      const cleanupFunctionName = `cleanup${prevModuleId.charAt(0).toUpperCase() + prevModuleId.slice(1)}Module`;
+      if (typeof window[cleanupFunctionName] === 'function') {
+        try {
+          window[cleanupFunctionName]();
+          console.log(`✅ Cleanup customizado chamado: ${cleanupFunctionName}`);
+        } catch (e) {
+          console.warn(`⚠️ Erro ao chamar ${cleanupFunctionName}:`, e);
+        }
+      }
+    }
+
+    // ===== EXECUTAR INICIALIZAÇÃO COM TRATAMENTO DE ERRO =====
     try {
       if (typeof initFunction === 'function') {
         initFunction();
         console.log(`✅ Módulo ${moduleId} carregado no palco com sucesso`);
       } else {
         console.error(`❌ Erro: initFunction para ${moduleId} não é uma função válida`);
+        // Reset em caso de erro
+        state.activeModule = null;
+        state.initialized.delete(moduleId);
       }
     } catch (e) {
       console.error(`❌ Erro crítico ao processar script de ${moduleId}:`, e);
-      // Se deu erro, limpamos o estado para permitir tentar carregar de novo
+      // Reset em caso de erro
       state.activeModule = null;
       state.initialized.delete(moduleId);
     }
@@ -143,11 +166,12 @@ window.ModuleLifecycle = (function () {
 
     modules.forEach(cleanup);
     state.initialized.clear();
+    state.activeModule = null;
 
     console.log('🧹 Cleanup completo executado');
   }
 
-  // API Pública
+  // API pública
   return {
     addListener,
     cleanup,
@@ -158,4 +182,4 @@ window.ModuleLifecycle = (function () {
 
 })();
 
-console.log('✅ ModuleLifecycle carregado');
+console.log('✅ ModuleLifecycle carregado (CORRIGIDO)');

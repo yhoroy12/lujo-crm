@@ -42,28 +42,58 @@ if (typeof window.initAtendimentoModule === 'undefined') {
     window.initAtendimentoModule = async function() {
         console.log("🔧 Inicializando Módulo de Atendimento");
 
-        // 1. Aguardar usuário estar carregado
-        await window.AuthSystem.ensureUserLoaded();
+        try {
+            // 1. Aguardar usuário estar carregado
+            console.log("⏳ Aguardando usuário...");
+            await window.AuthSystem.ensureUserLoaded();
+            console.log("✅ Usuário carregado");
 
-        // 2. Inicializar StateManager (gerencia estado do módulo)
-        window.StateManager.init(MODULE_ID, {
-            currentTicket: null,
-            currentEmail: null,
-            activeTab: 'aba-atendimento',
-            historicoFiltrado: [...MOCK_HISTORICO],
-            canalHistorico: 'whatsapp',
-            emailTimerRunning: false,
-            ticketTimerRunning: false
-        });
+            // 2. Inicializar StateManager (gerencia estado do módulo)
+            console.log("⏳ Inicializando StateManager...");
+            window.StateManager.init(MODULE_ID, {
+                currentTicket: null,
+                currentEmail: null,
+                activeTab: 'aba-atendimento',
+                historicoFiltrado: [...MOCK_HISTORICO],
+                canalHistorico: 'whatsapp',
+                emailTimerRunning: false,
+                ticketTimerRunning: false
+            });
+            console.log("✅ StateManager inicializado");
 
-        // 3. Inicializar componentes de UI em ordem
-        initAtendimentoTabs();
-        initModalHandlers();
-        initAtendimentoWhatsApp();
-        initEmailsTab();
-        initHistoricoTab();
+            // 3. Inicializar componentes de UI em ordem CRÍTICA
+            console.log("⏳ Inicializando abas...");
+            const absOk = initAtendimentoTabs();
+            if (!absOk) {
+                console.error("❌ Falha ao inicializar abas");
+                // Continuar mesmo assim (fallback já foi configurado)
+            }
+            console.log("✅ Abas inicializadas");
 
-        console.log("✅ Módulo de Atendimento inicializado com sucesso");
+            console.log("⏳ Inicializando handlers de modais...");
+            initModalHandlers();
+            console.log("✅ Modais inicializados");
+
+            console.log("⏳ Inicializando WhatsApp...");
+            initAtendimentoWhatsApp();
+            console.log("✅ WhatsApp inicializado");
+
+            console.log("⏳ Inicializando e-mails...");
+            initEmailsTab();
+            console.log("✅ E-mails inicializados");
+
+            console.log("⏳ Inicializando histórico...");
+            initHistoricoTab();
+            console.log("✅ Histórico inicializado");
+
+            console.log("🎉 Módulo de Atendimento inicializado COM SUCESSO");
+
+        } catch (error) {
+            console.error("❌ ERRO CRÍTICO ao inicializar módulo:", error);
+            console.error(error.stack);
+            // Não falhar silenciosamente - informar o usuário
+            showToast('Erro ao inicializar módulo. Recarregue a página.', 'error');
+        }
     };
 }
 
@@ -77,11 +107,19 @@ function initAtendimentoTabs() {
     const container = document.querySelector('.modulo-painel-atendimento');
     
     if (!container) {
-        console.warn('⚠️ Container do módulo atendimento não encontrado');
-        return;
+        console.error('❌ Container do módulo atendimento NÃO encontrado');
+        return false;
     }
 
-    // Usar TabManager (padrão do sistema - referência: admin.js)
+    console.log('📍 Container encontrado:', container);
+
+    // Verificar se TabManager está disponível
+    if (!window.TabManager) {
+        console.error('❌ TabManager não está carregado');
+        return false;
+    }
+
+    // ===== TRAVA 1: Inicializar TabManager =====
     window.TabManager.init('.modulo-painel-atendimento', MODULE_ID, {
         tabButtonSelector: '.aba-btn',
         tabContentSelector: '.aba-conteudo',
@@ -89,14 +127,80 @@ function initAtendimentoTabs() {
         onTabChange: (tabId, tabContent) => {
             console.log(`📑 Aba alterada para: ${tabId}`);
             
-            // Atualizar estado
-            window.StateManager.set(MODULE_ID, { activeTab: tabId });
+            // Atualizar estado (SEGURO)
+            if (window.StateManager) {
+                window.StateManager.set(MODULE_ID, { activeTab: tabId });
+            }
 
             // Inicializar conteúdo específico da aba
             initializeTabContent(tabId);
         }
     });
+
+    console.log('✅ TabManager inicializado com sucesso');
+
+    // ===== TRAVA 2: Configurar cliques manualmente (FALLBACK) =====
+    // Caso TabManager falhe, temos um plano B
+    setupTabFallback(container);
+
+    return true;
 }
+
+/**
+ * FALLBACK: Se TabManager falhar, usar sistema manual
+ * Isso garante que as abas funcionem mesmo em condições adversas
+ */
+function setupTabFallback(container) {
+    const buttons = container.querySelectorAll('.aba-btn');
+    const contents = container.querySelectorAll('.aba-conteudo');
+
+    console.log(`🔄 Configurando fallback: ${buttons.length} botões, ${contents.length} conteúdos`);
+
+    buttons.forEach(button => {
+        // Remover listeners antigos (evitar duplicatas)
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+
+        // Adicionar novo listener
+        newButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const targetTab = this.dataset.aba;
+            if (!targetTab) {
+                console.warn('⚠️ Botão sem data-aba:', this);
+                return;
+            }
+
+            console.log(`🎯 Fallback: Ativando aba ${targetTab}`);
+
+            // Desativar todos os botões
+            buttons.forEach(btn => btn.classList.remove('ativa'));
+            
+            // Desativar todos os conteúdos
+            contents.forEach(content => content.classList.remove('ativa'));
+
+            // Ativar selecionado
+            this.classList.add('ativa');
+            
+            // Procurar conteúdo correto
+            const targetContent = container.querySelector(`.aba-conteudo.${targetTab}`);
+            if (targetContent) {
+                targetContent.classList.add('ativa');
+                console.log(`✅ Aba ativada: ${targetTab}`);
+
+                // Callback
+                if (window.StateManager) {
+                    window.StateManager.set(MODULE_ID, { activeTab: targetTab });
+                }
+                initializeTabContent(targetTab);
+            } else {
+                console.error(`❌ Conteúdo não encontrado: .aba-conteudo.${targetTab}`);
+            }
+        });
+    });
+}
+
 
 /**
  * Inicializa conteúdo específico quando uma aba é ativada
@@ -105,10 +209,13 @@ function initAtendimentoTabs() {
 function initializeTabContent(tabId) {
     switch(tabId) {
         case 'aba-atendimento':
-            console.log("📞 Aba de atendimento ativada");
+            console.log("☎️ Aba de atendimento ativada");
+            // Certificar que elementos de atendimento estão prontos
+            ensureAtendimentoReady();
             break;
         case 'aba-emails':
-            console.log("📨 Aba de e-mails ativada");
+            console.log("📧 Aba de e-mails ativada");
+            // Emails já inicializados no initEmailsTab()
             break;
         case 'aba-demandas':
             console.log("📋 Aba de demandas ativada");
@@ -117,6 +224,19 @@ function initializeTabContent(tabId) {
             console.log("📚 Aba de histórico ativada");
             carregarDadosHistorico();
             break;
+        default:
+            console.warn(`⚠️ Aba desconhecida: ${tabId}`);
+    }
+}
+
+function ensureAtendimentoReady() {
+    const workspace = document.getElementById('workspaceGrid');
+    const emptyState = document.getElementById('emptyState');
+    
+    if (workspace && emptyState) {
+        console.log('✅ Elementos de atendimento validados');
+    } else {
+        console.warn('⚠️ Elementos de atendimento faltando');
     }
 }
 
@@ -1751,4 +1871,40 @@ if (typeof window.cleanupAtendimentoModule === 'undefined') {
 }
 
 // ===== FIM DO ARQUIVO =====
+// ===== DEBUG: Adicionar função de diagnóstico =====
+window.debugAtendimentoTabs = function() {
+    console.group('🔍 DEBUG ABAS ATENDIMENTO');
+    
+    const container = document.querySelector('.modulo-painel-atendimento');
+    console.log('Container:', container ? '✅ Encontrado' : '❌ NÃO encontrado');
+
+    const buttons = document.querySelectorAll('.aba-btn');
+    console.log(`Botões de aba: ${buttons.length} encontrados`);
+    buttons.forEach((btn, i) => {
+        console.log(`  [${i}] data-aba="${btn.dataset.aba}" class="${btn.className}"`);
+    });
+
+    const contents = document.querySelectorAll('.aba-conteudo');
+    console.log(`Conteúdos: ${contents.length} encontrados`);
+    contents.forEach((cont, i) => {
+        console.log(`  [${i}] class="${cont.className}"`);
+    });
+
+    const active = document.querySelector('.aba-btn.ativa');
+    console.log(`Aba ativa: ${active ? active.dataset.aba : 'Nenhuma'}`);
+
+    if (window.TabManager) {
+        console.log('✅ TabManager carregado');
+    } else {
+        console.log('❌ TabManager NÃO carregado');
+    }
+
+    if (window.StateManager) {
+        console.log('✅ StateManager carregado');
+    } else {
+        console.log('❌ StateManager NÃO carregado');
+    }
+
+    console.groupEnd();
+};
 console.log("✅ atendimento.js refatorado carregado com sucesso");

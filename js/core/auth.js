@@ -1,13 +1,14 @@
-// ==================== AUTH.JS - SISTEMA DE PERMISSÕES CORRIGIDO ====================
-      // ==================== HIERARQUIA DO SISTEMA ====================
+// ==================== AUTH.JS - SISTEMA DE PERMISSÕES REFATORADO ====================
+// Fluxo: Email → Firebase Auth → Firestore (Custom Claims via Cloud Functions)
 
+// ==================== HIERARQUIA DO SISTEMA ====================
 const ROLE_LEVELS = {
-  ADMIN: 999, // somente sistema
-  CEO: 100, // jeff
-  GERENTE_MASTER: 80, // mauricio
-  GERENTE: 60, // lisbeth
-  SUPERVISOR: 40, // cesar
-  OPERADOR: 20, // matheus,carlos,reginaldo...
+  ADMIN: 999,           // somente sistema
+  CEO: 100,             // jeff
+  GERENTE_MASTER: 80,   // mauricio
+  GERENTE: 60,          // lisbeth
+  SUPERVISOR: 40,       // cesar
+  OPERADOR: 20,         // matheus, carlos, reginaldo...
   ESTAGIARIO: 0
 };
 
@@ -19,7 +20,7 @@ const ROLE_CAN_MANAGE_USERS = [
   'GERENTE'
 ];
 
-
+// ===== IMPORTS FIREBASE =====
 import { 
   signInWithEmailAndPassword, 
   signOut, 
@@ -73,11 +74,11 @@ window.AuthSystem = {
       return true;
     }
 
-    // Verifica permissões customizadas
+    // Verifica permissões customizadas do usuário
     const hasCustomPermission = user.permissions && 
                                 user.permissions.includes(permission);
     
-    // Verifica permissões do role base (do permissions.js)
+    // Verifica permissões do role base (do permissions.js, se existir)
     const rolePermissions = window.PermissionsSystem?.ROLES[user.role]?.permissions || [];
     const hasRolePermission = rolePermissions.includes(permission);
 
@@ -108,181 +109,35 @@ window.AuthSystem = {
       sessionStorage.removeItem('currentUser');
       window.location.href = 'login.html';
     }
-  }
-};
+  },
 
-// Expor funções globais (compatibilidade)
-window.logout = window.AuthSystem.logout;
-window.isAuthenticated = window.AuthSystem.isAuthenticated;
-window.hasPermission = window.AuthSystem.hasPermission;
-window.AuthHierarchy = {
-  ROLE_LEVELS,
-  getRoleLevel,
-  canManageUsers,
-  canCreateRole,
-  canAssignRole,
-  isAdminSystem
-};
+  /**
+   * Aguarda Firebase estar pronto (Promise)
+   */
+  ensureUserLoaded: function () {
+    return new Promise((resolve) => {
+      const check = () => {
+        const user = window.AuthSystem?.getCurrentUser();
 
-// ===== INICIALIZAÇÃO =====
-window.addEventListener('DOMContentLoaded', () => {
-  if (window.location.pathname.includes('login.html')) {
-    initLoginPage();
-  }
-
-  // Monitora estado do Firebase Auth
-  waitForFirebase().then(() => {
-    onAuthStateChanged(window.FirebaseApp.auth, (user) => {
-      if (user) {
-        console.log("🔥 Firebase: Usuário conectado:", user.email);
-      } else {
-        console.log("❄️ Firebase: Nenhum usuário ativo");
-      }
-    });
-  });
-});
-
-/**
- * Aguarda Firebase estar pronto
- */
-function waitForFirebase() {
-  return new Promise((resolve) => {
-    const check = setInterval(() => {
-      if (window.FirebaseApp?.auth && window.FirebaseApp?.db) {
-        clearInterval(check);
-        resolve();
-      }
-    }, 100);
-  });
-}
-
-/**
- * Inicializa página de login (chips de teste)
- */
-function initLoginPage() {
-  document.querySelectorAll('.profile-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      if (usernameInput && passwordInput) {
-        usernameInput.value = chip.dataset.user;
-        passwordInput.value = chip.dataset.pass;
-      }
-    });
-  });
-}
-
-// ===== PROCESSO DE LOGIN ATUALIZADO (E-MAIL OU USERNAME) =====
-if (loginForm) {
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // Captura o valor do input (que pode ser e-mail ou username)
-    const identificador = usernameInput.value.trim().toLowerCase();
-    const password = passwordInput.value;
-
-    if (!window.FirebaseApp?.auth || !window.FirebaseApp?.db) {
-      alert('⚠️ Sistema Firebase não inicializado. Recarregue a página.');
-      return;
-    }
-
-    if (!identificador || !password) {
-      alert('⚠️ Preencha todos os campos.');
-      return;
-    }
-
-    if (loginBtn) loginBtn.disabled = true;
-    if (loading) loading.classList.add('show');
-
-    try {
-      let emailFinal = identificador;
-
-      // --- LÓGICA DE USERNAME ---
-      // Se não houver '@', assumimos que é um username e buscamos o e-mail no Firestore
-      // --- LÓGICA DE USERNAME (CORRIGIDA) ---
-      if (!identificador.includes('@')) {
-        console.log('🔍 Identificador reconhecido como username. Buscando e-mail...');
-        
-        // Extração correta das funções de dentro do fStore
-        const { db, fStore } = window.FirebaseApp;
-        const { collection, query, where, getDocs, limit } = fStore; // Agora pegando de fStore
-
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("username", "==", identificador), limit(1));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-          throw new Error('Username não encontrado.');
+        if (
+          user &&
+          user.uid &&
+          user.role &&
+          typeof user.setor === 'string'
+        ) {
+          resolve(user);
+        } else {
+          setTimeout(check, 100);
         }
-
-        emailFinal = querySnapshot.docs[0].data().email;
-        console.log('✅ Username mapeado para:', emailFinal);
-      }
-
-      // 1. Autenticar no Firebase Auth usando o e-mail (original ou o que encontramos)
-      const userCredential = await signInWithEmailAndPassword(
-        window.FirebaseApp.auth, 
-        emailFinal, 
-        password
-      );
-      
-      const fbUser = userCredential.user;
-
-      // 2. Buscar dados completos do Firestore para a sessão
-      const userDocRef = doc(window.FirebaseApp.db, "users", fbUser.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (!userDoc.exists()) {
-        throw new Error('Perfil não encontrado no Firestore.');
-      }
-
-      const userData = userDoc.data();
-
-      // 3. Montar objeto de sessão
-      const resolvedRole = AuthHierarchy.getRoleLevel(userData.role) >= 0
-        ? userData.role
-        : 'ATENDENTE';
-
-      const sessionData = {
-        uid: fbUser.uid,
-        name: userData.name || 'Usuário',
-        username: userData.username || fbUser.email.split('@')[0],
-        email: fbUser.email,
-        role: resolvedRole,
-        setor: userData.setor || 'triagem',
-        roleLevel: AuthHierarchy.getRoleLevel(resolvedRole),
-        permissions: userData.customPermissions || []
       };
 
-      sessionStorage.setItem('currentUser', JSON.stringify(sessionData));
-      window.location.href = 'Main.html';
+      check();
+    });
+  }
+};
 
-    } catch (error) {
-      console.error("❌ Erro no login:", error);
-      
-      let errorMessage = 'Erro ao fazer login. ';
-      if (error.message === 'Username não encontrado.') {
-        errorMessage = 'Este nome de usuário não existe.';
-      } else {
-        switch(error.code) {
-          case 'auth/invalid-credential':
-            errorMessage += 'E-mail/Usuário ou senha incorretos.';
-            break;
-          case 'auth/user-not-found':
-            errorMessage += 'Usuário não cadastrado.';
-            break;
-          default:
-            errorMessage += 'Verifique suas credenciais.';
-        }
-      }
-
-      alert(errorMessage);
-      if (loginBtn) loginBtn.disabled = false;
-      if (loading) loading.classList.remove('show');
-    }
-  });
-}
- // Utis // 
-
- function getRoleLevel(role) {
+// ===== HIERARQUIA - FUNÇÕES UTILITÁRIAS =====
+function getRoleLevel(role) {
   return ROLE_LEVELS[role] ?? -1;
 }
 
@@ -314,24 +169,188 @@ function canAssignRole(user, targetRole) {
   return userLevel > targetLevel;
 }
 
-window.AuthSystem.ensureUserLoaded = function () {
-  return new Promise((resolve) => {
-    const check = () => {
-      const user = window.AuthSystem?.getCurrentUser();
-
-      if (
-        user &&
-        user.uid &&
-        Array.isArray(user.setor)
-      ) {
-        resolve(user);
-      } else {
-        setTimeout(check, 100);
-      }
-    };
-
-    check();
-  });
+// ===== EXPOR FUNÇÕES GLOBAIS (COMPATIBILIDADE) =====
+window.logout = window.AuthSystem.logout;
+window.isAuthenticated = window.AuthSystem.isAuthenticated;
+window.hasPermission = window.AuthSystem.hasPermission;
+window.AuthHierarchy = {
+  ROLE_LEVELS,
+  getRoleLevel,
+  canManageUsers,
+  canCreateRole,
+  canAssignRole,
+  isAdminSystem
 };
 
-console.log('✅ Auth.js carregado - Sistema de Permissões inicializado');
+// ===== INICIALIZAÇÃO =====
+window.addEventListener('DOMContentLoaded', () => {
+  if (window.location.pathname.includes('login.html')) {
+    initLoginPage();
+  }
+
+  // Monitora estado do Firebase Auth
+  waitForFirebase().then(() => {
+    onAuthStateChanged(window.FirebaseApp.auth, (fbUser) => {
+      if (fbUser) {
+        console.log("🔥 Firebase: Usuário conectado:", fbUser.email);
+        console.log("🔑 Custom Claims disponíveis:", fbUser.customClaims);
+      } else {
+        console.log("❄️ Firebase: Nenhum usuário ativo");
+      }
+    });
+  });
+});
+
+/**
+ * Aguarda Firebase estar pronto
+ */
+function waitForFirebase() {
+  return new Promise((resolve) => {
+    const check = setInterval(() => {
+      if (window.FirebaseApp?.auth && window.FirebaseApp?.db) {
+        clearInterval(check);
+        resolve();
+      }
+    }, 100);
+  });
+}
+
+/**
+ * Inicializa página de login (chips de teste)
+ * Carrega os chips com email (removido username)
+ */
+function initLoginPage() {
+  document.querySelectorAll('.profile-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (usernameInput && passwordInput) {
+        // Agora os chips contêm 'email' ao invés de 'user'
+        usernameInput.value = chip.dataset.email || chip.dataset.user;
+        passwordInput.value = chip.dataset.pass;
+      }
+    });
+  });
+}
+
+// ===== PROCESSO DE LOGIN REFATORADO (APENAS EMAIL) =====
+if (loginForm) {
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const email = usernameInput.value.trim().toLowerCase();
+    const password = passwordInput.value;
+
+    // ===== VALIDAÇÕES INICIAIS =====
+    if (!window.FirebaseApp?.auth || !window.FirebaseApp?.db) {
+      alert('⚠️ Sistema Firebase não inicializado. Recarregue a página.');
+      return;
+    }
+
+    if (!email || !password) {
+      alert('⚠️ Preencha todos os campos.');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      alert('⚠️ Digite um e-mail válido.');
+      return;
+    }
+
+    if (loginBtn) loginBtn.disabled = true;
+    if (loading) loading.classList.add('show');
+
+    try {
+      // ===== ETAPA 1: AUTENTICAR NO FIREBASE AUTH =====
+      console.log('🔐 Autenticando no Firebase Auth:', email);
+      
+      const userCredential = await signInWithEmailAndPassword(
+        window.FirebaseApp.auth, 
+        email, 
+        password
+      );
+      
+      const fbUser = userCredential.user;
+      console.log('✅ Autenticação bem-sucedida:', fbUser.uid);
+
+      // ===== ETAPA 2: BUSCAR DOCUMENTO DO FIRESTORE =====
+      console.log('📋 Buscando dados do usuário no Firestore...');
+      
+      const userDocRef = doc(window.FirebaseApp.db, "users", fbUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        throw new Error('PROFILE_NOT_FOUND');
+      }
+
+      const userData = userDoc.data();
+      console.log('📊 Dados obtidos:', userData);
+
+      // ===== ETAPA 3: VALIDAR ROLE =====
+      const resolvedRole = ROLE_LEVELS.hasOwnProperty(userData.role)
+        ? userData.role
+        : 'ESTAGIARIO';
+
+      console.log('🔖 Role resolvido:', resolvedRole);
+
+      // ===== ETAPA 4: MONTAR SESSÃO =====
+      const sessionData = {
+        uid: fbUser.uid,
+        name: userData.name || 'Usuário',
+        email: fbUser.email,
+        role: resolvedRole,
+        setor: userData.setor || 'triagem',
+        roleLevel: getRoleLevel(resolvedRole),
+        permissions: userData.customPermissions || [],
+        // Informações adicionais opcionais
+        department: userData.department || null,
+        phone: userData.phone || null
+      };
+
+      // ===== ETAPA 5: SALVAR SESSÃO =====
+      sessionStorage.setItem('currentUser', JSON.stringify(sessionData));
+      console.log('💾 Sessão salva:', sessionData);
+
+      // ===== REDIRECIONAR =====
+      window.location.href = 'Main.html';
+
+    } catch (error) {
+      console.error("❌ Erro no login:", error);
+      
+      let errorMessage = 'Erro ao fazer login. ';
+
+      // Mapear erros específicos do Firebase
+      switch(error.code) {
+        case 'auth/invalid-credential':
+          errorMessage = '❌ E-mail ou senha incorretos.';
+          break;
+        case 'auth/user-not-found':
+          errorMessage = '❌ Este e-mail não está cadastrado.';
+          break;
+        case 'auth/wrong-password':
+          errorMessage = '❌ Senha incorreta.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = '❌ E-mail inválido.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = '⏱️ Muitas tentativas de login. Tente novamente em alguns minutos.';
+          break;
+        default:
+          if (error.message === 'PROFILE_NOT_FOUND') {
+            errorMessage = '❌ Seu perfil não foi encontrado no sistema. Contate o administrador.';
+          } else {
+            errorMessage += 'Verifique suas credenciais e tente novamente.';
+          }
+      }
+
+      alert(errorMessage);
+      
+      // Reset do formulário
+      if (loginBtn) loginBtn.disabled = false;
+      if (loading) loading.classList.remove('show');
+      passwordInput.value = '';
+    }
+  });
+}
+
+// ===== LOG DE INICIALIZAÇÃO =====
+console.log('✅ Auth.js carregado - Sistema de Permissões inicializado (Modo Email-Only)');
