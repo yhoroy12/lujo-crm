@@ -217,7 +217,7 @@ const ROLES = {
     ]
   }
 };
-
+/*
 let USERS_DB = {
   ana: { 
     password: '123456', 
@@ -274,7 +274,9 @@ let USERS_DB = {
     customPermissions: [] 
   }
 };
+*/
 
+/*
 function login(username, password) {
   const user = USERS_DB[username];
   if (!user || user.password !== password) return { success: false, error: 'Usuário ou senha inválidos' };
@@ -292,11 +294,12 @@ function login(username, password) {
   sessionStorage.setItem('currentUser', JSON.stringify(sessionData));
   return { success: true, user: sessionData };
 }
-
+*/
 function logout() {
-  sessionStorage.removeItem('currentUser');
-  window.location.href = 'login.html';
+  sessionStorage.clear();
+window.location.href = '../templates/login.html';
 }
+
 
 function getCurrentUser() {
   const data = sessionStorage.getItem('currentUser');
@@ -307,25 +310,39 @@ function isAuthenticated() {
   return getCurrentUser() !== null;
 }
 
-function getUserPermissions(username) {
-  const user = USERS_DB[username];
+function getUserPermissions() {
+  const user = getCurrentUser();
   if (!user) return [];
   
-  if (user.role === 'ADMIN') return Object.values(PERMISSIONS);
+  // Se for ADMIN, ele ganha TODAS as permissões do sistema automaticamente
+  if (user.role === 'ADMIN') {
+    return Object.values(PERMISSIONS);
+  }
   
-  return [...new Set([...(ROLES[user.role]?.permissions || []), ...(user.customPermissions || [])])];
+  const rolePermissions = ROLES[user.role]?.permissions || [];
+  const customPermissions = user.permissions || [];
+  
+  return [...new Set([...rolePermissions, ...customPermissions])];
 }
 
 function hasPermission(permission) {
   const user = getCurrentUser();
   if (!user) return false;
   
-  if (user.permissions.includes(PERMISSIONS.SUPER_ADMIN)) return true;
+  // Se for ADMIN, sempre retorna true para qualquer permissão solicitada
+  if (user.role === 'ADMIN') return true;
   
-  return user.permissions.includes(permission);
+  const userPermissions = getUserPermissions();
+  return userPermissions.includes(permission) || userPermissions.includes(PERMISSIONS.SUPER_ADMIN);
 }
 
 function hasModuleAccess(module) {
+  const user = getCurrentUser();
+  if (!user) return false;
+
+  // REGRA DE OURO: Admin entra em qualquer lugar
+  if (user.role === 'ADMIN') return true;
+
   const modulePermissions = {
     atendimento: PERMISSIONS.ATEND_VIEW,
     conteudo: PERMISSIONS.CONT_VIEW,
@@ -339,16 +356,15 @@ function hasModuleAccess(module) {
 
   return hasPermission(modulePermissions[module]);
 }
-
 window.PermissionsSystem = {
   PERMISSIONS,
   ROLES,
-  login,
   logout,
   getCurrentUser,
   isAuthenticated,
   hasPermission,
-  hasModuleAccess
+  hasModuleAccess,
+  getUserPermissions
 };
 
-console.log("✅ Sistema de Permissões carregado");
+console.log("✅ Sistema de Permissões (RBAC Dinâmico) carregado");

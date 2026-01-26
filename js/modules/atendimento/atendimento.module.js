@@ -141,37 +141,31 @@ const AtendimentoModule = {
   /**
    * Carregar conteúdo dinâmico das abas
    */
-  async loadTabContent(tabId) {
+async loadTabContent(tabId) {
     try {
-      let tabModule;
-      
-      switch(tabId) {
-        case 'aba-atendimento':
-          tabModule = await import('../tabs/whatsapp.js');
-          await tabModule.default.init();
-          break;
-          
-        case 'aba-emails':
-          tabModule = await import('../tabs/emails.js');
-          await tabModule.default.init();
-          break;
-          
-        case 'aba-demandas':
-          tabModule = await import('../tabs/demandas.js');
-          await tabModule.default.init();
-          break;
-          
-        case 'aba-historico':
-          tabModule = await import('../tabs/historico.js');
-          await tabModule.default.init();
-          break;
-      }
-      
-      console.log(`✅ Aba ${tabId} carregada`);
+        const scriptName = tabId.replace('aba-', '');
+        // Caminho relativo ao atendimento.module.js
+        const modulePath = `./tabs/${scriptName}.js`; 
+        
+        console.log(`📦 Carregando script da aba: ${modulePath}`);
+        
+        const tabModule = await import(modulePath);
+        
+        // AJUSTE AQUI: 
+        // Como exportamos "export const EmailsTab", o objeto está em tabModule.EmailsTab
+        // Se exportamos "export default", estaria em tabModule.default
+        const moduleInstance = tabModule.EmailsTab || tabModule.default || tabModule;
+
+        if (moduleInstance && typeof moduleInstance.init === 'function') {
+            await moduleInstance.init();
+        } else if (tabModule.init) {
+            await tabModule.init();
+        }
+        
     } catch (error) {
-      console.error(`❌ Erro ao carregar aba ${tabId}:`, error);
+        console.error(`❌ Erro ao carregar aba ${tabId}:`, error);
     }
-  },
+},
 
   /**
    * 5. Bind eventos globais

@@ -10,40 +10,50 @@ const SPA = {
   currentModuleId: null,
   loadedModules: new Map(),
   cssCache: new Set(),
-  
+
   /**
    * Inicializa a SPA
    */
   async init() {
     console.log('🚀 Inicializando SPA');
-    
+
     try {
       // 1. Aguardar autenticação
       await this.waitForAuth();
       console.log('✅ Autenticação pronta');
       
-      // 2. Aguardar permissões
-      await this.waitForPermissions();
-      console.log('✅ Permissões carregadas');
-      
       // 3. Gerar navegação
       this.setupNavigation();
       console.log('✅ Navegação configurada');
       
-      // 4. Carregar módulo padrão
-      const defaultModule = 'atendimento';
-      await this.loadModule(defaultModule);
-      
+      // 3.1 Modal de noticias
+      this.showNewsModal();
+      console.log('✅ Modal de notícias exibido');
+            
       // 5. Setup hotkeys e atalhos globais
       this.setupHotkeys();
       console.log('✅ Hotkeys configurados');
-      
+
       // 6. Setup busca global
       this.setupGlobalSearch();
       console.log('✅ Busca global configurada');
+
+      // 2. Aguardar permissões
+      await this.waitForPermissions();
+      console.log('✅ Permissões carregadas');
+
+
+      // 4 filtrar cards do main por permissão
+      this.filterDashboardCards();
+      console.log('✅ Cards do dashboard filtrados por permissão');
+
       
+      // 7.Setup botão noticias
+      this.setupNewsButton();
+      console.log('✅ Botão de notícias configurado');
+
       console.log('🎉 SPA pronto para uso');
-      
+
     } catch (error) {
       console.error('❌ Erro ao inicializar SPA:', error);
       this.showError('Erro ao inicializar sistema. Recarregue a página.');
@@ -53,21 +63,16 @@ const SPA = {
   /**
    * Aguarda autenticação estar pronta
    */
-  waitForAuth() {
+  async waitForAuth() {
+    console.log('⏳ Aguardando validação do perfil...');
     return new Promise((resolve) => {
-      const checkAuth = setInterval(() => {
-        if (window.AuthSystem && window.AuthSystem.isAuthenticated()) {
-          clearInterval(checkAuth);
-          console.log('👤 Usuário autenticado:', window.AuthSystem.getCurrentUser().name);
-          resolve();
+      const interval = setInterval(() => {
+        const user = window.PermissionsSystem.getCurrentUser();
+        if (user && user.role) {
+          clearInterval(interval);
+          resolve(user);
         }
-      }, 100);
-      
-      // Timeout de segurança
-      setTimeout(() => {
-        clearInterval(checkAuth);
-        resolve();
-      }, 5000);
+      }, 200); // Checa a cada 200ms
     });
   },
 
@@ -82,7 +87,7 @@ const SPA = {
           resolve();
         }
       }, 100);
-      
+
       setTimeout(() => {
         clearInterval(checkPerms);
         resolve();
@@ -91,103 +96,263 @@ const SPA = {
   },
 
   /**
+   * ⭐ NOVO: Mostra modal de notícias ao fazer login
+   */
+  showNewsModal() {
+    const user = window.AuthSystem.getCurrentUser();
+    if (!user) return;
+
+    // Criar modal de notícias
+    const modalHTML = `
+      <div class="modal active" id="modalNews" role="dialog" aria-labelledby="newsTitle">
+        <div class="modal-content" style="max-width: 800px;">
+          <div class="modal-header">
+            <div>
+              <h2 id="newsTitle">📰 Notícias da Empresa</h2>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #666;">
+                Bem-vindo(a), <strong>${user.name}</strong>!
+              </p>
+            </div>
+            <button class="btn-close" id="btnCloseNews" aria-label="Fechar">&times;</button>
+          </div>
+          <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+            <!-- Notícia 1 -->
+            <article class="news-item" style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--color-border);">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 18px; color: var(--color-text);">
+                  🎯 Nova Política de Atendimento
+                </h3>
+                <span style="font-size: 12px; color: #999;">25/01/2025</span>
+              </div>
+              <p style="line-height: 1.6; color: #666;">
+                A partir do próximo mês, haverá atualizações nos horários e procedimentos para melhor atender nossos clientes. 
+                O atendimento será estendido até às 20h nos dias úteis.
+              </p>
+              <div style="margin-top: 10px;">
+                <span class="status-badge" style="background: #e3f2fd; color: #1976d2; font-size: 11px;">
+                  Comunicado Oficial
+                </span>
+              </div>
+            </article>
+
+            <!-- Notícia 2 -->
+            <article class="news-item" style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--color-border);">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 18px; color: var(--color-text);">
+                  🚀 Campanha de Marketing 2025
+                </h3>
+                <span style="font-size: 12px; color: #999;">20/01/2025</span>
+              </div>
+              <p style="line-height: 1.6; color: #666;">
+                O novo ciclo de campanhas foca no público jovem e em estratégias digitais modernas. 
+                Todos os setores devem alinhar seus processos com as novas diretrizes.
+              </p>
+              <div style="margin-top: 10px;">
+                <span class="status-badge" style="background: #fff3cd; color: #856404; font-size: 11px;">
+                  Marketing
+                </span>
+              </div>
+            </article>
+
+            <!-- Notícia 3 -->
+            <article class="news-item" style="margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 18px; color: var(--color-text);">
+                  💡 Atualização do Sistema CRM
+                </h3>
+                <span style="font-size: 12px; color: #999;">15/01/2025</span>
+              </div>
+              <p style="line-height: 1.6; color: #666;">
+                Nova interface implementada com melhorias de performance e experiência do usuário. 
+                Explore os novos recursos disponíveis em cada módulo.
+              </p>
+              <div style="margin-top: 10px;">
+                <span class="status-badge" style="background: #e6f6ea; color: #1a7b3f; font-size: 11px;">
+                  Tecnologia
+                </span>
+              </div>
+            </article>
+          </div>
+          <div class="modal-footer">
+            <label style="display: flex; align-items: center; gap: 8px; margin-right: auto;">
+              <input type="checkbox" id="dontShowAgainToday" style="width: 16px; height: 16px;">
+              <span style="font-size: 13px; color: #666;">Não mostrar novamente hoje</span>
+            </label>
+            <button class="btn btn-primary" id="btnCloseNews2">
+              Entendi
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Verificar se já foi mostrado hoje
+    const today = new Date().toDateString();
+    const lastShown = localStorage.getItem('newsModalLastShown');
+
+    if (lastShown === today) {
+      console.log('ℹ️ Modal de notícias já foi mostrado hoje');
+      return;
+    }
+
+    // Adicionar ao DOM
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Registrar listeners
+    const modal = document.getElementById('modalNews');
+    const btnClose = document.getElementById('btnCloseNews');
+    const btnClose2 = document.getElementById('btnCloseNews2');
+    const checkbox = document.getElementById('dontShowAgainToday');
+
+    const closeModal = () => {
+      if (checkbox?.checked) {
+        localStorage.setItem('newsModalLastShown', today);
+      }
+      modal?.remove();
+    };
+
+    btnClose?.addEventListener('click', closeModal);
+    btnClose2?.addEventListener('click', closeModal);
+
+    // Fechar com ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal) {
+        closeModal();
+      }
+    }, { once: true });
+
+    console.log('📰 Modal de notícias exibido');
+  },
+
+
+  setupNewsButton() {
+    const btnSettings = document.getElementById('btnSettings');
+
+    if (btnSettings) {
+      // Alterar ícone e título
+      btnSettings.innerHTML = '<i class="fi fi-rr-newspaper"></i>';
+      btnSettings.title = 'Notícias da Empresa';
+      btnSettings.setAttribute('aria-label', 'Abrir notícias');
+
+      // Remover listeners antigos
+      const newBtn = btnSettings.cloneNode(true);
+      btnSettings.parentNode.replaceChild(newBtn, btnSettings);
+
+      // Adicionar novo listener
+      newBtn.addEventListener('click', () => {
+        // Remover restrição de "não mostrar hoje"
+        localStorage.removeItem('newsModalLastShown');
+        this.showNewsModal();
+      });
+
+      console.log('📰 Botão de notícias configurado');
+    }
+  },
+
+  /* ⭐ NOVO: Filtra cards do dashboard por permissão
+   */
+  filterDashboardCards() {
+    const user = window.PermissionsSystem.getCurrentUser();
+    if (!user) return;
+
+    const cards = document.querySelectorAll('.dash-card');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+      const moduleId = card.getAttribute('data-module');
+      // Se for ADMIN, sempre mostra. Caso contrário, checa a permissão.
+      const hasAccess = (user.role === 'ADMIN') || window.PermissionsSystem.hasModuleAccess(moduleId);
+
+      if (hasAccess) {
+        card.style.display = 'flex';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    console.log(`📊 Dashboard: ${visibleCount} cards visíveis de ${cards.length}`);
+  },
+
+
+  /**
    * Configura navegação do sidebar
    */
   setupNavigation() {
-    const user = window.AuthSystem.getCurrentUser();
-    if (!user) {
-      console.error('❌ Usuário não encontrado');
-      return;
-    }
+    const navContainer = document.querySelector('[data-role="nav-container"]');
+    if (!navContainer) return;
 
-    // Gerar links do sidebar baseado em rotas disponíveis
-    const availableRoutes = window.RoutesUtil.getAvailableRoutes(user);
-    const navContainer = document.querySelector('[data-role="nav-container"]') || 
-                         document.querySelector('nav') ||
-                         document.querySelector('.sidebar');
+    // Delegação de eventos: ouvimos o container, não o link individual
+    navContainer.addEventListener('click', async (e) => {
+      const link = e.target.closest('.sidebar-link');
+      if (!link) return;
 
-    if (!navContainer) {
-      console.warn('⚠️ Container de navegação não encontrado');
-      return;
-    }
+      e.preventDefault();
+      const moduleId = link.getAttribute('data-module');
 
-    // Gerar HTML para sidebar
-    const sidebarHTML = availableRoutes.map(route => `
-      <a href="#" 
-         class="sidebar-link" 
-         data-module="${route.id}" 
-         title="${route.description}"
-         data-permission="${route.permission}">
-        <i class="fi ${route.icon}"></i>
-        <span class="link-label">${route.name}</span>
-      </a>
-    `).join('');
+      console.log(`🚀 Tentando carregar módulo: ${moduleId}`);
+      await this.loadModule(moduleId);
 
-    navContainer.innerHTML = sidebarHTML;
-
-    // Registrar listeners
-    document.querySelectorAll('[data-module]').forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const moduleId = link.dataset.module;
-        
-        // Verificar permissão
-        if (!window.AuthSystem.hasPermission(link.dataset.permission)) {
-          this.showError('Você não tem permissão para acessar este módulo');
-          return;
-        }
-        
-        this.loadModule(moduleId);
-      });
+      // Atualiza classe ativa visual
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
     });
-
-    console.log(`📍 Navegação gerada com ${availableRoutes.length} módulos`);
   },
+
 
   /**
    * Carrega um módulo dinamicamente
    */
+
   async loadModule(moduleId) {
     console.log(`📦 Carregando módulo: ${moduleId}`);
-    
-    // 1. Verificar se módulo existe
+
     const route = window.RoutesUtil.getRoute(moduleId);
     if (!route) {
       console.error(`❌ Módulo não encontrado: ${moduleId}`);
       return;
     }
 
-    // 2. Verificar permissão
-    const user = window.AuthSystem.getCurrentUser();
-    if (!window.RoutesUtil.canAccess(moduleId, user)) {
-      console.error(`❌ Sem permissão para acessar: ${moduleId}`);
-      this.showError('Você não tem permissão para acessar este módulo');
-      return;
+    const user = window.PermissionsSystem.getCurrentUser();
+    if (user.role !== 'ADMIN') {
+      if (!window.PermissionsSystem.hasModuleAccess(moduleId)) {
+        console.error(`❌ Sem permissão para acessar: ${moduleId}`);
+        window.showToast?.('Acesso negado', 'error');
+        return;
+      }
     }
 
-    // 3. Se já é o módulo atual, ignora
     if (this.currentModuleId === moduleId) {
       console.log(`⚠️ Módulo ${moduleId} já está ativo`);
       return;
     }
 
     try {
-      // 4. Cleanup do módulo anterior
+      // Cleanup do módulo anterior
       if (this.currentModule && typeof this.currentModule.cleanup === 'function') {
         console.log(`🧹 Limpando módulo anterior: ${this.currentModuleId}`);
         this.currentModule.cleanup();
       }
 
-      // 5. Mostrar loading
-      const container = document.getElementById('app-container');
+      // ⭐ ESCONDER DASHBOARD
+      const dashboard = document.getElementById('dashboard-inicial');
+      if (dashboard) {
+        dashboard.classList.remove('modulo-ativo');
+        dashboard.classList.add('modulo-oculto');
+      }
+
+      // Mostrar loading
+      const container = document.getElementById('modulos-container');
       if (container) {
+        container.classList.remove('modulo-oculto');
+        container.classList.add('modulo-ativo');
         container.innerHTML = '<div style="text-align: center; padding: 40px;"><p>⏳ Carregando...</p></div>';
       }
 
-      // 6. Carregar CSS do módulo (otimização Blaze)
+      // Carregar CSS do módulo
       await this.loadModuleCSS(route);
 
-      // 7. Carregar módulo (reutilizar se já foi carregado)
+      // Carregar módulo
       let moduleExport;
       if (this.loadedModules.has(moduleId)) {
         console.log(`♻️ Reutilizando módulo em cache: ${moduleId}`);
@@ -198,7 +363,7 @@ const SPA = {
         this.loadedModules.set(moduleId, moduleExport);
       }
 
-      // 8. Inicializar módulo
+      // Inicializar módulo
       this.currentModule = moduleExport.default;
       this.currentModuleId = moduleId;
 
@@ -208,74 +373,70 @@ const SPA = {
 
       await this.currentModule.init();
 
-      // 9. Atualizar UI (sidebar highlight)
+      // Atualizar UI
       this.updateSidebarActive(moduleId);
+      this.updateBreadcrumb(route.name);
 
       console.log(`✅ Módulo carregado: ${moduleId}`);
 
     } catch (error) {
       console.error(`❌ Erro ao carregar módulo ${moduleId}:`, error);
-      
-      const container = document.getElementById('app-container');
+
+      const container = document.getElementById('modulos-container');
       if (container) {
         container.innerHTML = `
           <div style="color: red; padding: 40px; text-align: center;">
             <h3>❌ Erro ao carregar módulo</h3>
             <p>${error.message}</p>
-            <p style="color: #999; font-size: 12px;">Verifique o console para mais detalhes</p>
+            <button class="btn btn-primary" onclick="location.reload()">
+              Recarregar Página
+            </button>
           </div>
         `;
       }
     }
   },
-
   /**
-   * Carrega CSS do módulo (otimização Blaze)
-   * Evita carregar CSS redundante
-   */
+    * Carrega CSS do módulo
+    */
   async loadModuleCSS(route) {
     if (!route.cssPath) return;
-    
-    // Verificar se CSS já foi carregado
+
     if (this.cssCache.has(route.cssPath)) {
       console.log(`♻️ CSS já em cache: ${route.cssPath}`);
       return;
     }
 
     const linkId = `style-${route.id}`;
-    
-    // Verificar se link já existe no DOM
+
     if (document.getElementById(linkId)) {
       console.log(`♻️ CSS já no DOM: ${route.cssPath}`);
       this.cssCache.add(route.cssPath);
       return;
     }
 
-    // Criar link do CSS
     const link = document.createElement('link');
     link.id = linkId;
     link.rel = 'stylesheet';
     link.href = route.cssPath;
-    
-    // Remover CSS de outros módulos (otimização de memória)
+
     this.removeOtherModuleCSS(route.id);
-    
+
     document.head.appendChild(link);
     this.cssCache.add(route.cssPath);
-    
+
     console.log(`📄 CSS carregado: ${route.cssPath}`);
   },
 
   /**
-   * Remove CSS de outros módulos (economia Blaze)
+   * Remove CSS de outros módulos
    */
   removeOtherModuleCSS(currentModuleId) {
-    // Manter apenas CSS global e do módulo atual
     const keepCSS = ['global'];
-    
+
     document.querySelectorAll('link[id^="style-"]').forEach(link => {
       const moduleId = link.id.replace('style-', '');
-      
+
       if (!keepCSS.includes(moduleId) && moduleId !== currentModuleId) {
         link.remove();
         this.cssCache.delete(link.href);
@@ -298,123 +459,107 @@ const SPA = {
   },
 
   /**
-   * ===== SISTEMA DE BUSCA GLOBAL (CORRIGIDO) =====
+   * ⭐ NOVO: Atualiza breadcrumb
    */
-setupGlobalSearch() {
-    const searchModal = document.getElementById('globalSearch');
-    const searchInput = document.getElementById('searchInput');
-    const searchResults = document.getElementById('searchResults');
-    const btnSearch = document.getElementById('btnSearch');
-    const btnCloseSearch = document.querySelector('.btn-close-search');
+  updateBreadcrumb(moduleName) {
+    const breadcrumb = document.getElementById('breadcrumb');
+    if (breadcrumb) {
+      breadcrumb.innerHTML = `
+        <span>Lujo Network</span>
+        <span>${moduleName}</span>
+      `;
+    }
+  },
 
-    if (!searchModal || !searchInput) {
-      console.warn('⚠️ Elementos de busca não encontrados');
+
+  /**
+   * Remove CSS de outros módulos (economia Blaze)
+   */
+  removeOtherModuleCSS(currentModuleId) {
+    // Manter apenas CSS global e do módulo atual
+    const keepCSS = ['global'];
+
+    document.querySelectorAll('link[id^="style-"]').forEach(link => {
+      const moduleId = link.id.replace('style-', '');
+
+      if (!keepCSS.includes(moduleId) && moduleId !== currentModuleId) {
+        link.remove();
+        this.cssCache.delete(link.href);
+        console.log(`🧹 CSS removido: ${link.href}`);
+      }
+    });
+  },
+
+  /**
+   * Atualiza highlight do link ativo no sidebar
+   */
+  updateSidebarActive(moduleId) {
+    document.querySelectorAll('[data-module]').forEach(link => {
+      if (link.dataset.module === moduleId) {
+        link.classList.add('active');
+      } else {
+        link.classList.remove('active');
+      }
+    });
+  },
+
+  /**
+   * ===== SISTEMA DE BUSCA GLOBAL =====
+   */
+  setupGlobalSearch() {
+    const searchModal = document.getElementById('globalSearch');
+    const btnSearch = document.getElementById('btnSearch');
+    const searchInput = document.getElementById('searchInput');
+    const searchOverlay = document.querySelector('.search-overlay');
+    const btnClose = document.querySelector('.btn-close-search');
+
+    if (!searchModal || !btnSearch) {
+      console.warn('⚠️ Elementos de busca não encontrados no DOM');
       return;
     }
 
-    // ===== INICIALIZAR SEARCH FECHADO =====
-    searchModal.classList.add('hidden');
-    searchModal.setAttribute('aria-hidden', 'true');
-
-    // ===== ABRIR BUSCA =====
+    // Função interna para abrir
     const openSearch = () => {
-      console.log('🔍 Abrindo busca global');
-      searchModal.classList.remove('hidden');
-      searchModal.setAttribute('aria-hidden', 'false');
-      searchInput.focus();
-      searchResults.innerHTML = '';
+      searchModal.classList.add('active');
+      setTimeout(() => searchInput.focus(), 100); // Delay para o focus funcionar após o display flex
     };
 
-    // ===== FECHAR BUSCA =====
+    // Função interna para fechar
     const closeSearch = () => {
-      console.log('🔍 Fechando busca global');
-      searchModal.classList.add('hidden');
-      searchModal.setAttribute('aria-hidden', 'true');
-      searchInput.value = '';
-      searchResults.innerHTML = '';
+      searchModal.classList.remove('active');
+      searchInput.value = ''; // Limpa a busca ao fechar
     };
 
-    // ===== LISTENERS =====
-
-    // Botão de busca
-    if (btnSearch) {
-      btnSearch.addEventListener('click', openSearch);
-    }
-
-    // Botão fechar
-    if (btnCloseSearch) {
-      btnCloseSearch.addEventListener('click', closeSearch);
-    }
-
-    // ESC para fechar
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !searchModal.classList.contains('hidden')) {
-        closeSearch();
-      }
+    // 1. Gatilho por Clique no Botão do Header
+    btnSearch.addEventListener('click', (e) => {
+      e.preventDefault();
+      openSearch();
     });
 
-    // Ctrl+/ para abrir busca
+    // 2. Gatilho por Atalho (Ctrl + /)
     document.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+      if (e.ctrlKey && e.key === '/') {
         e.preventDefault();
-        if (searchModal.classList.contains('hidden')) {
-          openSearch();
-        } else {
-          closeSearch();
-        }
+        openSearch();
       }
-    });
 
-    // Fechar ao clicar no overlay
-    searchModal.addEventListener('click', (e) => {
-      if (e.target === searchModal) {
+      // 3. Fechar com ESC
+      if (e.key === 'Escape' && searchModal.classList.contains('active')) {
         closeSearch();
       }
     });
 
-    // Busca em tempo real
-    searchInput.addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase().trim();
+    // 4. Fechar ao clicar no Overlay (fundo)
+    if (searchOverlay) {
+      searchOverlay.addEventListener('click', closeSearch);
+    }
 
-      if (!term) {
-        searchResults.innerHTML = '';
-        return;
-      }
+    // 5. Fechar no botão "X"
+    if (btnClose) {
+      btnClose.addEventListener('click', closeSearch);
+    }
 
-      // Filtrar rotas disponíveis
-      const user = window.AuthSystem.getCurrentUser();
-      const availableRoutes = window.RoutesUtil.getAvailableRoutes(user);
-      
-      const results = availableRoutes.filter(route =>
-        route.name.toLowerCase().includes(term) ||
-        route.description.toLowerCase().includes(term)
-      );
-
-      // Renderizar resultados
-      if (results.length === 0) {
-        searchResults.innerHTML = '<li style="padding: 12px 16px; color: #999;">Nenhum resultado encontrado</li>';
-        return;
-      }
-
-      searchResults.innerHTML = results.map(route => `
-        <li class="search-result-item" data-module="${route.id}">
-          <i class="fi ${route.icon}" style="margin-right: 8px;"></i>
-          <strong>${route.name}</strong>
-          <p style="font-size: 12px; color: #999; margin: 0;">${route.description}</p>
-        </li>
-      `).join('');
-
-      // Registrar listeners nos resultados
-      document.querySelectorAll('.search-result-item').forEach(item => {
-        item.addEventListener('click', () => {
-          const moduleId = item.dataset.module;
-          closeSearch();
-          this.loadModule(moduleId);
-        });
-      });
-    });
-
-    console.log('✅ Busca global configurada');
+    console.log('🔍 Sistema de Busca Global vinculado com sucesso.');
   },
 
   /**
@@ -422,18 +567,16 @@ setupGlobalSearch() {
    */
   setupHotkeys() {
     document.addEventListener('keydown', (e) => {
-      // Alt + Número para navegar módulos
       if (e.altKey && e.key >= '1' && e.key <= '9') {
         const routes = Object.values(window.ROUTES)
           .sort((a, b) => a.order - b.order);
-        
+
         const moduleIndex = parseInt(e.key) - 1;
         if (routes[moduleIndex]) {
           this.loadModule(routes[moduleIndex].id);
         }
       }
 
-      // Ctrl/Cmd + L para logout
       if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
         e.preventDefault();
         if (confirm('Deseja sair do sistema?')) {
@@ -442,7 +585,7 @@ setupGlobalSearch() {
       }
     });
 
-    console.log('⌨️ Hotkeys configurados (Alt+[1-9] = módulos, Ctrl+L = logout, Ctrl+/ = busca)');
+    console.log('⌨️ Hotkeys configurados');
   },
 
   /**
@@ -498,7 +641,7 @@ const BlazeOptimizations = {
 
     console.log(`📊 Executando query: ${queryKey}`);
     const data = await queryFn();
-    
+
     this.queryCache.set(queryKey, {
       data,
       timestamp: now
@@ -574,13 +717,57 @@ const BlazeOptimizations = {
  * ===== FUNÇÃO GLOBAL showToast (se não existir) =====
  */
 if (typeof window.showToast === 'undefined') {
-  window.showToast = function(message, type = 'info') {
+  window.showToast = function (message, type = 'info') {
     const container = document.getElementById('toastContainer');
     if (!container) return;
 
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    
+
+    const icons = {
+      success: 'fi-rr-check-circle',
+      error: 'fi-rr-cross-circle',
+      warning: 'fi-rr-triangle-warning',
+      info: 'fi-rr-info'
+    };
+
+    toast.innerHTML = `
+      <i class="fi ${icons[type] || icons.info}"></i>
+      <span>${message}</span>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => {
+        if (toast.parentNode === container) {
+          container.removeChild(toast);
+        }
+      }, 300);
+    }, 3000);
+  };
+}
+
+/**
+ * ⭐ FUNÇÃO GLOBAL: Navegar para módulo (usada nos cards)
+ */
+window.navegarParaModulo = function (moduleId) {
+  console.log('🔗 Navegando para módulo:', moduleId);
+  SPA.loadModule(moduleId);
+};
+
+/**
+ * Função global showToast
+ */
+if (typeof window.showToast === 'undefined') {
+  window.showToast = function (message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
     const icons = {
       success: 'fi-rr-check-circle',
       error: 'fi-rr-cross-circle',
@@ -616,7 +803,7 @@ if (typeof window.showToast === 'undefined') {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     SPA.init();
-    
+
     // Limpar cache a cada 10 minutos
     setInterval(() => {
       BlazeOptimizations.cleanExpiredCache();

@@ -75,6 +75,10 @@ body {
   overflow: hidden;
 }
 
+/* ============================= */
+/* SIDEBAR / NAVEGAÇÃO - CORRIGIDO */
+/* ============================= */
+
 .sidebar {
   grid-area: sidebar;
   background: white;
@@ -91,27 +95,14 @@ body {
   left: 0;
   top: 0;
   height: 100vh;
-  transform: translateX(-100%); /* Totalmente escondida */
+  transform: translateX(0);
+  pointer-events: auto;
+  
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  pointer-events: none; /* Não bloqueia cliques quando oculta */
 }
 
-.sidebar-trigger {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 20px; /* Área sensível de 20px */
-  height: 100vh;
-  z-index: calc(var(--z-sidebar) - 1);
-  background: transparent;
-  cursor: pointer;
-}
-
-.sidebar-trigger:hover ~ .sidebar,
 .sidebar:hover {
-  transform: translateX(0); /* Aparecer */
-  pointer-events: auto; /* Permitir cliques */
-  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15); /* Sombra para destacar */
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
 }
 
 .sidebar::-webkit-scrollbar {
@@ -158,12 +149,14 @@ body {
 .sidebar-link:hover {
   background: var(--color-secondary);
   color: var(--color-primary);
+  transform: translateX(4px);
 }
 
 .sidebar-link.active {
   background: var(--color-secondary);
   color: var(--color-primary);
   border-left: 3px solid var(--color-primary);
+  font-weight: 600;
 }
 
 .sidebar-link .link-label {
@@ -248,7 +241,10 @@ body {
   margin: 0;
 }
 
-/* Cards do dashboard */
+/* ============================= */
+/* DASHBOARD CARDS - MELHORIAS */
+/* ============================= */
+
 .dashboard-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -270,6 +266,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 16px;
+  display: flex !important;
 }
 
 .dash-card:hover {
@@ -281,6 +278,11 @@ body {
 .dash-card i {
   font-size: 48px;
   color: var(--color-primary);
+  transition: transform 0.3s ease;
+}
+
+.dash-card:hover i {
+  transform: scale(1.1);
 }
 
 .dash-card h3 {
@@ -294,6 +296,10 @@ body {
   color: var(--color-text-light);
   margin: 0;
   line-height: 1.5;
+}
+
+.dash-card[style*="display: none"] {
+  display: none !important;
 }
 
 /* ============================= */
@@ -874,32 +880,29 @@ footer {
 }
 
 /* ============================= */
-/* BUSCA GLOBAL (CORRIGIDA)       */
+/* BUSCA GLOBAL                  */
 /* ============================= */
 .global-search {
   position: fixed;
   inset: 0;
-  display: none; /* Inicia TOTALMENTE escondido */
+  display: none;
   align-items: flex-start;
   justify-content: center;
   padding-top: 100px;
-  z-index: 9999; /* Use um valor alto fixo se var(--z-search) falhar */
+  z-index: var(--z-search, 2000);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px); 
 }
 
-.global-search:not(.hidden) {
+.global-search.active {
   display: flex !important;
 }
 
-.global-search.hidden {
-  display: none !important;
-}
-
 .search-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6); /* Escurece o fundo */
   cursor: pointer;
-  z-index: 1000;
+  z-index: 10000;
 }
 
 /* Classes de Ativação */
@@ -911,15 +914,20 @@ footer {
 }
 
 .search-container {
-  width: 100%;
-  max-width: 500px;
-  background: white;
-  border-radius: 8px; /* Ajuste se var(--radius) não existir */
-  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  width: 90%;
+  max-width: 600px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
   overflow: hidden;
   position: relative;
-  z-index: 1001; /* Fica acima do overlay */
-  animation: fadeInDown 0.2s ease-out; /* Pequena animação de entrada */
+  z-index: 10001;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+@keyframes searchSlideIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeInDown {

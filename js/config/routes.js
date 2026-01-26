@@ -145,22 +145,20 @@ window.RoutesUtil = {
    * Filtra por permissões do usuário
    */
   getAvailableRoutes(user) {
-    if (!user) {
-      console.warn('⚠️ Usuário não fornecido');
-      return [];
-    }
+    if (!user) return [];
 
-    return Object.values(window.ROUTES)
-      .filter(route => {
-        // Verificar permissão
-        const hasPermission = window.AuthSystem.hasPermission(route.permission);
-        
-        // Verificar role
-        const hasRole = route.roles.includes(user.role);
-        
-        return hasPermission && hasRole;
-      })
-      .sort((a, b) => a.order - b.order);
+    return Object.values(window.ROUTES).filter(route => {
+      // 1. Se o usuário for ADMIN, ele vê TUDO, independente do que diz a rota
+      if (user.role === 'ADMIN') return true;
+
+      // 2. Senão, verifica se a role dele está permitida na rota
+      const hasRole = route.roles && route.roles.includes(user.role);
+
+      // 3. E verifica se ele tem a permissão específica
+      const hasPerm = window.PermissionsSystem.hasPermission(route.permission);
+
+      return hasRole || hasPerm;
+    }).sort((a, b) => a.order - b.order);
   },
 
   /**
@@ -189,11 +187,11 @@ window.RoutesUtil = {
   getNextRoute(currentRouteId, user) {
     const availableRoutes = this.getAvailableRoutes(user);
     const currentIndex = availableRoutes.findIndex(r => r.id === currentRouteId);
-    
+
     if (currentIndex === -1 || currentIndex === availableRoutes.length - 1) {
       return availableRoutes[0] || null;
     }
-    
+
     return availableRoutes[currentIndex + 1];
   },
 
@@ -203,11 +201,11 @@ window.RoutesUtil = {
   getPreviousRoute(currentRouteId, user) {
     const availableRoutes = this.getAvailableRoutes(user);
     const currentIndex = availableRoutes.findIndex(r => r.id === currentRouteId);
-    
+
     if (currentIndex <= 0) {
       return availableRoutes[availableRoutes.length - 1] || null;
     }
-    
+
     return availableRoutes[currentIndex - 1];
   },
 
@@ -216,7 +214,7 @@ window.RoutesUtil = {
    */
   generateSidebarHTML(user) {
     const routes = this.getAvailableRoutes(user);
-    
+
     return routes.map(route => `
       <a href="#" class="sidebar-link" data-module="${route.id}" 
          title="${route.description}" data-permission="${route.permission}">

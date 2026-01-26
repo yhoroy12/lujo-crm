@@ -438,7 +438,7 @@
 
               <div class="acoes-footer"
                 style="display: flex; justify-content: flex-end; gap: 12px; align-items: center;">
-                <button class="btn-devolver-fila" onclick="devolverParaFila()">
+                <button class="btn-devolver-fila" onclick="EmailsTab.abrirModalDevolucao()">
                   <i class="fi fi-rr-undo"></i> Devolver para Fila
                 </button>
                 <button class="btn-direcionar" onclick="abrirModalDirecionamento()">
@@ -803,19 +803,26 @@
     </div>
     <!-- MODAL's -->
     <!-- MODAL JUSTIFICATIVA DEVOLUÇÃO PARA FILA -->
-    <div id="modalJustificativa" class="modal-email-justificativa">
+    <div id="modalJustificativaDevolucao" class="modal-email-justificativa" style="display:none;">
       <div class="modal-email-content">
-        <div class="modal-header-flex">
-        <h3><i class="fi fi-rr-exclamation" style="color: #f1c40f;"></i> Justificativa </h3>
-        <h4><button onclick="fecharModalJustificativa()" class="btn-modal-close-x">&times;</button></h4>
+        <div class="modal-header-flex"
+          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3 style="margin:0;"><i class="fi fi-rr-exclamation" style="color: #f1c40f;"></i> Justificativa</h3>
+          <button onclick="EmailsTab.fecharModalDevolucao()" class="btn-modal-close-x"
+            style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
         </div>
         <p style="font-size: 14px; color: #666; margin-bottom: 10px;">Por que você está devolvendo este atendimento para
           a fila?</p>
-        <textarea id="txtJustificativa"
-          placeholder="Ex: Assunto técnico demais, cliente precisa de suporte de nível 2..."></textarea>
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
-          <button class="btn-devolver-fila" style="height: 40px; padding: 0 20px;"
-            onclick="confirmarDevolucao()">Confirmar Devolução</button>
+
+        <textarea id="justificativaDevolucaoTexto"
+          placeholder="Ex: Assunto técnico demais, cliente precisa de suporte de nível 2..."
+          style="width: 100%; height: 100px; padding: 10px; border-radius: 8px; border: 1px solid #ddd;"></textarea>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+          <button class="btn-secundario" onclick="EmailsTab.fecharModalDevolucao()">Cancelar</button>
+          <button class="btn-devolver-fila"
+            style="height: 40px; padding: 0 20px; background: #f1c40f; color: #000; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;"
+            onclick="EmailsTab.confirmarDevolucao()">Confirmar Devolução</button>
         </div>
       </div>
     </div>
@@ -826,15 +833,16 @@
       <div class="modal-email-content" style="width: 400px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h3 style="margin:0;"><i class="fi fi-rr-shuffle"></i> Direcionar para...</h3>
-          <button onclick="fecharModalDirecionar()" class="btn-modal-close-x">&times;</button>
+          <button onclick="EmailsTab.fecharModalDirecionar()" class="btn-modal-close-x">&times;</button>
         </div>
 
-        <div class="lista-setores-direcionamento">
-          <button class="item-setor" onclick="confirmarDirecionamento('conteudo')">Conteúdo</button>
-          <button class="item-setor" onclick="confirmarDirecionamento('tecnico')">Técnico</button>
-          <button class="item-setor" onclick="confirmarDirecionamento('copyright')">Copyright / Jurídico</button>
-          <button class="item-setor" onclick="confirmarDirecionamento('financeiro')">Financeiro</button>
-          <button class="item-setor" onclick="confirmarDirecionamento('marketing')">Marketing</button>
+        <div class="lista-setores-direcionamento" style="display: flex; flex-direction: column; gap: 10px;">
+          <button class="item-setor" onclick="EmailsTab.confirmarDirecionamento('conteudo')">Conteúdo</button>
+          <button class="item-setor" onclick="EmailsTab.confirmarDirecionamento('tecnico')">Técnico</button>
+          <button class="item-setor" onclick="EmailsTab.confirmarDirecionamento('copyright')">Copyright /
+            Jurídico</button>
+          <button class="item-setor" onclick="EmailsTab.confirmarDirecionamento('financeiro')">Financeiro</button>
+          <button class="item-setor" onclick="EmailsTab.confirmarDirecionamento('marketing')">Marketing</button>
         </div>
       </div>
     </div>
@@ -845,7 +853,7 @@
         <div
           style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
           <h3 id="detalheEmailAssunto" style="margin:0; font-size: 16px;">Assunto do E-mail</h3>
-          <button onclick="fecharModalDetalhes()" class="btn-modal-close-x">&times;</button>
+          <button onclick="EmailsTab.fecharModalDetalhes()" class="btn-modal-close-x">&times;</button>
         </div>
 
         <div id="detalheEmailMeta"
