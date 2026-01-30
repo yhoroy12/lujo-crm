@@ -10,9 +10,8 @@ window.ROUTES = {
   atendimento: {
     id: 'atendimento',
     name: 'Atendimento',
-    icon: 'fi-rr-headset',
+    icon: 'fi fi-rr-phone-call',
     color: '#3498db',
-    description: 'Sistema de atendimento ao cliente',
     permission: 'atendimento.view',
     modulePath: 'js/modules/atendimento/atendimento.module.js',
     cssPath: '../public/css/atendimento.css',
@@ -24,9 +23,8 @@ window.ROUTES = {
   conteudo: {
     id: 'conteudo',
     name: 'Conteúdo',
-    icon: 'fi-rr-document',
+    icon: 'fi fi-rr-music-alt',
     color: '#9b59b6',
-    description: 'Gerenciamento de conteúdo',
     permission: 'conteudo.view',
     modulePath: 'js/modules/conteudo/conteudo.module.js',
     cssPath: '../public/css/conteudo.css',
@@ -40,7 +38,6 @@ window.ROUTES = {
     name: 'Copyright',
     icon: 'fi-rr-shield-check',
     color: '#e74c3c',
-    description: 'Gerenciamento de direitos autorais',
     permission: 'copyright.view',
     modulePath: 'js/modules/copyright/copyright.module.js',
     cssPath: '../public/css/copyright.css',
@@ -54,7 +51,6 @@ window.ROUTES = {
     name: 'Financeiro',
     icon: 'fi-rr-dollar',
     color: '#2ecc71',
-    description: 'Gestão financeira e pagamentos',
     permission: 'financeiro.view',
     modulePath: 'js/modules/financeiro/financeiro.module.js',
     cssPath: '../public/css/financeiro.css',
@@ -66,9 +62,8 @@ window.ROUTES = {
   tecnico: {
     id: 'tecnico',
     name: 'Suporte Técnico',
-    icon: 'fi-rr-tools',
+    icon: 'fi fi-rr-users',
     color: '#f39c12',
-    description: 'Suporte técnico e issues',
     permission: 'tecnico.view',
     modulePath: 'js/modules/tecnico/tecnico.module.js',
     cssPath: '../public/css/tecnico.css',
@@ -80,9 +75,8 @@ window.ROUTES = {
   marketing: {
     id: 'marketing',
     name: 'Marketing',
-    icon: 'fi-rr-megaphone',
+    icon: 'fi fi-rr-star',
     color: '#1abc9c',
-    description: 'Campanhas e estratégias de marketing',
     permission: 'marketing.view',
     modulePath: 'js/modules/marketing/marketing.module.js',
     cssPath: '../public/css/marketing.css',
@@ -94,9 +88,8 @@ window.ROUTES = {
   gestor: {
     id: 'gestor',
     name: 'Gestão',
-    icon: 'fi-rr-chart-line',
+    icon: 'fi fi-rr-user',
     color: '#34495e',
-    description: 'Controle e indicadores de gestão',
     permission: 'gestor.view',
     modulePath: 'js/modules/gestor/gestor.module.js',
     cssPath: '../public/css/gerencia/gerencia.css',
@@ -108,9 +101,8 @@ window.ROUTES = {
   relatorios: {
     id: 'relatorios',
     name: 'Relatórios',
-    icon: 'fi-rr-briefcase',
+    icon: 'fi fi-rr-chart-histogram',
     color: '#16a085',
-    description: 'Relatórios e análises',
     permission: 'relatorios.view',
     modulePath: 'js/modules/relatorios/relatorios.module.js',
     cssPath: '../public/css/relatorios.css',
@@ -122,9 +114,8 @@ window.ROUTES = {
   'usuarios-permissoes': {
     id: 'usuarios-permissoes',
     name: 'Administração',
-    icon: 'fi-rr-user-lock',
+    icon: 'fi fi-rr-settings',
     color: '#c0392b',
-    description: 'Gerenciamento de usuários e permissões',
     permission: 'admin.view',
     modulePath: 'js/modules/usuarios-permissoes/usuarios-permissoes.module.js',
     cssPath: '../public/css/admin.css',
@@ -217,7 +208,7 @@ window.RoutesUtil = {
 
     return routes.map(route => `
       <a href="#" class="sidebar-link" data-module="${route.id}" 
-         title="${route.description}" data-permission="${route.permission}">
+         title="${route.name}">
         <i class="fi ${route.icon}"></i>
         <span class="link-label">${route.name}</span>
       </a>

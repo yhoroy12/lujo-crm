@@ -6,11 +6,20 @@
  */
 
 const PermissionFilter = {
+  // 🔒 Flag para impedir re-inicialização
+  _initialized: false,
+  _moduleId: 'permission-filter',
+
   /**
    * Inicializa o sistema de filtragem
    * Deve ser chamado após AuthSystem, PermissionsSystem e ROUTES estarem prontos
    */
   async init() {
+     // 🔒 PROTEÇÃO: Impedir re-execução
+    if (this._initialized) {
+      console.warn('⚠️ Permission Filter já foi inicializado. Ignorando duplicata.');
+      return;
+    }
     console.log('🔐 Inicializando Permission Filter');
 
     try {
@@ -43,6 +52,9 @@ const PermissionFilter = {
 
       // 6. Setup de logout
       this.setupLogout();
+
+      // 🔒 Marcar como inicializado
+      this._initialized = true;
 
       console.log('✅ Permission Filter inicializado com sucesso');
 
@@ -160,12 +172,12 @@ const PermissionFilter = {
            class="sidebar-link" 
            data-module="${route.id}" 
            data-permission="${route.permission}"
-           title="${route.description}"
+            title="${route.name}"
            aria-label="${route.name}">
           <i class="fi ${route.icon}"></i>
           <span class="link-label">${route.name}</span>
           <span class="link-description" style="font-size: 11px; opacity: 0.7;">
-            ${route.description}
+            ${route.description || ''}
           </span>
         </a>
       `)
@@ -176,8 +188,15 @@ const PermissionFilter = {
    * Registra listeners nos links do sidebar
    */
   bindSidebarEvents() {
-    document.querySelectorAll('[data-module]').forEach(link => {
-      link.addEventListener('click', (e) => {
+  // 🧹 IMPORTANTE: Limpar listeners antigos ANTES de adicionar novos
+    if (window.ModuleLifecycle) {
+      window.ModuleLifecycle.cleanup(this._moduleId);
+    }
+    const links = document.querySelectorAll('[data-module]');
+    
+    links.forEach(link => {
+      // ✅ Handler separado para poder ser rastreado
+      const clickHandler = (e) => {
         e.preventDefault();
         
         const moduleId = link.dataset.module;
@@ -188,16 +207,24 @@ const PermissionFilter = {
           this.showAccessDenied(moduleId);
           return;
         }
-
-        // Carregar módulo via SPA
-        if (window.SPA && typeof window.SPA.loadModule === 'function') {
+         if (window.SPA && typeof window.SPA.loadModule === 'function') {
           window.SPA.loadModule(moduleId);
         } else {
           console.error('❌ SPA não está disponível');
         }
-      });
-
-      // Destacar link ao passar o mouse
+      };
+          // ✅ CORRIGIDO: Usar ModuleLifecycle para rastrear listeners
+      if (window.ModuleLifecycle) {
+        window.ModuleLifecycle.addListener(
+          link,
+          'click',
+          clickHandler,
+          this._moduleId
+        );
+      } else {
+        // Fallback se ModuleLifecycle não estiver disponível
+        link.addEventListener('click', clickHandler);
+      }
       link.addEventListener('mouseenter', () => {
         link.style.transform = 'translateX(4px)';
       });
@@ -206,7 +233,18 @@ const PermissionFilter = {
         link.style.transform = 'translateX(0)';
       });
     });
+
+    console.log(`✅ ${links.length} listeners de sidebar registrados via ModuleLifecycle`);
   },
+  /* 
+    document.querySelectorAll('[data-module]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        const moduleId = link.dataset.module;
+        console.log(`🔗 Clicou em módulo: ${moduleId}`);
+
+    */
 
   /**
    * Adiciona badges visuais baseado no role do usuário
@@ -332,7 +370,33 @@ const PermissionFilter = {
       console.log('ℹ️ Nenhum botão de logout encontrado');
       return;
     }
+    logoutButtons.forEach(btn => {
+      const logoutHandler = (e) => {
+        e.preventDefault();
 
+        if (confirm('Deseja realmente fazer logout?')) {
+          console.log('🚪 Executando logout...');
+          window.AuthSystem.logout();
+        }
+      };
+
+      // ✅ Usar ModuleLifecycle
+      if (window.ModuleLifecycle) {
+        window.ModuleLifecycle.addListener(
+          btn,
+          'click',
+          logoutHandler,
+          this._moduleId
+        );
+      } else {
+        btn.addEventListener('click', logoutHandler);
+      }
+    });
+
+    console.log(`✅ ${logoutButtons.length} botão(es) de logout configurado(s)`);
+  },
+
+    /*
     logoutButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -345,7 +409,7 @@ const PermissionFilter = {
     });
 
     console.log(`✅ ${logoutButtons.length} botão(es) de logout configurado(s)`);
-  },
+  },*/
 
   /**
    * Mostra mensagem de acesso negado
@@ -363,6 +427,24 @@ const PermissionFilter = {
     }
   },
 
+  //adicionado remover se não funcionar
+  //✅ NOVO: Método para resetar (útil em hot reload)
+   
+  reset() {
+    console.log('🔄 Resetando Permission Filter...');
+    
+    // Limpar listeners
+    if (window.ModuleLifecycle) {
+      window.ModuleLifecycle.cleanup(this._moduleId);
+    }
+    
+    // Resetar flag
+    this._initialized = false;
+    
+    console.log('✅ Permission Filter resetado');
+  },
+
+
   /**
    * Debug: Imprime informações de permissões
    */
@@ -378,6 +460,11 @@ const PermissionFilter = {
     const allRoutes = Object.values(window.ROUTES);
     const hiddenRoutes = allRoutes.filter(r => !routes.find(ar => ar.id === r.id));
     console.log(`🔒 Rotas ocultas (${hiddenRoutes.length}):`, hiddenRoutes.map(r => r.id));
+    //adicionado remover se não funcionar
+    console.log('🔧 Estado interno:', {
+      initialized: this._initialized,
+      moduleId: this._moduleId
+    });
 
     console.groupEnd();
   }

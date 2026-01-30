@@ -58,7 +58,7 @@ const AtendimentoModule = {
       // 5. Bind eventos globais
       this.bindGlobalEvents();
       console.log('✅ Eventos configurados');
-      
+  
       console.log('🎉 Atendimento pronto');
       
     } catch (error) {
@@ -110,8 +110,16 @@ const AtendimentoModule = {
    */
   async loadServices() {
     try {
+      console.log('📦 Carregando infraestrutura de dados do Firebase...');
+        await import('./services/atendimento-chat-sistem/atendimento-data-structure.js');
+        await import('./services/atendimento-chat-sistem/atendimento-acceptance-manager.js');
+        await import('./services/atendimento-chat-sistem/atendimento-restoration-manager.js');
+        if (!window.AtendimentoDataStructure && typeof AtendimentoDataStructureManager !== 'undefined') {
+        window.AtendimentoDataStructure = new AtendimentoDataStructureManager();
+      }
+
       window.AtendimentoServices = {};
-      console.log('✅ Services preparados (carregamento lazy)');
+      console.log('Infraestrutura de dados e Services prontos');
     } catch (error) {
       console.error('❌ Erro ao preparar services:', error);
       throw error;
@@ -150,10 +158,6 @@ async loadTabContent(tabId) {
         console.log(`📦 Carregando script da aba: ${modulePath}`);
         
         const tabModule = await import(modulePath);
-        
-        // AJUSTE AQUI: 
-        // Como exportamos "export const EmailsTab", o objeto está em tabModule.EmailsTab
-        // Se exportamos "export default", estaria em tabModule.default
         const moduleInstance = tabModule.EmailsTab || tabModule.default || tabModule;
 
         if (moduleInstance && typeof moduleInstance.init === 'function') {

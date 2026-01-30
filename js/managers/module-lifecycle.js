@@ -11,7 +11,8 @@ window.ModuleLifecycle = (function () {
   const state = {
     activeModule: null,
     listeners: new Map(),
-    initialized: new Set()
+    initialized: new Set(),
+    pendingInit: null // ✅ NOVO: Rastreia módulo sendo inicializado
   };
 
   /**
@@ -73,17 +74,9 @@ window.ModuleLifecycle = (function () {
   /**
    * Inicializa um módulo com cleanup automático do anterior
    * 
-   * ⚠️ ERRO CRÍTICO CORRIGIDO:
-   * Antes: A TRAVA 1 verificava se activeModule === moduleId ANTES do cleanup
-   * Depois: cleanupAtendimentoModule() é chamada DEPOIS, o que deletava
-   *        initialized.delete(moduleId) DENTRO do cleanup, permitindo reinit
-   * 
-   * Solução: Mover state.initialized.add() ANTES de cleanup
-   * Assim se init() for chamado múltiplas vezes, a TRAVA 1 vai pegar na segunda
-   * 
    * @param {string} moduleId - ID do novo módulo
    * @param {Function} initFunction - Função de inicialização do módulo
-   */
+   /*//* 
   function init(moduleId, initFunction) {
     // ===== TRAVA 1: Se já é o módulo ativo, ignora reinit =====
     if (state.activeModule === moduleId) {
@@ -137,6 +130,80 @@ window.ModuleLifecycle = (function () {
       state.initialized.delete(moduleId);
     }
   }
+    */
+  /**
+   * ✅ CORRIGIDO: Inicializa um módulo com proteção robusta contra duplicação
+   * 
+   * Mudanças principais:
+   * 1. Marca como "pendente" ANTES de qualquer operação
+   * 2. Verifica se já está ativo OU pendente
+   * 3. Cleanup do módulo anterior ANTES de marcar como ativo
+   * 
+   * @param {string} moduleId - ID do novo módulo
+   * @param {Function} initFunction - Função de inicialização do módulo
+   */
+  function init(moduleId, initFunction) {
+    // ===== TRAVA 1: Se já está ativo OU pendente, ignorar =====
+    if (state.activeModule === moduleId) {
+      console.warn(`⚠️ Módulo ${moduleId} já está ativo. Abortando duplicata.`);
+      return;
+    }
+
+    if (state.pendingInit === moduleId) {
+      console.warn(`⚠️ Módulo ${moduleId} já está sendo inicializado. Abortando duplicata.`);
+      return;
+    }
+
+    console.log(`🚀 Preparando inicialização do módulo: ${moduleId}`);
+
+    // ===== MARCAR COMO PENDENTE IMEDIATAMENTE (CRÍTICO!) =====
+    state.pendingInit = moduleId;
+
+    try {
+      // ===== LIMPAR MÓDULO ANTERIOR =====
+      if (state.activeModule && state.activeModule !== moduleId) {
+        const prevModuleId = state.activeModule;
+        console.log(`🔄 Limpando módulo anterior: ${prevModuleId}`);
+        
+        cleanup(prevModuleId);
+        
+        // Chamar função de cleanup customizada (se existir)
+        const cleanupFunctionName = `cleanup${prevModuleId.charAt(0).toUpperCase() + prevModuleId.slice(1)}Module`;
+        if (typeof window[cleanupFunctionName] === 'function') {
+          try {
+            window[cleanupFunctionName]();
+            console.log(`✅ Cleanup customizado chamado: ${cleanupFunctionName}`);
+          } catch (e) {
+            console.warn(`⚠️ Erro ao chamar ${cleanupFunctionName}:`, e);
+          }
+        }
+      }
+
+      // ===== MARCAR COMO ATIVO ANTES DE EXECUTAR =====
+      state.activeModule = moduleId;
+      state.initialized.add(moduleId);
+
+      // ===== EXECUTAR INICIALIZAÇÃO COM TRATAMENTO DE ERRO =====
+      if (typeof initFunction === 'function') {
+        initFunction();
+        console.log(`✅ Módulo ${moduleId} carregado no palco com sucesso`);
+      } else {
+        console.error(`❌ Erro: initFunction para ${moduleId} não é uma função válida`);
+        // Reset em caso de erro
+        state.activeModule = null;
+        state.initialized.delete(moduleId);
+      }
+
+    } catch (e) {
+      console.error(`❌ Erro crítico ao processar script de ${moduleId}:`, e);
+      // Reset em caso de erro
+      state.activeModule = null;
+      state.initialized.delete(moduleId);
+    } finally {
+      // ===== LIMPAR FLAG DE PENDENTE =====
+      state.pendingInit = null;
+    }
+  }
 
   /**
    * Retorna estatísticas de uso
@@ -150,6 +217,7 @@ window.ModuleLifecycle = (function () {
 
     return {
       activeModule: state.activeModule,
+      pendingInit: state.pendingInit,
       totalListeners: state.listeners.size,
       byModule,
       initialized: Array.from(state.initialized)
@@ -167,8 +235,28 @@ window.ModuleLifecycle = (function () {
     modules.forEach(cleanup);
     state.initialized.clear();
     state.activeModule = null;
+    state.pendingInit = null;
 
     console.log('🧹 Cleanup completo executado');
+  }
+
+  /**
+   * ✅ NOVO: Debug helper
+   */
+  function debug() {
+    console.group('🔍 MODULE LIFECYCLE DEBUG');
+    console.log('📊 Estado atual:', {
+      activeModule: state.activeModule,
+      pendingInit: state.pendingInit,
+      initialized: Array.from(state.initialized),
+      totalListeners: state.listeners.size
+    });
+
+    console.log('📋 Listeners por módulo:');
+    const stats = getStats();
+    console.table(stats.byModule);
+
+    console.groupEnd();
   }
 
   // API pública
@@ -177,6 +265,7 @@ window.ModuleLifecycle = (function () {
     cleanup,
     init,
     getStats,
+    debug,
     cleanupAll
   };
 

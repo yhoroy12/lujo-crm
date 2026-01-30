@@ -1,8 +1,7 @@
 /**
  * =====================================================
- * MAIN.JS - Orquestrador Principal da SPA (CORRIGIDO v2)
+ * MAIN.JS - Orquestrador Principal da SPA (CORRIGIDO)
  * Gerencia navegação, módulos e otimizações Blaze
- * ✅ CORRIGIDO: Removido setupNavigation duplicado
  * =====================================================
  */
 
@@ -23,30 +22,33 @@ const SPA = {
       await this.waitForAuth();
       console.log('✅ Autenticação pronta');
       
-      // ✅ CORRIGIDO: Removido setupNavigation() - agora é gerenciado pelo permission-filter.js
-      // Isso evita duplicação de listeners
+      // 3. Gerar navegação
+      this.setupNavigation();
+      console.log('✅ Navegação configurada');
       
-      // 2. Modal de noticias
+      // 3.1 Modal de noticias
       this.showNewsModal();
       console.log('✅ Modal de notícias exibido');
             
-      // 3. Setup hotkeys e atalhos globais
+      // 5. Setup hotkeys e atalhos globais
       this.setupHotkeys();
       console.log('✅ Hotkeys configurados');
 
-      // 4. Setup busca global
+      // 6. Setup busca global
       this.setupGlobalSearch();
       console.log('✅ Busca global configurada');
 
-      // 5. Aguardar permissões
+      // 2. Aguardar permissões
       await this.waitForPermissions();
       console.log('✅ Permissões carregadas');
 
-      // 6. Filtrar cards do main por permissão
+
+      // 4 filtrar cards do main por permissão
       this.filterDashboardCards();
       console.log('✅ Cards do dashboard filtrados por permissão');
 
-      // 7. Setup botão noticias
+      
+      // 7.Setup botão noticias
       this.setupNewsButton();
       console.log('✅ Botão de notícias configurado');
 
@@ -275,13 +277,28 @@ const SPA = {
 
 
   /**
-   * ✅ CORRIGIDO: Removido setupNavigation()
-   * Agora o permission-filter.js é responsável por gerenciar os cliques
-   * nos links do sidebar. Isso evita duplicação de listeners.
-   * 
-   * A navegação via cards do dashboard usa a função global navegarParaModulo()
-   * que está definida na linha 758.
+   * Configura navegação do sidebar
    */
+  setupNavigation() {
+    const navContainer = document.querySelector('[data-role="nav-container"]');
+    if (!navContainer) return;
+
+    // Delegação de eventos: ouvimos o container, não o link individual
+    navContainer.addEventListener('click', async (e) => {
+      const link = e.target.closest('.sidebar-link');
+      if (!link) return;
+
+      e.preventDefault();
+      const moduleId = link.getAttribute('data-module');
+
+      console.log(`🚀 Tentando carregar módulo: ${moduleId}`);
+      await this.loadModule(moduleId);
+
+      // Atualiza classe ativa visual
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+    });
+  },
 
 
   /**
@@ -455,6 +472,38 @@ updateSidebarActive(moduleId) {
         <span>${moduleName}</span>
       `;
     }
+  },
+
+
+  /**
+   * Remove CSS de outros módulos (economia Blaze)
+   */
+  removeOtherModuleCSS(currentModuleId) {
+    // Manter apenas CSS global e do módulo atual
+    const keepCSS = ['global'];
+
+    document.querySelectorAll('link[id^="style-"]').forEach(link => {
+      const moduleId = link.id.replace('style-', '');
+
+      if (!keepCSS.includes(moduleId) && moduleId !== currentModuleId) {
+        link.remove();
+        this.cssCache.delete(link.href);
+        console.log(`🧹 CSS removido: ${link.href}`);
+      }
+    });
+  },
+
+  /**
+   * Atualiza highlight do link ativo no sidebar
+   */
+  updateSidebarActive(moduleId) {
+    document.querySelectorAll('[data-module]').forEach(link => {
+      if (link.dataset.module === moduleId) {
+        link.classList.add('active');
+      } else {
+        link.classList.remove('active');
+      }
+    });
   },
 
   /**
@@ -712,6 +761,42 @@ window.navegarParaModulo = function (moduleId) {
 };
 
 /**
+ * Função global showToast
+ */
+if (typeof window.showToast === 'undefined') {
+  window.showToast = function (message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    const icons = {
+      success: 'fi-rr-check-circle',
+      error: 'fi-rr-cross-circle',
+      warning: 'fi-rr-triangle-warning',
+      info: 'fi-rr-info'
+    };
+
+    toast.innerHTML = `
+      <i class="fi ${icons[type] || icons.info}"></i>
+      <span>${message}</span>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => {
+        if (toast.parentNode === container) {
+          container.removeChild(toast);
+        }
+      }, 300);
+    }, 3000);
+  };
+}
+
+/**
  * =====================================================
  * INICIALIZAÇÃO
  * =====================================================
@@ -735,5 +820,5 @@ if (document.readyState === 'loading') {
 window.SPA = SPA;
 window.BlazeOptimizations = BlazeOptimizations;
 
-console.log('✅ main.js carregado (CORRIGIDO v2) - SPA pronto para uso');
+console.log('✅ main.js carregado - SPA pronto para uso');
 console.log('💡 Execute: window.SPA.debug() para ver estado atual');

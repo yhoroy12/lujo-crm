@@ -6,7 +6,8 @@ import {
   getFirestore, 
   collection, 
   onSnapshot, 
-  doc, 
+  doc,
+  addDoc, 
   getDoc, 
   setDoc, 
   updateDoc, 
@@ -17,10 +18,13 @@ import {
   getDocs,   // <--- ADICIONADO
   limit,
   arrayUnion,
-  runTransaction
+  runTransaction,
+  serverTimestamp,
+  Timestamp
+
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged,signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBk0quftYz1i0oxH0ZDiP7JyIlr58eTi7o",
@@ -42,7 +46,8 @@ window.FirebaseApp = {
     fStore: { 
         collection, 
         onSnapshot, 
-        doc, 
+        doc,
+        addDoc, 
         getDoc, 
         setDoc, 
         updateDoc, 
@@ -53,13 +58,17 @@ window.FirebaseApp = {
         getDocs,
         limit,
         arrayUnion,
-        runTransaction
+        runTransaction,
+        serverTimestamp,
+        Timestamp,
+        
     },
     fAuth: { 
         createUserWithEmailAndPassword,
         signInWithEmailAndPassword,
         signOut,
-        onAuthStateChanged
+        onAuthStateChanged,
+        signInAnonymously
     }
 };
 console.log("🔥 Firebase conectado com sucesso!");

@@ -80,29 +80,37 @@ body {
 /* ============================= */
 
 .sidebar {
-  grid-area: sidebar;
-  background: white;
-  border-right: 1px solid var(--color-border);
-  width: 60px;
+  width: 70px;
+  height: auto;
+  max-height: 85vh;
+  position: fixed;
+  top: 50%;
+  left: -60px; /* Fica totalmente escondida */
+  transform: translateY(-58.5%);
+  border-radius: 0 24px 24px 0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(15px) saturate(160%);
+  -webkit-backdrop-filter: blur(15px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: var(--spacing) 0;
+  padding: 15px 0;
   z-index: var(--z-sidebar);
-  overflow-y: auto;
-  overflow-x: hidden;
-  position: fixed;
-  left: 0;
+  transition: left 0.3s ease-out;
+}
+.sidebar::after {
+  content: "";
+  position: absolute;
   top: 0;
-  height: 100vh;
-  transform: translateX(0);
-  pointer-events: auto;
-  
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  right: 0px; /* Área de 20px que "sobra" para dentro da tela */
+  width: 0px;
+  height: 100%;
+  background: transparent; /* Fica invisível */
 }
 
 .sidebar:hover {
-  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+  left: 0; /* Alinha perfeitamente no canto esquerdo */
 }
 
 .sidebar::-webkit-scrollbar {
@@ -123,48 +131,62 @@ body {
 }
 
 /* Sidebar links */
-.sidebar-link {
+.sidebar-links {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-  color: var(--color-text);
-  text-decoration: none;
-  border-radius: var(--radius);
-  transition: all var(--transition);
-  cursor: pointer;
-  position: relative;
-  font-size: 11px;
-  gap: 4px;
-  min-height: 60px;
+  gap: 8px;
+  margin-top: 10px;
+  flex: 1;
+  overflow-y: auto;
+}
+.sidebar-link {
+  width: 50px;
+  height: 50px;
+  margin: 8px auto;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-light);
+  transition: all 0.2s ease;
 }
 
 .sidebar-link i {
-  font-size: 24px;
+  font-size: 20px;
 }
-
 .sidebar-link:hover {
   background: var(--color-secondary);
   color: var(--color-primary);
   transform: translateX(4px);
 }
 
-.sidebar-link.active {
-  background: var(--color-secondary);
+.sidebar-link:hover:not(.active) {
+  background: rgba(0, 102, 255, 0.1);
   color: var(--color-primary);
-  border-left: 3px solid var(--color-primary);
-  font-weight: 600;
+  transform: translateY(-2px);
+}
+
+.sidebar-link.active {
+background: var(--color-primary);
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 102, 255, 0.4);
 }
 
 .sidebar-link .link-label {
-  font-size: 9px;
-  text-align: center;
-  line-height: 1.2;
+font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-top: 4px;
+  display: none;
 }
-
+.sidebar-divider {
+  width: 60%;
+  height: 1px;
+  background: var(--color-border);
+  margin: 10px 0;
+}
 .sidebar-loading {
   display: flex;
   align-items: center;
@@ -454,6 +476,14 @@ header {
 
 .btn-icon:hover {
   background: rgba(255,255,255,0.3);
+}
+
+.btn-icon i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  opacity: 1 !important;
 }
 
 .notification-badge {

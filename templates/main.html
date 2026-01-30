@@ -45,9 +45,16 @@
 
     <!-- ===== SIDEBAR / NAVEGAÇÃO ===== -->
     <aside class="sidebar" id="sidebar" data-role="nav-container" role="navigation" aria-label="Navegação principal">
-      <!-- Preenchido dinamicamente por permission-filter.js -->
-      <div class="sidebar-loading">
-        <p>⏳ Carregando menu...</p>
+      <a href="#" class="sidebar-link active" id="btnGoHome" title="Ir para o Início">
+        <i class="fi fi-rr-home"></i>
+        <span class="link-label">Home</span>
+      </a>
+      <div class="sidebar-divider"></div>
+      <div id="dynamic-menu">
+        <!-- Preenchido dinamicamente por permission-filter.js -->
+        <div class="sidebar-loading">
+          <p>⏳ Carregando menu...</p>
+        </div>
       </div>
     </aside>
 
@@ -61,9 +68,6 @@
     <!-- ===== HEADER ===== -->
     <header class="header">
       <div class="header-left">
-        <button class="menu-btn" id="menuTrigger" aria-label="Toggle menu">
-          <i class="fi fi-rr-menu-burger"></i>
-        </button>
         <h1 class="app-title">Lujo Network</h1>
       </div>
 
@@ -88,8 +92,8 @@
             <i class="fi fi-rr-bell"></i>
             <span class="notification-badge">0</span>
           </button>
-          <button class="btn btn-icon" id="btnSettings" title="Configurações">
-            <i class="fi fi-rr-gear"></i>
+          <button class="btn btn-icon" id="btnNewspaper" title="Configurações">
+            <i class="fi fi-rr-bell"></i>
           </button>
           <button class="btn btn-danger" id="btnLogout" data-action="logout" title="Sair (Ctrl+L)">
             <i class="fi fi-rr-sign-out"></i>
