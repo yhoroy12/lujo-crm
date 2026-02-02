@@ -572,7 +572,7 @@ body {
   color: var(--text-light);
 }
 
-/* Área de mensagens */
+/* Área de mensagens classes gerais*/
 .messages-container {
   flex: 1;
   overflow-y: auto;
@@ -585,9 +585,18 @@ body {
 }
 
 .message {
-  display: flex;
-  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  word-wrap: break-word;
   animation: messageSlide 0.3s ease;
+}
+
+.message-content {
+  max-width: 75%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 @keyframes messageSlide {
@@ -599,14 +608,6 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.message.user {
-  flex-direction: row-reverse;
-}
-
-.message.system {
-  justify-content: center;
 }
 
 .message-avatar {
@@ -622,25 +623,8 @@ body {
   flex-shrink: 0;
 }
 
-.message-content {
-  max-width: 75%;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.message.user .message-content {
-  align-items: flex-end;
-}
-
-.message.system .message-content {
-  max-width: 85%;
-  align-items: center;
-}
-
-.message-sender {
-  font-size: 12px;
-  font-weight: 600;
+.time {
+  font-size: 10px;
   color: var(--text-light);
   padding: 0 4px;
 }
@@ -653,17 +637,43 @@ body {
   position: relative;
 }
 
+/* Mensagem enviada pelo USUÁRIO (Direita) */
+.message.user {
+  display: flex;
+  flex-direction: row-reverse;
+  margin-bottom: 10px; 
+}
+
+.message.user .message-content {
+  background-color: #ffc60f69; /* Preto */
+  color: rgb(0, 0, 0);
+  border-radius: 15px 15px 2px 15px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+}
+
 .message.user .message-bubble {
   background: var(--bg-message-user);
   color: white;
   border-bottom-right-radius: 4px;
 }
+.message.user .time {
+  color: rgb (0, 0, 0);
+  font-size: 10px;
+  text-align: right;
+  margin-top: 4px;
+}
+/* Mensagem do SISTEMA (Centralizada) */
+.message.system {
+  justify-content: center;
+}
 
-.message.operator .message-bubble {
-  background: var(--bg-message-operator);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-bottom-left-radius: 4px;
+.message.system .message-content {
+  max-width: 85%;
+  align-items: center;
 }
 
 .message.system .message-bubble {
@@ -676,15 +686,37 @@ body {
   padding: 8px 16px;
 }
 
-.message-time {
-  font-size: 11px;
-  color: var(--text-light);
-  padding: 0 4px;
+/* Mensagem recebida do OPERADOR (Esquerda) */
+.message.operator {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 10px;
 }
 
-.message.user .message-time {
-  color: rgba(255,255,255,0.7);
-  text-align: right;
+.message.operator .message-content {
+  background-color: var(--bg-message-operator); /* Branco */
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 15px 15px 15px 2px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+}
+
+.message.operator .time {
+  color: var(--text-light);
+  font-size: 10px;
+  margin-top: 4px;
+}
+
+
+.message.operator .message-bubble {
+  background: var(--bg-message-operator);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
 }
 
 /* Input de mensagem */

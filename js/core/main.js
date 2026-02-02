@@ -9,8 +9,10 @@
 const SPA = {
   currentModule: null,
   currentModuleId: null,
+  isLoading: false,
   loadedModules: new Map(),
   cssCache: new Set(),
+  
 
   /**
    * Inicializa a SPA
@@ -289,7 +291,26 @@ const SPA = {
    */
 
   async loadModule(moduleId) {
+    // Se já estiver carregando algo, ignora o novo clique
+    if (this.isLoading) {
+       console.warn(`⏳ Já existe um carregamento em curso. Ignorando: ${moduleId}`);
+       return;
+    }
+
+    // Se o módulo já é o atual, não recarrega (Evita duplicar listeners)
+    if (this.currentModuleId === moduleId) {
+       console.log(`ℹ️ Módulo ${moduleId} já está ativo.`);
+       return;
+    }
+
+    this.isLoading = true; // Inicia trava
     console.log(`📦 Carregando módulo: ${moduleId}`);
+
+    // ✅ SOLUÇÃO: Antes de carregar o novo, limpa o atual
+    if (this.currentModule && typeof this.currentModule.cleanup === 'function') {
+      console.log(`🧹 Executando cleanup do módulo: ${this.currentModuleId}`);
+      this.currentModule.cleanup();
+    }
 
     const route = window.RoutesUtil.getRoute(moduleId);
     if (!route) {
@@ -378,6 +399,8 @@ const SPA = {
           </div>
         `;
       }
+    } finally{
+        this.isLoading = false; // Libera trava
     }
   },
   /**

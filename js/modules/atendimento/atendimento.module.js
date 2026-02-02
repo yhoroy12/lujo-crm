@@ -3,30 +3,6 @@
  * Coordena: abas, services, state management, timers
  */
 
-// Mock de histórico para inicialização
-const MOCK_HISTORICO = [
-    {
-        id: 'MS-20251111-223841',
-        cliente: 'Marcos Oliveira',
-        telefone: '(11) 98888-7777',
-        email: 'marcos@email.com',
-        tipo: 'financeiro',
-        status: 'concluido',
-        dataAbertura: '2025-01-09T14:30:00',
-        dataConclusao: '2025-01-09T14:52:00',
-        tempoAtendimento: 22,
-        validacaoIdentidade: true,
-        descricao: 'Cliente solicitou esclarecimentos sobre valores.',
-        observacoes: 'Cliente satisfeito.',
-        setorDerivado: null,
-        timeline: [
-            { hora: '14:30', texto: 'Ticket criado' },
-            { hora: '14:32', texto: 'Atribuído' },
-            { hora: '14:35', texto: 'Identidade validada' },
-            { hora: '14:52', texto: 'Ticket concluído' }
-        ]
-    }
-];
 
 const AtendimentoModule = {
   id: 'atendimento',
@@ -98,7 +74,7 @@ const AtendimentoModule = {
       currentTicket: null,
       currentEmail: null,
       activeTab: 'aba-atendimento',
-      historicoFiltrado: [...MOCK_HISTORICO],
+      historicoFiltrado: null,
       canalHistorico: 'whatsapp',
       emailTimerRunning: false,
       ticketTimerRunning: false
@@ -201,10 +177,17 @@ async loadTabContent(tabId) {
     try {
       this.stopAllTimers();
       
+      // ✅ Garante a limpeza da aba de WhatsApp se houver conexão aberta
+      if (window.WhatsAppTab && window.WhatsAppTab.unsubscribeChat) {
+        window.WhatsAppTab.unsubscribeChat();
+        window.WhatsAppTab.unsubscribeChat = null;
+        console.log("✅ Connection Firebase Chat encerrada");
+      }
+      // ✅ Chama o gerenciador de ciclo de vida global
       if (window.ModuleLifecycle) {
         window.ModuleLifecycle.cleanup(this.id);
       }
-      
+      // ✅ Reseta o estado do módulo
       if (window.StateManager) {
         window.StateManager.reset(this.id);
       }

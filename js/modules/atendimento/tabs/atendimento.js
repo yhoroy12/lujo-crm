@@ -11,6 +11,13 @@ const WhatsAppTab = {
 
   async init() {
     console.log('📱 Inicializando aba WhatsApp');
+    
+    // ✅ SOLUÇÃO: Limpa listeners anteriores antes de iniciar novos
+    if (this.unsubscribeChat) {
+      console.log("🧹 Removendo listener de chat duplicado...");
+      this.unsubscribeChat();
+      this.unsubscribeChat = null;
+    }
     try {
       this.cacheElements();
       this.bindEvents();
@@ -65,7 +72,7 @@ const WhatsAppTab = {
   setupInitialState() {
     const db = window.FirebaseApp.db;
     const { collection, query, where, onSnapshot } = window.FirebaseApp.fStore;
-    const q = query(collection(db, "atend_chat_fila"), where("status", "==", "novo"));
+    const q = query(collection(db, "atend_chat_fila"), where("status", "==", "fila"));
 
     this.unsubscribeFila = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {

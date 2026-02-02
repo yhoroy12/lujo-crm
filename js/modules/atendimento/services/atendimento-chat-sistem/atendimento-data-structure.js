@@ -111,7 +111,7 @@ class AtendimentoDataStructureManager {
         uid_cliente: clienteInfo.uid_cliente,
 
         // Status (compatível com State Machine)
-        status: "novo",
+        status: "fila",
 
         // Informações do cliente
         cliente: {

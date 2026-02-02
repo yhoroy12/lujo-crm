@@ -284,7 +284,8 @@ class AtendimentoServiceIntegrado {
         {
           autor: autor, // "cliente" ou "operador"
           texto: texto,
-          enviado_em: this.fStore.serverTimestamp()
+          timestamp: this.fStore.serverTimestamp(), // ✅ CORRIGIDO: campo unificado 'timestamp'
+          uid_autor: this.auth?.currentUser?.uid || null
         }
       );
 

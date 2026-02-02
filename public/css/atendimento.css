@@ -626,6 +626,13 @@
   margin-top: 4px;
   text-align: right;
 }
+.modulo-painel-atendimento .msg.cliente .msg-time {
+  color: #666;
+  text-align: left;
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
 /* Input de chat - fixo na base */
 .modulo-painel-atendimento .chat-input-container {
   flex: 0 0 auto;
