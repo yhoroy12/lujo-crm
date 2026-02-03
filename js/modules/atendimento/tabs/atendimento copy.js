@@ -1,16 +1,42 @@
 /**
- * ABA: ATENDIMENTO WHATSAPP
+ * ABA: ATENDIMENTO WHATSAPP (VERSÃO PROTEGIDA)
  * Gerencia atendimento via WhatsApp/Telefone
+ * 
+ * ✅ MELHORIAS IMPLEMENTADAS:
+ * - Proteção contra re-inicialização (_initialized)
+ * - Lógica de notificação inteligente (só notifica se ocioso E na aba certa)
+ * - Cleanup completo de listeners Firebase
+ * - Método refresh para re-ativação
  */
 
 const WhatsAppTab = {
   id: 'aba-atendimento',
   moduleId: 'atendimento',
   elements: {},
-  unsubscribeChat: null, // Guardar a conexão do chat para limpar depois
+  
+  // ✅ NOVO: Controle de estado
+  _initialized: false,
+  
+  // Listeners Firebase
+  unsubscribeChat: null,
+  unsubscribeFila: null,
 
   async init() {
+    // ✅ PROTEÇÃO CONTRA RE-INICIALIZAÇÃO
+    if (this._initialized) {
+      console.warn('⚠️ WhatsAppTab já inicializado. Abortando duplicata.');
+      return;
+    }
+
     console.log('📱 Inicializando aba WhatsApp');
+    
+    // ✅ SOLUÇÃO: Limpa listeners anteriores antes de iniciar novos
+    if (this.unsubscribeChat) {
+      console.log("🧹 Removendo listener de chat duplicado...");
+      this.unsubscribeChat();
+      this.unsubscribeChat = null;
+    }
+
     try {
       this.cacheElements();
       this.bindEvents();
@@ -23,8 +49,15 @@ const WhatsAppTab = {
         console.log("🎯 Recuperando atendimento ativo:", idSalvo);
         await this.restaurarVisualAtendimento(idSalvo);
       }
+
+      // ✅ MARCAR COMO INICIALIZADO
+      this._initialized = true;
+      console.log('✅ WhatsAppTab inicializado com sucesso');
+
     } catch (error) {
       console.error('❌ Erro em WhatsApp:', error);
+      // ✅ RESET EM CASO DE ERRO
+      this._initialized = false;
     }
   },
 
@@ -65,8 +98,9 @@ const WhatsAppTab = {
   setupInitialState() {
     const db = window.FirebaseApp.db;
     const { collection, query, where, onSnapshot } = window.FirebaseApp.fStore;
-    const q = query(collection(db, "atend_chat_fila"), where("status", "==", "novo"));
+    const q = query(collection(db, "atend_chat_fila"), where("status", "==", "fila"));
 
+    // ✅ SALVAR REFERÊNCIA PARA CLEANUP
     this.unsubscribeFila = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
         if (change.type === "added") {
@@ -77,7 +111,47 @@ const WhatsAppTab = {
     });
   },
 
+  /**
+   * ✅ LÓGICA DE NOTIFICAÇÃO INTELIGENTE
+   * 
+   * REGRAS:
+   * - Só notifica se estiver OCIOSO (sem atendimento ativo)
+   * - Só notifica se estiver na ABA WHATSAPP, DEMANDAS ou HISTÓRICO
+   * - NÃO notifica se estiver na aba EMAILS
+   */
   notificarNovoAtendimento(ticket) {
+    console.log('🔔 Novo atendimento detectado:', ticket.atendimentoId);
+
+    // ✅ VERIFICAR SE ESTÁ OCIOSO
+    const atendimentoAtivo = localStorage.getItem('atendimento_ativo_id');
+    const estaOcioso = !atendimentoAtivo;
+
+    if (!estaOcioso) {
+      console.log('🔕 Operador OCUPADO. Notificação ignorada (atendimento ativo:', atendimentoAtivo, ')');
+      return;
+    }
+
+    // ✅ VERIFICAR EM QUAL ABA ESTÁ
+    const state = window.StateManager.get('atendimento');
+    const abaAtiva = state?.activeTab || 'aba-atendimento';
+
+    // ✅ LISTA DE ABAS QUE PODEM RECEBER NOTIFICAÇÃO
+    const abasPermitidas = ['aba-atendimento', 'aba-demandas', 'aba-historico'];
+
+    if (!abasPermitidas.includes(abaAtiva)) {
+      console.log(`🔕 Operador em aba não permitida (${abaAtiva}). Notificação ignorada.`);
+      return;
+    }
+
+    // ✅ TODAS AS CONDIÇÕES ATENDIDAS: MOSTRAR POPUP
+    console.log('✅ Exibindo notificação de novo atendimento');
+    this.mostrarPopup(ticket);
+  },
+
+  /**
+   * ✅ NOVO: Método separado para mostrar popup
+   */
+  mostrarPopup(ticket) {
     const nomeExibicao = document.getElementById('popupCliente');
     if (nomeExibicao) nomeExibicao.textContent = ticket.cliente.nome;
     if (this.elements.popup) this.elements.popup.style.display = 'flex';
@@ -92,7 +166,7 @@ const WhatsAppTab = {
 
     this.renderizarInterfaceAtendimento(ticket);
     this.vincularOperadorNoFirebase(ticket.atendimentoId);
-    this.conectarChat(ticket.atendimentoId); // Inicia o chat em tempo real
+    this.conectarChat(ticket.atendimentoId);
   },
 
   async restaurarVisualAtendimento(atendimentoId) {
@@ -112,7 +186,7 @@ const WhatsAppTab = {
         window.AtendimentoDataStructure.state.atendimentoId = atendimentoId;
 
         this.renderizarInterfaceAtendimento(ticket);
-        this.conectarChat(atendimentoId); // Restaura as mensagens
+        this.conectarChat(atendimentoId);
       }
     } catch (error) {
       console.error("❌ Erro ao restaurar:", error);
@@ -217,13 +291,8 @@ const WhatsAppTab = {
     try {
       const manager = window.AtendimentoDataStructure;
 
-      // 1. Tenta pegar o UID de três fontes diferentes para garantir
-      const firebaseUID = window.FirebaseApp.auth?.currentUser?.uid;
-      const authSystemUID = window.AuthSystem?.getCurrentUser()?.uid;
-      const authSystemId = window.AuthSystem?.getCurrentUser()?.id;
-
       const finalUID = window.FirebaseApp.auth?.currentUser?.uid;
-      // 2. Trava de segurança: Se ainda for undefined, não prossegue
+      
       if (!finalUID) {
         console.error("❌ Erro Crítico: UID do operador não encontrado. Verifique se o operador está logado no Firebase.");
         if (window.ToastManager) window.ToastManager.show("Sessão expirada. Faça login novamente.", "error");
@@ -240,8 +309,6 @@ const WhatsAppTab = {
       console.log("🤝 Vinculando operador garantido:", operadorInfo);
 
       manager.state.atendimentoId = atendimentoId;
-
-      // 3. Executa o aceite no manager
       await manager.operadorAceitaAtendimento(operadorInfo);
 
       console.log("🚀 Firebase atualizado com sucesso!");
@@ -249,7 +316,78 @@ const WhatsAppTab = {
     } catch (error) {
       console.error("❌ Falha ao vincular operador:", error);
     }
+  },
+
+  /**
+   * ✅ NOVO: Método de refresh (chamado ao retornar para a aba)
+   */
+  async refresh() {
+    console.log('🔄 Atualizando WhatsAppTab...');
+
+    try {
+      // Verificar se há atendimento ativo para restaurar
+      const idSalvo = localStorage.getItem('atendimento_ativo_id');
+      
+      if (idSalvo) {
+        console.log('🎯 Verificando status do atendimento ativo...');
+        await this.restaurarVisualAtendimento(idSalvo);
+      }
+
+      console.log('✅ WhatsAppTab atualizado');
+    } catch (error) {
+      console.error('❌ Erro ao atualizar WhatsApp:', error);
+    }
+  },
+
+  /**
+   * ✅ NOVO: Método de cleanup (chamado ao sair da aba)
+   */
+  cleanup() {
+    console.log('🧹 Limpando WhatsAppTab...');
+
+    try {
+      // ✅ Limpar listener do chat (se houver)
+      if (this.unsubscribeChat) {
+        console.log('🧹 Removendo listener de chat');
+        this.unsubscribeChat();
+        this.unsubscribeChat = null;
+      }
+
+      // ✅ IMPORTANTE: NÃO limpar unsubscribeFila
+      // Ele precisa continuar rodando para distribuir atendimentos
+      console.log('ℹ️ Listener de fila mantido ativo (distribuição contínua)');
+
+      // ✅ NÃO resetar _initialized (tab continua carregada)
+      console.log('✅ WhatsAppTab limpo (pronto para reuso)');
+
+    } catch (error) {
+      console.warn('⚠️ Erro no cleanup de WhatsApp:', error);
+    }
+  },
+
+  /**
+   * ✅ NOVO: Cleanup completo (apenas quando sair do módulo inteiro)
+   */
+  destroy() {
+    console.log('🗑️ Destruindo WhatsAppTab completamente...');
+
+    // Limpar TUDO, incluindo listener de fila
+    if (this.unsubscribeChat) {
+      this.unsubscribeChat();
+      this.unsubscribeChat = null;
+    }
+
+    if (this.unsubscribeFila) {
+      this.unsubscribeFila();
+      this.unsubscribeFila = null;
+    }
+
+    this._initialized = false;
+    console.log('✅ WhatsAppTab destruído');
   }
 };
+
+// ✅ Expor globalmente
+window.WhatsAppTab = WhatsAppTab;
 
 export default WhatsAppTab;

@@ -175,6 +175,7 @@ if (formPessoa) {
 
       // Inicia atendimento e obtém o ID
       const atendimentoId = await service.clienteIniciarAtendimento(dados);
+      sessionStorage.setItem('atendimentoId', atendimentoId);
 
       segundosEspera = 0;
       atendimentoTimer = setInterval(atualizarTimerFila, 1000);
@@ -230,6 +231,7 @@ const ligarMonitorDeStatus = (atendimentoId) => {
 
 window.addEventListener('statusMudou', (e) => {
   const { status, dados, atendimentoId } = e.detail;
+  
 
   console.log("🔔 Status mudou para:", status);
 
@@ -675,6 +677,20 @@ window.addEventListener('beforeunload', () => {
 /* =====================================================
    INICIALIZAÇÃO
 ===================================================== */
+/* =====================================================
+   DEBUG – MOSTRAR UID LOGADA NO NAVEGADOR
+===================================================== */
+const auth = window.FirebaseApp?.auth;
 
+if (auth) {
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      console.log("🧑‍💻 UID logada no navegador:", user.uid);
+      console.log("🔐 Tipo de login:", user.isAnonymous ? "ANÔNIMO" : "REGISTRADO");
+    } else {
+      console.log("🚫 Nenhum usuário autenticado no navegador");
+    }
+  });
+}
 console.log("✅ Chat do Cliente carregado e pronto!");
 console.log("📱 Aguardando ação do usuário...");

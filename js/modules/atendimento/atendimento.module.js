@@ -1,23 +1,24 @@
 /**
- * ATENDIMENTO MODULE - Controlador Principal (VERSÃO CORRIGIDA)
+ * ATENDIMENTO MODULE - Controlador Principal (VERSÃO FINAL CORRIGIDA)
  * Coordena: abas, services, state management, timers
  * 
- * CORREÇÕES IMPLEMENTADAS:
- * ✅ Sistema de cache de tabs (previne re-importação)
- * ✅ Proteção contra re-inicialização do módulo
- * ✅ Cleanup granular por aba
- * ✅ Rastreamento de aba ativa
- * ✅ Logs detalhados para debug
+ * ✅ CORREÇÕES IMPLEMENTADAS:
+ * - Sistema de cache de tabs (previne re-importação)
+ * - Proteção contra re-inicialização do módulo
+ * - Cleanup granular por aba
+ * - Método de re-ativação de abas
+ * - Cleanup completo com destroy() das tabs
+ * - Logs detalhados para debug
  */
 
 const AtendimentoModule = {
   id: 'atendimento',
   
-  // ✅ NOVO: Controle de estado interno
+  // ✅ Controle de estado interno
   _initialized: false,
   _currentTab: null,
   
-  // ✅ NOVO: Cache de tabs carregadas
+  // ✅ Cache de tabs carregadas
   _loadedTabs: new Set(),
   
   // Referências de timers
@@ -25,7 +26,7 @@ const AtendimentoModule = {
   emailTimerInterval: null,
 
   async init() {
-    // ✅ CORREÇÃO 1: Proteção contra re-inicialização
+    // ✅ PROTEÇÃO: Re-inicialização
     if (this._initialized) {
       console.warn('⚠️ Atendimento já foi inicializado. Abortando duplicata.');
       return;
@@ -34,27 +35,21 @@ const AtendimentoModule = {
     console.log('🔧 Inicializando módulo Atendimento');
     
     try {
-      // 1. Carregar template HTML
       await this.loadTemplate();
       console.log('✅ Template carregado');
       
-      // 2. Inicializar State Manager
       this.initState();
       console.log('✅ State inicializado');
       
-      // 3. Carregar serviços
       await this.loadServices();
       console.log('✅ Services carregados');
       
-      // 4. Inicializar abas
       this.setupTabs();
       console.log('✅ Abas configuradas');
       
-      // 5. Bind eventos globais
       this.bindGlobalEvents();
       console.log('✅ Eventos configurados');
 
-      // ✅ NOVO: Marcar como inicializado
       this._initialized = true;
   
       console.log('🎉 Atendimento pronto');
@@ -62,15 +57,11 @@ const AtendimentoModule = {
       
     } catch (error) {
       console.error('❌ Erro ao inicializar Atendimento:', error);
-      // ✅ NOVO: Reset em caso de erro
       this._initialized = false;
       throw error;
     }
   },
 
-  /**
-   * 1. Carregar template HTML
-   */
   async loadTemplate() {
     try {
       const response = await fetch('../js/modules/atendimento/templates/atendimento.html');
@@ -87,9 +78,6 @@ const AtendimentoModule = {
     }
   },
 
-  /**
-   * 2. Inicializar State Manager
-   */
   initState() {
     if (!window.StateManager) {
       throw new Error('StateManager não carregado');
@@ -106,9 +94,6 @@ const AtendimentoModule = {
     });
   },
 
-  /**
-   * 3. Carregar Services (Lazy Loading)
-   */
   async loadServices() {
     try {
       console.log('📦 Carregando infraestrutura de dados do Firebase...');
@@ -129,9 +114,6 @@ const AtendimentoModule = {
     }
   },
 
-  /**
-   * 4. Configurar abas com TabManager
-   */
   setupTabs() {
     if (!window.TabManager) {
       throw new Error('TabManager não carregado');
@@ -144,35 +126,27 @@ const AtendimentoModule = {
       onTabChange: (tabId, tabContent) => {
         console.log(`📑 Aba alterada para: ${tabId}`);
         
-        // ✅ CORREÇÃO 2: Cleanup da aba anterior
+        // ✅ Cleanup da aba anterior
         if (this._currentTab && this._currentTab !== tabId) {
           console.log(`🧹 Preparando cleanup da aba anterior: ${this._currentTab}`);
           this.cleanupTab(this._currentTab);
         }
         
-        // ✅ NOVO: Atualizar aba atual
         this._currentTab = tabId;
-        
-        // Atualizar state
         window.StateManager.set(this.id, { activeTab: tabId });
-        
-        // Carregar conteúdo (com cache)
         this.loadTabContent(tabId);
       }
     });
   },
 
   /**
-   * ✅ CORREÇÃO 3: Carregar conteúdo dinâmico das abas COM CACHE
+   * ✅ Carregar conteúdo dinâmico das abas COM CACHE
    */
   async loadTabContent(tabId) {
     try {
       // ✅ VERIFICAÇÃO DE CACHE
       if (this._loadedTabs.has(tabId)) {
         console.log(`♻️ Tab ${tabId} já carregada (usando cache)`);
-        
-        // ✅ IMPORTANTE: Mesmo com cache, precisa re-ativar a aba
-        // pois o usuário pode ter saído e voltado
         await this.reactivateTab(tabId);
         return;
       }
@@ -182,7 +156,6 @@ const AtendimentoModule = {
       
       console.log(`📦 Carregando script da aba: ${modulePath}`);
       
-      // ✅ PRIMEIRA VEZ: Importa e inicializa
       const tabModule = await import(modulePath);
       const moduleInstance = tabModule.EmailsTab || tabModule.default || tabModule;
 
@@ -192,27 +165,21 @@ const AtendimentoModule = {
         await tabModule.init();
       }
 
-      // ✅ ADICIONAR AO CACHE
       this._loadedTabs.add(tabId);
       console.log(`✅ Tab ${tabId} carregada e adicionada ao cache (${this._loadedTabs.size} tabs no cache)`);
       
     } catch (error) {
       console.error(`❌ Erro ao carregar aba ${tabId}:`, error);
-      // ✅ NOVO: Remover do cache se falhou
       this._loadedTabs.delete(tabId);
     }
   },
 
   /**
-   * ✅ NOVO: Re-ativar aba já carregada
-   * Útil para abas que precisam atualizar dados ao voltar
+   * ✅ Re-ativar aba já carregada
    */
   async reactivateTab(tabId) {
     console.log(`🔄 Re-ativando tab: ${tabId}`);
     
-    const scriptName = tabId.replace('aba-', '');
-    
-    // Verificar se a tab tem método de reativação
     const tabInstances = {
       'aba-atendimento': window.WhatsAppTab,
       'aba-emails': window.EmailsTab,
@@ -223,32 +190,21 @@ const AtendimentoModule = {
     const tabInstance = tabInstances[tabId];
     
     if (tabInstance) {
-      // Se a tab tem método onReactivate, chama
-      if (typeof tabInstance.onReactivate === 'function') {
-        await tabInstance.onReactivate();
-        console.log(`✅ Tab ${tabId} re-ativada via onReactivate()`);
-      } 
-      // Se a tab tem método refresh, chama
-      else if (typeof tabInstance.refresh === 'function') {
+      if (typeof tabInstance.refresh === 'function') {
         await tabInstance.refresh();
         console.log(`✅ Tab ${tabId} re-ativada via refresh()`);
-      }
-      // Senão, apenas loga
-      else {
-        console.log(`ℹ️ Tab ${tabId} não possui método de re-ativação`);
+      } else {
+        console.log(`ℹ️ Tab ${tabId} não possui método refresh`);
       }
     }
   },
 
   /**
-   * ✅ NOVO: Cleanup granular de uma aba específica
+   * ✅ Cleanup granular de uma aba específica
    */
   cleanupTab(tabId) {
     console.log(`🧹 Limpando aba: ${tabId}`);
 
-    const scriptName = tabId.replace('aba-', '');
-    
-    // Chamar cleanup específico da tab (se existir)
     const tabInstances = {
       'aba-atendimento': window.WhatsAppTab,
       'aba-emails': window.EmailsTab,
@@ -267,21 +223,13 @@ const AtendimentoModule = {
       }
     }
 
-    // ✅ IMPORTANTE: NÃO remove do cache aqui
-    // A tab continua carregada, apenas "dormente"
     console.log(`✅ Aba ${tabId} limpa (mantida no cache)`);
   },
 
-  /**
-   * 5. Bind eventos globais
-   */
   bindGlobalEvents() {
     // Eventos que afetam todo o módulo
   },
 
-  /**
-   * Parar todos os timers
-   */
   stopAllTimers() {
     if (this.ticketTimerInterval) {
       clearInterval(this.ticketTimerInterval);
@@ -296,7 +244,7 @@ const AtendimentoModule = {
   },
 
   /**
-   * ✅ CORRIGIDO: Cleanup completo - Chamado quando sair do módulo
+   * ✅ CORRIGIDO: Cleanup completo com destroy() das tabs
    */
   cleanup() {
     console.log('🧹 Limpando Atendimento');
@@ -305,52 +253,51 @@ const AtendimentoModule = {
       // 1. Parar timers
       this.stopAllTimers();
       
-      // 2. ✅ NOVO: Limpar TODAS as tabs carregadas
-      console.log(`🧹 Limpando ${this._loadedTabs.size} tabs...`);
+      // 2. ✅ DESTRUIR TODAS AS TABS CARREGADAS
+      console.log(`🗑️ Destruindo ${this._loadedTabs.size} tabs...`);
       
+      const tabInstances = {
+        'aba-atendimento': window.WhatsAppTab,
+        'aba-emails': window.EmailsTab,
+        'aba-demandas': window.DemandasTab,
+        'aba-historico': window.HistoricoTab
+      };
+
       for (const tabId of this._loadedTabs) {
-        this.cleanupTab(tabId);
+        const tabInstance = tabInstances[tabId];
+        
+        if (tabInstance && typeof tabInstance.destroy === 'function') {
+          try {
+            tabInstance.destroy();
+            console.log(`✅ Tab ${tabId} destruída`);
+          } catch (error) {
+            console.warn(`⚠️ Erro ao destruir ${tabId}:`, error);
+          }
+        }
       }
       
-      // 3. ✅ Limpar conexão do WhatsApp se houver
-      if (window.WhatsAppTab && window.WhatsAppTab.unsubscribeChat) {
-        window.WhatsAppTab.unsubscribeChat();
-        window.WhatsAppTab.unsubscribeChat = null;
-        console.log("✅ Connection Firebase Chat encerrada");
-      }
-
-      // 4. ✅ Limpar fila do WhatsApp se houver
-      if (window.WhatsAppTab && window.WhatsAppTab.unsubscribeFila) {
-        window.WhatsAppTab.unsubscribeFila();
-        window.WhatsAppTab.unsubscribeFila = null;
-        console.log("✅ Listener de fila encerrado");
-      }
-
-      // 5. ✅ Limpar listeners globais de emails.js
-      if (window.EmailsTab) {
-        // Remover funções globais
-        delete window.validarResposta;
-        delete window.confirmarDevolucao;
-        delete window.fecharModalDevolucao;
-        console.log("✅ Funções globais de emails removidas");
-      }
+      // 3. Limpar referências globais
+      delete window.WhatsAppTab;
+      delete window.EmailsTab;
+      delete window.DemandasTab;
+      delete window.HistoricoTab;
       
-      // 6. ✅ Chama o gerenciador de ciclo de vida global
+      // 4. Chama o gerenciador de ciclo de vida global
       if (window.ModuleLifecycle) {
         window.ModuleLifecycle.cleanup(this.id);
       }
       
-      // 7. ✅ Reseta o estado do módulo
+      // 5. Reseta o estado do módulo
       if (window.StateManager) {
         window.StateManager.reset(this.id);
       }
       
-      // 8. ✅ Fecha todos os modais
+      // 6. Fecha todos os modais
       if (window.ModalManager) {
         window.ModalManager.closeAll();
       }
 
-      // 9. ✅ NOVO: Reset de controles internos
+      // 7. Reset de controles internos
       this._loadedTabs.clear();
       this._currentTab = null;
       this._initialized = false;
@@ -361,7 +308,7 @@ const AtendimentoModule = {
     } catch (error) {
       console.error('⚠️ Erro durante cleanup:', error);
       
-      // ✅ NOVO: Forçar reset mesmo com erro
+      // Forçar reset mesmo com erro
       this._loadedTabs.clear();
       this._currentTab = null;
       this._initialized = false;
@@ -369,7 +316,7 @@ const AtendimentoModule = {
   },
 
   /**
-   * ✅ NOVO: Debug helper
+   * ✅ Debug helper
    */
   debug() {
     console.group('🔍 ATENDIMENTO MODULE DEBUG');
@@ -382,25 +329,18 @@ const AtendimentoModule = {
     });
     
     console.log('🔧 State Manager:', window.StateManager?.get(this.id));
-    
     console.log('📈 ModuleLifecycle:', window.ModuleLifecycle?.getStats());
     
     console.groupEnd();
   },
 
   /**
-   * ✅ NOVO: Força reset completo (útil para hot reload)
+   * ✅ Força reset completo
    */
   forceReset() {
     console.warn('🔄 Forçando reset completo do módulo Atendimento...');
     
     this.cleanup();
-    
-    // Limpar referências globais
-    delete window.WhatsAppTab;
-    delete window.EmailsTab;
-    delete window.DemandasTab;
-    delete window.HistoricoTab;
     
     console.log('✅ Reset completo executado');
   }
