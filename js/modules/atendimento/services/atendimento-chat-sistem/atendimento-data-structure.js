@@ -76,6 +76,11 @@ class AtendimentoDataStructureManager {
    * │   nome: string,
    * │   role: string,
    * │   aceitouEm: timestamp | null
+   * │   status_atendimento: "identidade_validada" | "em_atendimento" | "derivado" | "concluido" | null
+   * │   tipo_de_demanda:string,
+   * │   area_responsavel: string,
+   * │   descrição_da_solicitação: string,
+   * │   obsersações: string,
    * │ }
    * ├── atribuido_para_uid: string | null (UID do operador)
    * ├── timeline: [

@@ -297,7 +297,7 @@ function login(username, password) {
 */
 function logout() {
   sessionStorage.clear();
-window.location.href = '../templates/login.html';
+window.location.href = 'templates/login.html';
 }
 
 
