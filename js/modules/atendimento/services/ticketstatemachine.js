@@ -7,85 +7,56 @@
  */
 
 const TICKET_STATES = {
-  NOVO: "NOVO",
-  IDENTIDADE_VALIDADA: "IDENTIDADE_VALIDADA",
-  EM_ATENDIMENTO: "EM_ATENDIMENTO",
-  ENCAMINHADO: "ENCAMINHADO",
-  AGUARDANDO_SETOR: "AGUARDANDO_SETOR",
-  AGUARDANDO_CLIENTE: "AGUARDANDO_CLIENTE",
-  CONCLUIDO: "CONCLUIDO",
-  ACAO_ADMINISTRATIVA_APLICADA: "ACAO_ADMINISTRATIVA_APLICADA"
+  FILA: "FILA", // Estado inicial temporário ao criar ticket
+  NOVO: "NOVO", // Ticket direcionado a um operador, aguardando validação de identidade
+  IDENTIDADE_VALIDADA: "IDENTIDADE_VALIDADA", // Identidade do solicitante validada
+  EM_ATENDIMENTO: "EM_ATENDIMENTO",// Ticket em atendimento ativo
+  ENCAMINHADO: "ENCAMINHADO", // Ticket encaminhado para outro setor, altera apenas o campo setor
+  AGUARDANDO_SETOR: "AGUARDANDO_SETOR", // Aguardando ação de setor específico (ex: COPYRIGHT, CONTEUDO)
+  AGUARDANDO_CLIENTE: "AGUARDANDO_CLIENTE", // Aguardando resposta do cliente
+  CONCLUIDO: "CONCLUIDO" // Atendimento concluído, aguardando reabertura ou ação administrativa
 };
 
 const FINAL_STATES = [
-  TICKET_STATES.ACAO_ADMINISTRATIVA_APLICADA
+  TICKET_STATES.CONCLUIDO
 ];
 
 const TRANSITION_MATRIX = {
+  [TICKET_STATES.FILA]: {
+    [TICKET_STATES.NOVO]: {  // ✅ FILA → NOVO (operador aceita)
+      roles: ["ATENDENTE", "SUPERVISOR", "GERENTE", "ADMIN"],
+      requiresJustification: false
+    }
+  },
   [TICKET_STATES.NOVO]: {
-    [TICKET_STATES.IDENTIDADE_VALIDADA]: {
+    [TICKET_STATES.IDENTIDADE_VALIDADA]: {  // ✅ NOVO → IDENTIDADE_VALIDADA
       roles: ["ATENDENTE", "SUPERVISOR", "GERENTE", "ADMIN"],
       requiresJustification: false
     }
   },
   [TICKET_STATES.IDENTIDADE_VALIDADA]: {
-    [TICKET_STATES.EM_ATENDIMENTO]: {
+    [TICKET_STATES.EM_ATENDIMENTO]: {  // ✅ IDENTIDADE_VALIDADA → EM_ATENDIMENTO
       roles: ["ATENDENTE", "SUPERVISOR", "GERENTE", "ADMIN"],
       requiresJustification: false
     }
   },
   [TICKET_STATES.EM_ATENDIMENTO]: {
-    [TICKET_STATES.CONCLUIDO]: {
+    [TICKET_STATES.CONCLUIDO]: {  // ✅ EM_ATENDIMENTO → CONCLUIDO
       roles: ["ATENDENTE", "SUPERVISOR", "GERENTE", "ADMIN"],
       requiresJustification: false
     },
-    [TICKET_STATES.ENCAMINHADO]: {
+    [TICKET_STATES.ENCAMINHADO]: {  // ✅ EM_ATENDIMENTO → ENCAMINHADO
       roles: ["ATENDENTE", "SUPERVISOR", "GERENTE", "ADMIN"],
-      requiresJustification: false
+      requiresJustification: true  // Precisa justificar o encaminhamento
     }
   },
   [TICKET_STATES.ENCAMINHADO]: {
-    [TICKET_STATES.AGUARDANDO_SETOR]: {
-      roles: ["SYSTEM", "ATENDENTE", "SUPERVISOR", "GERENTE", "ADMIN"],
-      requiresJustification: false
-    }
-  },
-  [TICKET_STATES.AGUARDANDO_SETOR]: {
-    [TICKET_STATES.AGUARDANDO_CLIENTE]: {
-      roles: ["COPYRIGHT", "CONTEUDO", "SUPERVISOR", "GERENTE", "ADMIN"],
-      requiresJustification: false
-    },
-    [TICKET_STATES.CONCLUIDO]: {
+    [TICKET_STATES.CONCLUIDO]: {  // ✅ ENCAMINHADO → CONCLUIDO (após tratar demanda externa)
       roles: ["COPYRIGHT", "CONTEUDO", "SUPERVISOR", "GERENTE", "ADMIN"],
       requiresJustification: false
     }
   },
-  [TICKET_STATES.AGUARDANDO_CLIENTE]: {
-    [TICKET_STATES.CONCLUIDO]: {
-      roles: ["ATENDENTE", "SUPERVISOR", "GERENTE", "ADMIN"],
-      requiresJustification: false
-    },
-    [TICKET_STATES.ACAO_ADMINISTRATIVA_APLICADA]: {
-      roles: ["COPYRIGHT", "GERENTE", "ADMIN"],
-      requiresJustification: true
-    }
-  },
-  [TICKET_STATES.CONCLUIDO]: {
-    [TICKET_STATES.EM_ATENDIMENTO]: {
-      roles: ["SUPERVISOR", "GERENTE", "ADMIN"],
-      requiresJustification: true
-    }
-  }
 };
-
-const BLOCKED_BEFORE_VALIDATION = [
-  TICKET_STATES.EM_ATENDIMENTO,
-  TICKET_STATES.ENCAMINHADO,
-  TICKET_STATES.AGUARDANDO_SETOR,
-  TICKET_STATES.AGUARDANDO_CLIENTE,
-  TICKET_STATES.CONCLUIDO,
-  TICKET_STATES.ACAO_ADMINISTRATIVA_APLICADA
-];
 
 function isValidState(state) {
   return Object.values(TICKET_STATES).includes(state);
@@ -104,25 +75,20 @@ function canTransition(currentState, nextState, userRole) {
     return { allowed: false, reason: "Estado final não pode ser alterado" };
   }
 
-  if (currentState !== TICKET_STATES.IDENTIDADE_VALIDADA && 
-      currentState !== TICKET_STATES.NOVO &&
-      BLOCKED_BEFORE_VALIDATION.includes(nextState)) {
-    if (currentState === TICKET_STATES.NOVO && nextState !== TICKET_STATES.IDENTIDADE_VALIDADA) {
-      return { allowed: false, reason: "Identidade deve ser validada primeiro" };
-    }
-  }
-
   const possibleTransitions = TRANSITION_MATRIX[currentState];
   if (!possibleTransitions || !possibleTransitions[nextState]) {
     return { allowed: false, reason: "Transição não permitida" };
   }
 
   const transition = possibleTransitions[nextState];
-  if (!transition.roles.includes(userRole) && !transition.roles.includes("SYSTEM")) {
+  if (!transition.roles.includes(userRole)) {
     return { allowed: false, reason: "Usuário não autorizado para esta transição" };
   }
 
-  return { allowed: true, requiresJustification: transition.requiresJustification };
+  return { 
+    allowed: true, 
+    requiresJustification: transition.requiresJustification 
+  };
 }
 
 function requiresJustification(currentState, nextState) {

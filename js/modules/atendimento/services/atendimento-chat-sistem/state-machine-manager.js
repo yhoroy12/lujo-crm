@@ -1,10 +1,12 @@
 /**
- * STATE MACHINE MANAGER - Integração com Ticket State Machine
+ * STATE MACHINE MANAGER - Integração com Ticket State Machine (VERSÃO CORRIGIDA)
  * Gerencia transições de estado validadas e auditadas
  * 
- * Soluciona:
- * - PROBLEMA 5: Fluxo de estado incompatível
- * - PROBLEMA 2: Sincronização com State Machine
+ * ✅ CORREÇÕES APLICADAS:
+ * - Função normalizarEstado() para compatibilidade
+ * - Validação robusta de transições
+ * - Logs detalhados para debug
+ * - Tratamento de erros melhorado
  */
 
 class StateMachineManager {
@@ -15,20 +17,43 @@ class StateMachineManager {
   }
 
   /**
-   * Mapear estados do cliente para State Machine
-   * Cliente: "fila", "em_atendimento", "concluido"
-   * State Machine: NOVO, IDENTIDADE_VALIDADA, EM_ATENDIMENTO, CONCLUIDO, etc
+   * ✅ NOVO: Normalizar estados para compatibilidade
+   * Converte estados em minúsculo/misto para o padrão maiúsculo da State Machine
+   */
+  normalizarEstado(status) {
+    if (!status) return 'FILA';
+    
+    // Mapa de conversão
+    const mapa = {
+      'novo': 'NOVO',
+      'fila': 'FILA',
+      'identidade_validada': 'IDENTIDADE_VALIDADA',
+      'em_atendimento': 'EM_ATENDIMENTO',
+      'encaminhado': 'ENCAMINHADO',
+      'aguardando_setor': 'AGUARDANDO_SETOR',
+      'aguardando_cliente': 'AGUARDANDO_CLIENTE',
+      'concluido': 'CONCLUIDO',
+      'acao_administrativa_aplicada': 'ACAO_ADMINISTRATIVA_APLICADA'
+    };
+    
+    // Se já está em maiúsculo e é válido, retorna direto
+    if (status === status.toUpperCase() && window.TicketStateMachine?.isValidState(status)) {
+      return status;
+    }
+    
+    // Converte para minúsculo e busca no mapa
+    const statusLower = status.toLowerCase();
+    const estadoNormalizado = mapa[statusLower] || status.toUpperCase();
+    
+    console.log(`🔄 Normalização: "${status}" → "${estadoNormalizado}"`);
+    return estadoNormalizado;
+  }
+
+  /**
+   * Mapear estados do cliente para State Machine (mantido para compatibilidade)
    */
   mapearEstadoCliente(statusCliente) {
-    const mapa = {
-      "novo": "NOVO",
-      "fila": "NOVO", // Cliente em fila também é NOVO
-      "identidade_validada": "IDENTIDADE_VALIDADA",
-      "em_atendimento": "EM_ATENDIMENTO",
-      "concluido": "CONCLUIDO",
-      "encaminhado": "ENCAMINHADO"
-    };
-    return mapa[statusCliente] || "NOVO";
+    return this.normalizarEstado(statusCliente);
   }
 
   /**
@@ -41,10 +66,21 @@ class StateMachineManager {
       return { valido: false, erro: "State Machine não disponível" };
     }
 
+    // ✅ Normalizar ambos os estados antes de validar
+    const estadoAtualNormalizado = this.normalizarEstado(estadoAtual);
+    const estadoNovoNormalizado = this.normalizarEstado(estadoNovo);
+
+    console.group('🔍 DEBUG: Validação de Transição');
+    console.log('Estado Original:', estadoAtual);
+    console.log('Estado Normalizado:', estadoAtualNormalizado);
+    console.log('Estado Alvo:', estadoNovoNormalizado);
+    console.log('User Role:', userRole);
+    console.groupEnd();
+
     // Validar se a transição é permitida
     const validacao = window.TicketStateMachine.validateTransition(
-      estadoAtual,
-      estadoNovo,
+      estadoAtualNormalizado,
+      estadoNovoNormalizado,
       userRole,
       justificativa
     );
@@ -54,7 +90,7 @@ class StateMachineManager {
       return { valido: false, erro: validacao.error };
     }
 
-    console.log(`✓ Transição validada: ${estadoAtual} → ${estadoNovo}`);
+    console.log(`✅ Transição validada: ${estadoAtualNormalizado} → ${estadoNovoNormalizado}`);
     return { valido: true };
   }
 
@@ -67,12 +103,15 @@ class StateMachineManager {
       return [];
     }
 
+    // ✅ Normalizar estado antes de buscar transições
+    const estadoNormalizado = this.normalizarEstado(estadoAtual);
+
     const transicoes = window.TicketStateMachine.getAvailableTransitions(
-      estadoAtual,
+      estadoNormalizado,
       userRole
     );
 
-    console.log(`Transições disponíveis de ${estadoAtual}:`, transicoes);
+    console.log(`Transições disponíveis de ${estadoNormalizado}:`, transicoes);
     return transicoes;
   }
 
@@ -82,20 +121,29 @@ class StateMachineManager {
    */
   async criarLogTransicao(atendimentoId, estadoAnterior, estadoNovo, justificativa = null) {
     if (!this.currentUser) {
-      console.warn("⚠️ Usuário não autenticado");
-      return;
+      // Tentar obter usuário atual novamente
+      this.currentUser = window.FirebaseApp?.auth?.currentUser;
+      
+      if (!this.currentUser) {
+        console.warn("⚠️ Usuário não autenticado - log não será criado");
+        return;
+      }
     }
 
     try {
+      // ✅ Normalizar estados para o log
+      const estadoAnteriorNormalizado = this.normalizarEstado(estadoAnterior);
+      const estadoNovoNormalizado = this.normalizarEstado(estadoNovo);
+
       const logData = window.TicketStateMachine.createStateLog(
         atendimentoId,
-        estadoAnterior,
-        estadoNovo,
+        estadoAnteriorNormalizado,
+        estadoNovoNormalizado,
         {
           username: this.currentUser.email,
           name: this.currentUser.displayName || "Usuário",
           uid: this.currentUser.uid,
-          role: this.obterRoleUsuario() // Deve ser implementado em seu sistema
+          role: this.obterRoleUsuario()
         },
         justificativa
       );
@@ -111,10 +159,11 @@ class StateMachineManager {
         logData
       );
 
-      console.log("✓ Log de transição criado");
+      console.log("✅ Log de transição criado:", logData);
       return logData;
     } catch (error) {
       console.error("❌ Erro ao criar log:", error);
+      throw error;
     }
   }
 
@@ -122,47 +171,73 @@ class StateMachineManager {
    * Executar transição de estado (com validação e auditoria)
    */
   async executarTransicao(atendimentoId, estadoAnterior, estadoNovo, justificativa = null) {
-    // 1. Validar permissão
-    const userRole = this.obterRoleUsuario();
-    const validacao = this.validarTransicao(
-      estadoAnterior,
-      estadoNovo,
-      userRole,
-      justificativa
-    );
+    console.group('🚀 EXECUTANDO TRANSIÇÃO');
+    console.log('Atendimento ID:', atendimentoId);
+    console.log('Estado Anterior:', estadoAnterior);
+    console.log('Estado Novo:', estadoNovo);
+    console.log('Justificativa:', justificativa);
 
-    if (!validacao.valido) {
-      throw new Error(validacao.erro);
-    }
+    try {
+      // ✅ 1. Normalizar estados
+      const estadoAnteriorNormalizado = this.normalizarEstado(estadoAnterior);
+      const estadoNovoNormalizado = this.normalizarEstado(estadoNovo);
 
-    // 2. Criar log (auditoria)
-    await this.criarLogTransicao(
-      atendimentoId,
-      estadoAnterior,
-      estadoNovo,
-      justificativa
-    );
+      // 2. Validar permissão
+      const userRole = this.obterRoleUsuario();
+      const validacao = this.validarTransicao(
+        estadoAnteriorNormalizado,
+        estadoNovoNormalizado,
+        userRole,
+        justificativa
+      );
 
-    // 3. Atualizar status no Firestore
-    const agora = this.fStore.serverTimestamp();
+      if (!validacao.valido) {
+        throw new Error(validacao.erro);
+      }
+
+      // 3. Criar log (auditoria)
+      await this.criarLogTransicao(
+        atendimentoId,
+        estadoAnteriorNormalizado,
+        estadoNovoNormalizado,
+        justificativa
+      );
+
+      // 4. Atualizar status no Firestore
+      const agoraTimestamp = this.fStore.Timestamp.now();
+      const timelineItem = {
+        evento: `status_${estadoNovoNormalizado}`,
+        timestamp: agoraTimestamp,
+        usuario: this.currentUser?.uid || 'sistema',
+        estadoAnterior: estadoAnteriorNormalizado,
+        stadoNovo: estadoNovoNormalizado,
+        descricao: justificativa || `Transição para ${estadoNovoNormalizado}`
+    };
     
+   // Atualizar documento com novo estado e timeline 
     await this.fStore.updateDoc(
       this.fStore.doc(this.db, "atend_chat_fila", atendimentoId),
       {
-        status: estadoNovo,
-        ultimaTransicaoEm: agora,
-        timeline: this.fStore.arrayUnion({
-          evento: `status_${estadoNovo}`,
-          timestamp: agora,
-          usuario: this.currentUser?.uid,
-          estadoAnterior: estadoAnterior,
-          estadoNovo: estadoNovo,
-          descricao: justificativa || `Transição para ${estadoNovo}`
-        })
+        status: estadoNovoNormalizado,
+        ultimaTransicaoEm: agoraTimestamp,
+        timeline: this.fStore.arrayUnion(timelineItem)
       }
     );
 
-    console.log(`✓ Transição executada: ${estadoAnterior} → ${estadoNovo}`);
+      console.log(`✅ Transição executada: ${estadoAnteriorNormalizado} → ${estadoNovoNormalizado}`);
+      console.groupEnd();
+
+      return {
+        sucesso: true,
+        estadoAnterior: estadoAnteriorNormalizado,
+        estadoNovo: estadoNovoNormalizado
+      };
+
+    } catch (error) {
+      console.error('❌ Erro ao executar transição:', error);
+      console.groupEnd();
+      throw error;
+    }
   }
 
   /**
@@ -172,19 +247,23 @@ class StateMachineManager {
     if (!window.TicketStateMachine) {
       return false;
     }
-    return window.TicketStateMachine.isFinalState(estado);
+    const estadoNormalizado = this.normalizarEstado(estado);
+    return window.TicketStateMachine.isFinalState(estadoNormalizado);
   }
 
   /**
    * Obter role/permissão do usuário atual
-   * Deve ser implementado de acordo com seu sistema de Auth
+   * Busca do sessionStorage (AuthSystem)
    */
   obterRoleUsuario() {
-    // TODO: Implementar de acordo com seu sistema
-    // Exemplo: return localStorage.getItem('userRole') || "ATENDENTE"
+    const user = window.AuthSystem?.getCurrentUser();
     
-    // Por enquanto, retorna um padrão
-    return localStorage.getItem('userRole') || "ATENDENTE";
+    if (!user || !user.role) {
+      console.warn("⚠️ Usuário não autenticado ou sem role");
+      return "ATENDENTE"; // Padrão
+    }
+    
+    return user.role;
   }
 
   /**
@@ -192,11 +271,13 @@ class StateMachineManager {
    * Retorna true/false
    */
   podeExecutarAcao(estadoAtual, acao, userRole) {
-    const transicoes = this.obterTransicoesDisponiveis(estadoAtual, userRole);
+    const estadoNormalizado = this.normalizarEstado(estadoAtual);
+    const transicoes = this.obterTransicoesDisponiveis(estadoNormalizado, userRole);
     
     // Mapear ações para estados
     const acaoParaEstado = {
       "iniciar_atendimento": "EM_ATENDIMENTO",
+      "validar_identidade": "IDENTIDADE_VALIDADA",
       "concluir": "CONCLUIDO",
       "encaminhar": "ENCAMINHADO",
       "aguardar_cliente": "AGUARDANDO_CLIENTE"
@@ -205,9 +286,47 @@ class StateMachineManager {
     const estadoDestino = acaoParaEstado[acao];
     return estadoDestino && transicoes.includes(estadoDestino);
   }
+
+  /**
+   * ✅ NOVO: Verificar consistência de estado
+   * Útil para debug e validação
+   */
+  async verificarEstado(atendimentoId) {
+    try {
+      const { doc, getDoc } = this.fStore;
+      const docSnap = await getDoc(doc(this.db, 'atend_chat_fila', atendimentoId));
+      
+      if (!docSnap.exists()) {
+        return { valido: false, erro: 'Atendimento não encontrado' };
+      }
+
+      const data = docSnap.data();
+      const statusAtual = data.status;
+      const statusNormalizado = this.normalizarEstado(statusAtual);
+      const ehValido = window.TicketStateMachine?.isValidState(statusNormalizado);
+
+      console.group('🔍 VERIFICAÇÃO DE ESTADO');
+      console.log('Status no Firebase:', statusAtual);
+      console.log('Status Normalizado:', statusNormalizado);
+      console.log('É Estado Válido?', ehValido);
+      console.log('É Estado Final?', this.ehEstadoFinal(statusNormalizado));
+      console.groupEnd();
+
+      return {
+        valido: ehValido,
+        statusOriginal: statusAtual,
+        statusNormalizado: statusNormalizado,
+        ehFinal: this.ehEstadoFinal(statusNormalizado),
+        dados: data
+      };
+    } catch (error) {
+      console.error('❌ Erro ao verificar estado:', error);
+      return { valido: false, erro: error.message };
+    }
+  }
 }
 
 // Exportar como global
 window.StateMachineManager = new StateMachineManager();
 
-console.log("✅ StateMachineManager carregado");
+console.log("✅ StateMachineManager carregado (v2 - com normalização de estados)");

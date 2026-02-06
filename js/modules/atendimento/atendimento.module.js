@@ -101,13 +101,16 @@ const AtendimentoModule = {
       await import('./services/atendimento-chat-sistem/atendimento-data-structure.js');
       await import('./services/atendimento-chat-sistem/atendimento-acceptance-manager.js');
       await import('./services/atendimento-chat-sistem/atendimento-restoration-manager.js');
+      await import('./services/atendimento-chat-sistem/state-machine-manager.js');
+      await import('./services/ticketstatemachine.js');
+      await import('./services/demandas-service.js');
       
       if (!window.AtendimentoDataStructure && typeof AtendimentoDataStructureManager !== 'undefined') {
         window.AtendimentoDataStructure = new AtendimentoDataStructureManager();
       }
 
       window.AtendimentoServices = {};
-      console.log('✅ Infraestrutura de dados e Services prontos');
+      console.log('✅ Infraestrutura de dados e Services prontos (incluindo State Machine e Demandas)');
     } catch (error) {
       console.error('❌ Erro ao preparar services:', error);
       throw error;

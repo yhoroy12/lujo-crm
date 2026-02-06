@@ -55,7 +55,7 @@ class RealtimeListenersManager {
       
       const q = this.fStore.query(
         filaRef,
-        this.fStore.where("status", "==", "fila"),
+        this.fStore.where("status", "==", "FILA"),
         this.fStore.orderBy("criadoEm", "desc")
       );
 

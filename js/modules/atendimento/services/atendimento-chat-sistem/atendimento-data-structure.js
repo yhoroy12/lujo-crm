@@ -116,7 +116,7 @@ class AtendimentoDataStructureManager {
         uid_cliente: clienteInfo.uid_cliente,
 
         // Status (compatível com State Machine)
-        status: "fila",
+        status: "FILA",
 
         // Informações do cliente
         cliente: {
@@ -175,10 +175,10 @@ class AtendimentoDataStructureManager {
       });
       // Atualiza estado global
       this.state.clienteInfo = clienteInfo;
-      this.state.statusAtual = "novo";
+      this.state.statusAtual = "FILA";
       this.state.uid_cliente = clienteInfo.uid_cliente;
 
-      console.log(`✅ Atendimento criado: ${this.state.atendimentoId}`);
+      console.log(`✅ Atendimento criado na FILA: ${this.state.atendimentoId}`);
       console.log(`   Cliente UID: ${clienteInfo.uid_cliente}`);
 
       return this.state.atendimentoId;
@@ -252,8 +252,8 @@ class AtendimentoDataStructureManager {
 
   /**
    * ✅ CORRIGIDO: Quando operador aceita o atendimento
-   * Agora atualiza também atribuido_para_uid
-   */
+   * Status vai para "NOVO" para seguir fluxo da State Machine
+   *
   async operadorAceitaAtendimento(operadorInfo) {
     if (!this.state.atendimentoId) {
       throw new Error("Nenhum atendimento ativo");
@@ -268,13 +268,13 @@ class AtendimentoDataStructureManager {
       await this.fStore.updateDoc(
         this.fStore.doc(this.db, "atend_chat_fila", this.state.atendimentoId),
         {
-          status: "em_atendimento",
+          status: "NOVO", // ✅ CORRIGIDO: Inicia no estado NOVO para validação de identidade
           "operador.uid": operadorInfo.atribuido_para_uid,
           "operador.nome": operadorInfo.nome,
           "operador.role": operadorInfo.role,
           "operador.aceitouEm": agora(),
           atribuido_para_uid: operadorInfo.atribuido_para_uid, // ✅ Campo para Rules
-          inicioAtendimento: agora(),
+          atribuido_em: agora(),
           timeline: this.fStore.arrayUnion({
             evento: "operador_aceitou",
             timestamp: agora(),
@@ -285,141 +285,207 @@ class AtendimentoDataStructureManager {
       );
 
       this.state.operadorInfo = operadorInfo;
-      this.state.statusAtual = "em_atendimento";
+      this.state.statusAtual = "NOVO";
 
-      console.log(`✅ Operador ${operadorInfo.nome} aceitou atendimento`);
+      console.log(`✅ Operador ${operadorInfo.nome} aceitou atendimento (status: NOVO)`);
     } catch (error) {
       console.error("❌ Erro ao operador aceitar:", error);
       throw error;
     }
   }
+*/
+  //nova função operadorAceitaAtendimento corrigida - se não funcionar volta a anterior comentado acima
+  /* ✅ NOVO: Quando operador aceita o atendimento
+  * Transição: FILA → NOVO
+  */
+ 
+  async operadorAceitaAtendimento(operadorInfo) {
 
-  /**
+  if (!this.state.atendimentoId) {
+    throw new Error("Nenhum atendimento ativo");
+  }
+
+  try {
+    // ✅ 1. Validar transição usando State Machine
+    const validacao = window.StateMachineManager?.validarTransicao(
+      "FILA",
+      "NOVO",
+      operadorInfo.role || "ATENDENTE"
+    );
+
+    if (!validacao?.valido) {
+      throw new Error(validacao.erro);
+    }
+
+    // ✅ 2. Executar transição com State Machine
+    await window.StateMachineManager?.executarTransicao(
+      this.state.atendimentoId,
+      "FILA",
+      "NOVO",
+      `Operador ${operadorInfo.nome} aceitou o atendimento`
+    );
+
+
+    // ✅ 3. Atualizar informações do operador
+    const user = window.AuthSystem?.getCurrentUser();
+    
+    const timelineItem = {
+      evento: "operador_aceitou",
+      timestamp: agora(),
+      usuario: operadorInfo.atribuido_para_uid || user.uid,
+      descricao: `Operador ${operadorInfo.nome} aceitou o atendimento`
+    };
+    
+    // ✅ 4. Atualizar documento no Firestore
+    await this.fStore.updateDoc(
+      this.fStore.doc(this.db, "atend_chat_fila", this.state.atendimentoId),
+      {
+        "operador.uid": operadorInfo.atribuido_para_uid,
+        "operador.nome": operadorInfo.nome,
+        "operador.role": operadorInfo.role,
+        "operador.aceitouEm": agora(),
+        atribuido_para_uid: operadorInfo.atribuido_para_uid,
+        atribuido_em: agora(),
+        timeline: this.fStore.arrayUnion(timelineItem)
+        }
+      );
+      
+    this.state.operadorInfo = operadorInfo;
+    this.state.statusAtual = "NOVO";
+
+    console.log(`✅ Operador ${operadorInfo.nome} aceitou atendimento (FILA → NOVO)`);
+  } catch (error) {
+    console.error("❌ Erro ao operador aceitar:", error);
+    throw error;
+  }
+};
+
+/**
    * Validar identidade do cliente
    */
   async validarIdentidadeCliente() {
-    if (!this.state.atendimentoId) {
-      throw new Error("Nenhum atendimento ativo");
-    }
-
-    try {
-      await this.fStore.updateDoc(
-        this.fStore.doc(this.db, "atend_chat_fila", this.state.atendimentoId),
-        {
-          status: "identidade_validada",
-          "cliente.validadoEm": agora(),
-          timeline: this.fStore.arrayUnion({
-            evento: "identidade_validada",
-            timestamp: agora(),
-            usuario: "cliente",
-            descricao: "Identidade do cliente validada"
-          })
-        }
-      );
-
-      this.state.statusAtual = "identidade_validada";
-      console.log("✅ Identidade validada");
-    } catch (error) {
-      console.error("❌ Erro ao validar identidade:", error);
-      throw error;
-    }
+  if (!this.state.atendimentoId) {
+    throw new Error("Nenhum atendimento ativo");
   }
+
+  try {
+    await this.fStore.updateDoc(
+      this.fStore.doc(this.db, "atend_chat_fila", this.state.atendimentoId),
+      {
+        status: "identidade_validada",
+        "cliente.validadoEm": agora(),
+        timeline: this.fStore.arrayUnion({
+          evento: "identidade_validada",
+          timestamp: agora(),
+          usuario: "cliente",
+          descricao: "Identidade do cliente validada"
+        })
+      }
+    );
+
+    this.state.statusAtual = "identidade_validada";
+    console.log("✅ Identidade validada");
+  } catch (error) {
+    console.error("❌ Erro ao validar identidade:", error);
+    throw error;
+  }
+}
 
   /**
    * Finalizar atendimento
    */
   async finalizarAtendimento(justificativa = null) {
-    if (!this.state.atendimentoId) {
-      throw new Error("Nenhum atendimento ativo");
-    }
-
-    try {
-      await this.fStore.updateDoc(
-        this.fStore.doc(this.db, "atend_chat_fila", this.state.atendimentoId),
-        {
-          status: "concluido",
-          finalizadoEm: agora(),
-          timeline: this.fStore.arrayUnion({
-            evento: "atendimento_finalizado",
-            timestamp: agora(),
-            usuario: this.state.operadorInfo?.uid || "cliente",
-            descricao: justificativa || "Atendimento finalizado"
-          })
-        }
-      );
-
-      this.state.statusAtual = "concluido";
-      console.log("✅ Atendimento finalizado");
-    } catch (error) {
-      console.error("❌ Erro ao finalizar atendimento:", error);
-      throw error;
-    }
+  if (!this.state.atendimentoId) {
+    throw new Error("Nenhum atendimento ativo");
   }
 
-  /**
-   * Obter estado global sincronizado
-   */
-  obterEstadoGlobal() {
-    return {
-      atendimentoId: this.state.atendimentoId,
-      statusAtual: this.state.statusAtual,
-      cliente: this.state.clienteInfo,
-      operador: this.state.operadorInfo,
-      uid_cliente: this.state.uid_cliente,
-      timestamp: new Date().toISOString()
-    };
-  }
-
-  /**
-   * Sincronizar estado global em tempo real
-   */
-  sincronizarEstado(callback) {
-    if (!this.state.atendimentoId) {
-      console.warn("⚠️ Nenhum atendimento para sincronizar");
-      return null;
-    }
-
-    const docRef = this.fStore.doc(
-      this.db,
-      "atend_chat_fila",
-      this.state.atendimentoId
+  try {
+    await this.fStore.updateDoc(
+      this.fStore.doc(this.db, "atend_chat_fila", this.state.atendimentoId),
+      {
+        status: "concluido",
+        finalizadoEm: agora(),
+        timeline: this.fStore.arrayUnion({
+          evento: "atendimento_finalizado",
+          timestamp: agora(),
+          usuario: this.state.operadorInfo?.uid || "cliente",
+          descricao: justificativa || "Atendimento finalizado"
+        })
+      }
     );
 
-    return this.fStore.onSnapshot(docRef, (doc) => {
-      if (doc.exists()) {
-        const dados = doc.data();
+    this.state.statusAtual = "concluido";
+    console.log("✅ Atendimento finalizado");
+  } catch (error) {
+    console.error("❌ Erro ao finalizar atendimento:", error);
+    throw error;
+  }
+}
 
-        // Atualizar estado local
-        this.state.statusAtual = dados.status;
-        this.state.clienteInfo = dados.cliente;
-        this.state.operadorInfo = dados.operador;
-        this.state.uid_cliente = dados.uid_cliente;
+/**
+ * Obter estado global sincronizado
+ */
+obterEstadoGlobal() {
+  return {
+    atendimentoId: this.state.atendimentoId,
+    statusAtual: this.state.statusAtual,
+    cliente: this.state.clienteInfo,
+    operador: this.state.operadorInfo,
+    uid_cliente: this.state.uid_cliente,
+    timestamp: new Date().toISOString()
+  };
+}
 
-        // Chamar callback com dados atualizados
-        if (callback) {
-          callback({
-            atendimentoId: this.state.atendimentoId,
-            ...dados
-          });
-        }
+/**
+ * Sincronizar estado global em tempo real
+ */
+sincronizarEstado(callback) {
+  if (!this.state.atendimentoId) {
+    console.warn("⚠️ Nenhum atendimento para sincronizar");
+    return null;
+  }
+
+  const docRef = this.fStore.doc(
+    this.db,
+    "atend_chat_fila",
+    this.state.atendimentoId
+  );
+
+  return this.fStore.onSnapshot(docRef, (doc) => {
+    if (doc.exists()) {
+      const dados = doc.data();
+
+      // Atualizar estado local
+      this.state.statusAtual = dados.status;
+      this.state.clienteInfo = dados.cliente;
+      this.state.operadorInfo = dados.operador;
+      this.state.uid_cliente = dados.uid_cliente;
+
+      // Chamar callback com dados atualizados
+      if (callback) {
+        callback({
+          atendimentoId: this.state.atendimentoId,
+          ...dados
+        });
       }
-    });
-  }
+    }
+  });
+}
 
-  /**
-   * Limpar dados da sessão
-   */
-  limparSessao() {
-    sessionStorage.removeItem('atendimentoId');
-    this.state = {
-      atendimentoId: null,
-      clienteInfo: null,
-      operadorInfo: null,
-      statusAtual: null,
-      uid_cliente: null
-    };
-    console.log("✅ Sessão limpa");
-  }
+/**
+ * Limpar dados da sessão
+ */
+limparSessao() {
+  sessionStorage.removeItem('atendimentoId');
+  this.state = {
+    atendimentoId: null,
+    clienteInfo: null,
+    operadorInfo: null,
+    statusAtual: null,
+    uid_cliente: null
+  };
+  console.log("✅ Sessão limpa");
+}
 }
 
 // Exportar como global

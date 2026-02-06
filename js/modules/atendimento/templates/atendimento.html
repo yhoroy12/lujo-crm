@@ -22,7 +22,7 @@
       </button>
 
       <div class="ticket-status-indicator" id="ticketStatusIndicator">
-        <span class="status-badge" id="statusBadge">AGUARDANDO</span>
+        <span class="status-badge" id="statusBadge">--</span>
       </div>
     </div>
 
@@ -56,10 +56,10 @@
           <div class="context-header">
             <div class="ticket-id">
               <span class="label">TICKET</span>
-              <span class="value" id="ticketId">MS-20251111-223841</span>
+              <span class="value" id="ticketId">--</span>
             </div>
             <div class="ticket-state-badge">
-              <span class="state-indicator" id="stateIndicator">NOVO</span>
+              <span class="state-indicator" id="stateIndicator">--</span>
             </div>
           </div>
 
@@ -799,6 +799,72 @@
           <i class="fi fi-rr-check"></i>
           Aceitar Atendimento
         </button>
+      </div>
+    </div>
+    <!-- Popup de Encaminhamento -->
+    <div id="popupEncaminhar" class="modal-popup">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <i class="fi fi-rr-share"></i>
+            Encaminhar Atendimento
+          </h3>
+          <button class="btn-close modal-close" id="btnFecharEncaminhar">
+            <i class="fi fi-rr-cross-small"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="campo">
+            <label for="popupSetorDestino">
+              <i class="fi fi-rr-building"></i>
+              Setor de Destino
+            </label>
+            <div class="info-display" id="popupSetorDestino">
+              <!-- Será preenchido com o setor selecionado -->
+            </div>
+          </div>
+
+          <div class="campo">
+            <label for="popupDescricaoSolicitacao">
+              <i class="fi fi-rr-document"></i>
+              Descrição da Solicitação
+            </label>
+            <div class="info-display" id="popupDescricaoSolicitacao">
+              <!-- Será preenchido com a descrição -->
+            </div>
+          </div>
+
+          <div class="campo">
+            <label for="justificativaEncaminhamento">
+              <i class="fi fi-rr-comment-alt"></i>
+              Justificativa do Encaminhamento
+              <span class="required">*</span>
+            </label>
+            <textarea id="justificativaEncaminhamento" class="form-textarea"
+              placeholder="Descreva o motivo do encaminhamento..." rows="4" maxlength="500"></textarea>
+            <div class="char-counter">
+              <span id="charCount">0</span>/500 caracteres
+            </div>
+          </div>
+
+          <div class="alert alert-info">
+            <i class="fi fi-rr-info"></i>
+            <strong>Atenção:</strong> Após encaminhar, este atendimento sairá da sua responsabilidade e será transferido
+            para o setor selecionado.
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelarEncaminhar">
+            <i class="fi fi-rr-cross"></i>
+            Cancelar
+          </button>
+          <button class="btn btn-primary" id="btnConfirmarEncaminhar">
+            <i class="fi fi-rr-check"></i>
+            Confirmar Encaminhamento
+          </button>
+        </div>
       </div>
     </div>
     <!-- MODAL's -->

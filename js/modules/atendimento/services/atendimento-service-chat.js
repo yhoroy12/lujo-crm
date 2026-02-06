@@ -1,17 +1,17 @@
 /* =====================================================
-   CHAT CLIENTE - VERSÃO CORRIGIDA E FUNCIONAL
-   Integração: Interface UI + AtendimentoServiceIntegrado
-   
-   CORREÇÕES APLICADAS:
-   ✅ IDs dos botões corrigidos (btnSend)
-   ✅ Campo timestamp unificado
-   ✅ Autenticação anônima do cliente
-   ✅ Estrutura de mensagem compatível com Firestore Rules
-   ✅ Sincronização bidirecional operador ↔ cliente
+   CHAT CLIENTE - VERSÃO REFATORADA E ROBUSTA
+   Correções:
+   ✅ Persistência de sessão robusta
+   ✅ Normalização de estados
+   ✅ Listener unificado
+   ✅ Reconexão automática
+   ✅ Tratamento de erros completo
 ===================================================== */
 
 const service = window.AtendimentoServiceIntegrado;
+const stateMachine = window.StateMachineManager;
 
+// Elementos da interface
 const screens = {
   welcome: document.getElementById("screenWelcome"),
   conta: document.getElementById("screenIdentificarConta"),
@@ -24,44 +24,440 @@ const screens = {
 const headerStatus = document.getElementById("headerStatus");
 const messagesContainer = document.getElementById("messagesContainer");
 const messageInput = document.getElementById("messageInput");
-const btnSend = document.getElementById("btnSend"); // ✅ CORRIGIDO: era btnEnviar
+const btnSend = document.getElementById("btnSend");
 const loadingOverlay = document.getElementById("loadingOverlay");
 
-let atendimentoTimer = null;
-let segundosEspera = 0;
-let segundosAtendimento = 0;
-let notaSelecionada = 0;
-let unsubscribeChat = null; // Para limpar listener do chat
+// Estado gerenciado centralmente
+let clienteState = {
+  atendimentoId: null,
+  status: null,
+  uid: null,
+  operador: null,
+  timerInterval: null,
+  segundosEspera: 0,
+  segundosAtendimento: 0,
+  listeners: {
+    status: null,
+    mensagens: null
+  },
+  reconexoes: 0,
+  maxReconexoes: 5
+};
 
 /* =====================================================
-   AUTENTICAÇÃO ANÔNIMA DO CLIENTE
+   SISTEMA DE PERSISTÊNCIA ROBUSTO
 ===================================================== */
 
-async function autenticarClienteAnonimo() {
+function salvarEstadoSessao() {
+  const estado = {
+    atendimentoId: clienteState.atendimentoId,
+    uid: clienteState.uid,
+    status: clienteState.status,
+    timestamp: Date.now()
+  };
+  
+  // Salvar em múltiplos locais para redundância
+  sessionStorage.setItem('clienteAtendimento', JSON.stringify(estado));
+  localStorage.setItem('clienteAtendimentoBackup', JSON.stringify(estado));
+  
+  console.log('💾 Estado salvo na sessão:', estado);
+}
+
+function carregarEstadoSessao() {
   try {
-    const auth = window.FirebaseApp?.auth;
-
-    // Se já está autenticado, retorna
-    if (auth.currentUser) {
-      console.log("✅ Cliente já autenticado:", auth.currentUser.uid);
-      return auth.currentUser;
+    // Tentar sessionStorage primeiro
+    let estado = sessionStorage.getItem('clienteAtendimento');
+    
+    if (!estado) {
+      // Fallback para localStorage
+      estado = localStorage.getItem('clienteAtendimentoBackup');
     }
-
-    // Autentica anonimamente
-    const userCredential = await window.FirebaseApp.fAuth.signInAnonymously(
-      window.FirebaseApp.auth
-    );
-    console.log("✅ Cliente autenticado anonimamente:", userCredential.user.uid);
-    return userCredential.user;
-
+    
+    if (estado) {
+      const parsed = JSON.parse(estado);
+      
+      // Verificar se não expirou (30 minutos)
+      const tempoDecorrido = Date.now() - parsed.timestamp;
+      const EXPIRACAO = 30 * 60 * 1000; // 30 minutos
+      
+      if (tempoDecorrido < EXPIRACAO) {
+        clienteState.atendimentoId = parsed.atendimentoId;
+        clienteState.uid = parsed.uid;
+        clienteState.status = parsed.status;
+        return parsed;
+      } else {
+        console.log('⌛ Sessão expirada, limpando...');
+        limparSessao();
+      }
+    }
   } catch (error) {
-    console.error("❌ Erro na autenticação:", error);
-    throw error;
+    console.error('❌ Erro ao carregar sessão:', error);
   }
+  
+  return null;
+}
+
+function limparSessao() {
+  clienteState = {
+    atendimentoId: null,
+    status: null,
+    uid: null,
+    operador: null,
+    timerInterval: null,
+    segundosEspera: 0,
+    segundosAtendimento: 0,
+    listeners: { status: null, mensagens: null },
+    reconexoes: 0
+  };
+  
+  sessionStorage.removeItem('clienteAtendimento');
+  localStorage.removeItem('clienteAtendimentoBackup');
+  sessionStorage.removeItem('atendimentoId');
+  
+  console.log('🧹 Sessão limpa');
 }
 
 /* =====================================================
-   FUNÇÕES DE APOIO (UI)
+   NORMALIZAÇÃO DE ESTADOS (compatível com State Machine)
+===================================================== */
+
+function normalizarStatus(status) {
+  if (!status) return 'FILA';
+  
+  const mapa = {
+    'novo': 'NOVO',
+    'fila': 'FILA',
+    'identidade_validada': 'IDENTIDADE_VALIDADA',
+    'em_atendimento': 'EM_ATENDIMENTO',
+    'concluido': 'CONCLUIDO',
+    'encaminhado': 'ENCAMINHADO',
+    'cancelado': 'CANCELADO'
+  };
+  
+  // Tentar mapeamento
+  const statusLower = status.toLowerCase();
+  const normalizado = mapa[statusLower];
+  
+  if (normalizado) {
+    return normalizado;
+  }
+  
+  // Se já está em maiúsculo, usar como está
+  if (status === status.toUpperCase()) {
+    return status;
+  }
+  
+  // Default: converter para maiúsculo
+  return status.toUpperCase();
+}
+
+/* =====================================================
+   GERENCIADOR DE LISTENERS UNIFICADO
+===================================================== */
+
+class ClienteListenerManager {
+  constructor() {
+    this.db = window.FirebaseApp?.db;
+    this.fStore = window.FirebaseApp?.fStore;
+  }
+  
+  iniciarMonitoramento(atendimentoId) {
+    this.pararMonitoramento();
+    this.iniciarListenerStatus(atendimentoId);
+    this.iniciarListenerMensagens(atendimentoId);
+  }
+  
+  iniciarListenerStatus(atendimentoId) {
+    if (clienteState.listeners.status) {
+      clienteState.listeners.status();
+    }
+    
+    const docRef = this.fStore.doc(this.db, "atend_chat_fila", atendimentoId);
+    
+    clienteState.listeners.status = this.fStore.onSnapshot(
+      docRef,
+      (docSnap) => {
+        if (!docSnap.exists()) {
+          console.error('❌ Atendimento não encontrado:', atendimentoId);
+          this.tratarAtendimentoNaoEncontrado();
+          return;
+        }
+        
+        const dados = docSnap.data();
+        const statusNormalizado = normalizarStatus(dados.status);
+        
+        console.log('📊 Status atualizado:', {
+          antigo: clienteState.status,
+          novo: statusNormalizado,
+          dados: dados.status
+        });
+        
+        // Atualizar estado local
+        clienteState.status = statusNormalizado;
+        clienteState.operador = dados.operador;
+        
+        // Processar ações baseadas no status
+        this.processarStatus(statusNormalizado, dados);
+      },
+      (error) => {
+        console.error('❌ Erro no listener de status:', error);
+        this.tratarErroListener(error, 'status');
+      }
+    );
+    
+    console.log('👂 Listener de status iniciado para:', atendimentoId);
+  }
+  
+  iniciarListenerMensagens(atendimentoId) {
+    if (clienteState.listeners.mensagens) {
+      clienteState.listeners.mensagens();
+    }
+    
+    const mensagensRef = this.fStore.collection(
+      this.db,
+      "atend_chat_fila",
+      atendimentoId,
+      "mensagem"
+    );
+    
+    const q = this.fStore.query(
+      mensagensRef,
+      this.fStore.orderBy("timestamp", "asc")
+    );
+    
+    clienteState.listeners.mensagens = this.fStore.onSnapshot(
+      q,
+      (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === "added") {
+            const msgData = change.doc.data();
+            this.renderizarMensagem(msgData);
+          }
+        });
+      },
+      (error) => {
+        console.error('❌ Erro no listener de mensagens:', error);
+        this.tratarErroListener(error, 'mensagens');
+      }
+    );
+    
+    console.log('👂 Listener de mensagens iniciado para:', atendimentoId);
+  }
+  
+  processarStatus(status, dados) {
+    switch(status) {
+      case 'NOVO':
+        this.aoOperadorAceitar(dados);
+        break;
+        
+      case 'EM_ATENDIMENTO':
+        this.aoIniciarAtendimento(dados);
+        break;
+        
+      case 'CONCLUIDO':
+        this.aoConcluirAtendimento(dados);
+        break;
+        
+      case 'CANCELADO':
+        this.aoCancelarAtendimento();
+        break;
+    }
+  }
+  
+  aoOperadorAceitar(dados) {
+    console.log('✅ Operador aceitou o atendimento');
+    
+    // Parar timer da fila
+    if (clienteState.timerInterval) {
+      clearInterval(clienteState.timerInterval);
+    }
+    
+    // Atualizar UI
+    mostrarTela(screens.chat);
+    
+    // Iniciar timer do atendimento
+    clienteState.segundosAtendimento = 0;
+    clienteState.timerInterval = setInterval(atualizarTimerChat, 1000);
+    
+    // Atualizar header
+    if (headerStatus) {
+      const statusText = headerStatus.querySelector('.status-text');
+      const statusDot = headerStatus.querySelector('.status-dot');
+      if (statusText) {
+        const nomeOperador = dados.operador?.nome || "Atendente";
+        statusText.textContent = `Conversando com ${nomeOperador}`;
+      }
+      if (statusDot) {
+        statusDot.classList.add('online');
+      }
+    }
+    
+    // Mostrar informações do operador
+    const operatorInfo = document.getElementById('operatorInfo');
+    const operatorName = document.getElementById('operatorName');
+    if (operatorInfo && operatorName) {
+      operatorInfo.style.display = 'flex';
+      operatorName.textContent = dados.operador?.nome || "Atendente";
+    }
+    
+    toast("Um atendente aceitou seu chamado!", "success");
+  }
+  
+  aoIniciarAtendimento(dados) {
+    console.log('🚀 Atendimento iniciado');
+    // Chat já deve estar aberto pelo status NOVO
+  }
+  
+  aoConcluirAtendimento(dados) {
+    console.log('🏁 Atendimento concluído');
+    
+    // Parar todos os timers
+    if (clienteState.timerInterval) {
+      clearInterval(clienteState.timerInterval);
+    }
+    
+    // Parar listeners
+    this.pararMonitoramento();
+    
+    // Mostrar tela finalizada
+    mostrarTela(screens.finalizado);
+    
+    // Copiar mensagens para histórico
+    copiarMensagensParaHistorico();
+    
+    // Atualizar estado
+    salvarEstadoSessao();
+  }
+  
+  aoCancelarAtendimento() {
+    console.log('❌ Atendimento cancelado');
+    
+    // Parar timers
+    if (clienteState.timerInterval) {
+      clearInterval(clienteState.timerInterval);
+    }
+    
+    // Parar listeners
+    this.pararMonitoramento();
+    
+    // Mostrar tela inicial
+    mostrarTela(screens.welcome);
+    
+    // Limpar sessão
+    limparSessao();
+    
+    toast("Atendimento cancelado", "info");
+  }
+  
+  renderizarMensagem(msgData) {
+  if (!messagesContainer) return;
+  
+  const msgDiv = document.createElement("div");
+  const isCliente = msgData.autor === 'cliente';
+  msgDiv.className = `message ${isCliente ? 'user' : 'operator'}`;
+  
+  // 🔥 CORREÇÃO: Formatar hora de forma mais robusta
+  let hora = '--:--';
+  try {
+    let timestamp = msgData.timestamp;
+    
+    // Caso 1: É um objeto Timestamp do Firebase
+    if (timestamp && typeof timestamp.toDate === 'function') {
+      const data = timestamp.toDate();
+      hora = data.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    // Caso 2: É um objeto com propriedades seconds/nanoseconds
+    else if (timestamp && timestamp.seconds) {
+      const data = new Date(timestamp.seconds * 1000);
+      hora = data.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    // Caso 3: É um Date object ou string
+    else if (timestamp) {
+      const data = new Date(timestamp);
+      if (!isNaN(data.getTime())) {
+        hora = data.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+    }
+    // Caso 4: Usar hora atual como fallback
+    else {
+      hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+  } catch (error) {
+    console.warn('⚠️ Erro ao formatar hora da mensagem:', error);
+    // Fallback para hora atual
+    hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  
+  // Sanitizar texto para evitar XSS
+  const texto = msgData.texto || '';
+  const textoSanitizado = escapeHtml(texto);
+  
+  msgDiv.innerHTML = `
+    <div class="message-content">
+      <p>${textoSanitizado}</p>
+      <span class="time">${hora}</span>
+    </div>
+  `;
+  
+  messagesContainer.appendChild(msgDiv);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  
+  // 🔥 DEBUG: Log para verificar o timestamp
+  console.log('🕒 Hora renderizada:', {
+    autor: msgData.autor,
+    hora: hora,
+    timestamp: msgData.timestamp,
+    tipo: typeof msgData.timestamp
+  });
+}
+  
+  tratarErroListener(error, tipo) {
+    console.error(`❌ Erro no listener de ${tipo}:`, error);
+    
+    // Incrementar tentativas
+    clienteState.reconexoes++;
+    
+    if (clienteState.reconexoes <= clienteState.maxReconexoes) {
+      const delay = Math.min(1000 * Math.pow(2, clienteState.reconexoes), 30000);
+      console.log(`🔄 Tentando reconexão ${clienteState.reconexoes}/${clienteState.maxReconexoes} em ${delay}ms`);
+      
+      setTimeout(() => {
+        if (clienteState.atendimentoId) {
+          this.iniciarListenerStatus(clienteState.atendimentoId);
+        }
+      }, delay);
+    } else {
+      console.error('❌ Máximo de tentativas de reconexão atingido');
+      toast("Conexão perdida. Por favor, recarregue a página.", "error");
+    }
+  }
+  
+  tratarAtendimentoNaoEncontrado() {
+    toast("Atendimento não encontrado. Inicie um novo.", "error");
+    limparSessao();
+    mostrarTela(screens.welcome);
+  }
+  
+  pararMonitoramento() {
+    if (clienteState.listeners.status) {
+      clienteState.listeners.status();
+      clienteState.listeners.status = null;
+    }
+    
+    if (clienteState.listeners.mensagens) {
+      clienteState.listeners.mensagens();
+      clienteState.listeners.mensagens = null;
+    }
+    
+    console.log('🛑 Monitoramento parado');
+  }
+}
+
+// Instanciar gerenciador
+const clienteListeners = new ClienteListenerManager();
+
+/* =====================================================
+   FUNÇÕES AUXILIARES
 ===================================================== */
 
 function mostrarTela(tela) {
@@ -101,250 +497,24 @@ function toast(message, type = "success") {
 }
 
 function atualizarTimerFila() {
-  segundosEspera++;
-  // ✅ CORREÇÃO 2: Preencher campos da tela de fila
+  clienteState.segundosEspera++;
   const posicaoEl = document.getElementById("posicaoFila");
   const tempoEstEl = document.getElementById("tempoEstimado");
-
+  
   if (posicaoEl) posicaoEl.textContent = "1º na fila";
-
-  // Estimativa: 2 min por posição na fila
-  const minEstimado = Math.max(1, Math.ceil((segundosEspera) / 60));
+  
+  const minEstimado = Math.max(1, Math.ceil(clienteState.segundosEspera / 60));
   if (tempoEstEl) tempoEstEl.textContent = `~${minEstimado} min`;
 }
+
 function atualizarTimerChat() {
-  segundosAtendimento++;
-  const mins = Math.floor(segundosAtendimento / 60);
-  const secs = segundosAtendimento % 60;
+  clienteState.segundosAtendimento++;
+  const mins = Math.floor(clienteState.segundosAtendimento / 60);
+  const secs = clienteState.segundosAtendimento % 60;
   const timerElement = document.getElementById("tempoAtendimento");
   if (timerElement) {
     timerElement.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
-}
-
-
-/* =====================================================
-   FLUXO DE NAVEGAÇÃO E REGRAS DE NEGÓCIO
-===================================================== */
-
-// Botão iniciar atendimento
-const btnIniciar = document.getElementById("btnIniciarAtendimento");
-if (btnIniciar) {
-  btnIniciar.onclick = () => mostrarTela(screens.conta);
-}
-
-const btnVoltarWelcome = document.getElementById('btnVoltarWelcome');
-if (btnVoltarWelcome) {
-  btnVoltarWelcome.onclick = () => mostrarTela(screens.welcome);
-}
-
-const btnVoltarConta = document.getElementById('btnVoltarConta');
-if (btnVoltarConta) {
-  btnVoltarConta.onclick = () => mostrarTela(screens.conta);
-}
-
-// Formulário identificação conta
-const formConta = document.getElementById('formIdentificarConta');
-if (formConta) {
-  formConta.onsubmit = (e) => {
-    e.preventDefault();
-    mostrarTela(screens.pessoa);
-  };
-}
-
-// Formulário identificação pessoa
-const formPessoa = document.getElementById('formIdentificarPessoa');
-if (formPessoa) {
-  formPessoa.onsubmit = async (e) => {
-    e.preventDefault();
-
-    const dados = {
-      nome: document.getElementById('nomeCompleto').value,
-      telefone: document.getElementById('telefone').value,
-      email: document.getElementById('emailConta').value
-    };
-
-    try {
-      if (loadingOverlay) loadingOverlay.classList.remove('hidden');
-
-      // ✅ AUTENTICAR CLIENTE ANONIMAMENTE PRIMEIRO
-      const user = await autenticarClienteAnonimo();
-
-      // Adicionar UID do cliente aos dados
-      dados.uid_cliente = user.uid;
-
-      // Inicia atendimento e obtém o ID
-      const atendimentoId = await service.clienteIniciarAtendimento(dados);
-      sessionStorage.setItem('atendimentoId', atendimentoId);
-
-      segundosEspera = 0;
-      atendimentoTimer = setInterval(atualizarTimerFila, 1000);
-
-      mostrarTela(screens.fila);
-      toast("Você entrou na fila de espera", "success");
-
-      // Começa a vigiar se o operador aceita
-      ligarMonitorDeStatus(atendimentoId);
-
-    } catch (error) {
-      console.error("Erro ao iniciar:", error);
-      toast("Falha ao conectar. Verifique sua conexão.", "error");
-    } finally {
-      if (loadingOverlay) loadingOverlay.classList.add('hidden');
-    }
-  };
-}
-
-/* =====================================================
-   SISTEMA DE EVENTOS E SINCRONIZAÇÃO FIREBASE
-===================================================== */
-
-const ligarMonitorDeStatus = (atendimentoId) => {
-  const db = window.FirebaseApp.db;
-  const { doc, onSnapshot } = window.FirebaseApp.fStore;
-
-  const unsubscribe = onSnapshot(doc(db, "atend_chat_fila", atendimentoId), (docSnap) => {
-    if (docSnap.exists()) {
-      const dados = docSnap.data();
-      const novoStatus = dados.status;
-
-      console.log("📊 Status atual:", novoStatus);
-
-      // Dispara evento para o listener abaixo
-      const evento = new CustomEvent('statusMudou', {
-        detail: {
-          status: novoStatus,
-          dados: dados,
-          atendimentoId: atendimentoId
-        }
-      });
-      window.dispatchEvent(evento);
-
-      if (novoStatus === 'concluido') {
-        unsubscribe();
-      }
-    }
-  }, (error) => {
-    console.error("❌ Erro ao monitorar status:", error);
-  });
-};
-
-window.addEventListener('statusMudou', (e) => {
-  const { status, dados, atendimentoId } = e.detail;
-  
-
-  console.log("🔔 Status mudou para:", status);
-
-  if (status === 'em_atendimento') {
-    if (atendimentoTimer) clearInterval(atendimentoTimer);
-
-    // Mostrar tela de chat
-    mostrarTela(screens.chat);
-
-    // Iniciar timer do atendimento
-    segundosAtendimento = 0;
-    atendimentoTimer = setInterval(atualizarTimerChat, 1000);
-
-    // ✅ CONECTA O CHAT EM TEMPO REAL
-    conectarChatCliente(atendimentoId);
-
-    // Atualizar header com nome do operador
-    if (headerStatus) {
-      const statusText = headerStatus.querySelector('.status-text');
-      const statusDot = headerStatus.querySelector('.status-dot');
-      if (statusText) {
-        statusText.textContent = `Conversando com ${dados.operador?.nome || "Atendente"}`;
-      }
-      if (statusDot) {
-        statusDot.classList.add('online');
-      }
-    }
-
-    // Mostrar informações do operador
-    const operatorInfo = document.getElementById('operatorInfo');
-    const operatorName = document.getElementById('operatorName');
-    if (operatorInfo && operatorName) {
-      operatorInfo.style.display = 'flex';
-      operatorName.textContent = dados.operador?.nome || "Atendente";
-    }
-
-    toast("Um atendente aceitou seu chamado!", "success");
-  }
-
-  if (status === 'concluido') {
-    mostrarTela(screens.finalizado);
-    if (atendimentoTimer) clearInterval(atendimentoTimer);
-
-    // Limpar listener do chat
-    if (unsubscribeChat) {
-      unsubscribeChat();
-      unsubscribeChat = null;
-    }
-
-    // Copiar mensagens para histórico (somente leitura)
-    copiarMensagensParaHistorico();
-  }
-});
-
-const conectarChatCliente = (atendimentoId) => {
-  const db = window.FirebaseApp.db;
-  const { collection, query, orderBy, onSnapshot } = window.FirebaseApp.fStore;
-
-  // Limpar listener anterior se existir
-  if (unsubscribeChat) {
-    unsubscribeChat();
-  }
-
-  // ✅ CORRIGIDO: Usar 'timestamp' como campo de ordenação
-  const q = query(
-    collection(db, "atend_chat_fila", atendimentoId, "mensagem"),
-    orderBy("timestamp", "asc")
-  );
-
-  console.log("👂 Conectando chat do cliente ao atendimento:", atendimentoId);
-
-  unsubscribeChat = onSnapshot(q, (snapshot) => {
-    snapshot.docChanges().forEach((change) => {
-      if (change.type === "added") {
-        const msgData = change.doc.data();
-        renderizarMensagem(msgData);
-      }
-    });
-  }, (error) => {
-    console.error("❌ Erro ao escutar mensagens:", error);
-    toast("Erro ao conectar chat", "error");
-  });
-};
-
-function renderizarMensagem(msg) {
-  if (!messagesContainer) return;
-
-  const msgDiv = document.createElement("div");
-
-  // ✅ CSS: .message.user para cliente, .message.operator para operador
-  const isCliente = msg.autor === 'cliente';
-  msgDiv.className = `message ${isCliente ? 'user' : 'operator'}`;
-
-  // ✅ Converter timestamp do Firestore
-  let hora = '--:--';
-  if (msg.timestamp?.toDate) {
-    const data = msg.timestamp.toDate ? msg.timestamp.toDate() : new Date(msg.timestamp);
-    hora = data.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } else {
-    // FALLBACK: Se o timestamp for null (processando), usa a hora atual do sistema
-    console.log("⏳ Timestamp pendente no Firebase, usando hora local...");
-    hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  msgDiv.innerHTML = `
-    <div class="message-content">
-      <p>${escapeHtml(msg.texto)}</p>
-      <span class="time">${hora}</span>
-    </div>
-  `;
-
-  messagesContainer.appendChild(msgDiv);
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 function escapeHtml(text) {
@@ -353,187 +523,50 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-/* =====================================================
-   AÇÕES DO CHAT
-===================================================== */
-
-async function executarEnvio() {
-  const texto = messageInput?.value.trim();
-  if (!texto) return;
-
-  try {
-    const atendimentoId = service.atendimentoAtivo ||
-      window.AtendimentoDataStructure?.state?.atendimentoId;
-
-    if (!atendimentoId) {
-      console.error("❌ Nenhum atendimento ativo");
-      toast("Erro: atendimento não encontrado", "error");
-      return;
-    }
-
-    const db = window.FirebaseApp.db;
-    const { collection, addDoc, serverTimestamp } = window.FirebaseApp.fStore;
-    const auth = window.FirebaseApp.auth;
-
-    // Limpar input imediatamente (UX melhor)
-    messageInput.value = '';
-
-    // ✅ ESTRUTURA CORRETA: compatível com Firestore Rules
-    await addDoc(
-      collection(db, "atend_chat_fila", atendimentoId, "mensagem"),
-      {
-        autor: "cliente",
-        texto: texto,
-        timestamp: serverTimestamp(), // ✅ Campo unificado
-        uid_autor: auth.currentUser?.uid || null
-      }
-    );
-
-    console.log("✅ Mensagem enviada com sucesso");
-
-    // Focar novamente no input
-    messageInput.focus();
-
-  } catch (error) {
-    console.error("❌ Erro ao enviar:", error);
-    toast("Erro ao enviar mensagem", "error");
-
-    // Restaurar texto se houve erro
-    if (texto && messageInput) {
-      messageInput.value = texto;
-    }
+function mostrarLoading(mostrar, texto = "Carregando...") {
+  if (!loadingOverlay) return;
+  
+  if (mostrar) {
+    loadingOverlay.classList.remove('hidden');
+    const textElement = loadingOverlay.querySelector('#loadingText');
+    if (textElement) textElement.textContent = texto;
+  } else {
+    loadingOverlay.classList.add('hidden');
   }
 }
 
-// ✅ CORRIGIDO: Usar btnSend ao invés de btnEnviar
-if (btnSend) {
-  btnSend.onclick = executarEnvio;
-}
-
-if (messageInput) {
-  messageInput.onkeypress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      executarEnvio();
-    }
-  };
-}
-
 /* =====================================================
-   FINALIZAR CHAMADO (CLIENTE)
+   FUNÇÕES DO ANTERIOR (MANTIDAS)
 ===================================================== */
 
-const btnFinalizarChamado = document.getElementById('btnFinalizarChamado');
-if (btnFinalizarChamado) {
-  btnFinalizarChamado.onclick = async () => {
-    if (!confirm('Deseja realmente finalizar este atendimento?')) {
-      return;
+async function autenticarClienteAnonimo() {
+  try {
+    const auth = window.FirebaseApp?.auth;
+
+    // Se já está autenticado, retorna
+    if (auth.currentUser) {
+      console.log("✅ Cliente já autenticado:", auth.currentUser.uid);
+      return auth.currentUser;
     }
 
-    try {
-      const atendimentoId = service.atendimentoAtivo ||
-        window.AtendimentoDataStructure?.state?.atendimentoId;
+    // Autentica anonimamente
+    const userCredential = await window.FirebaseApp.fAuth.signInAnonymously(
+      window.FirebaseApp.auth
+    );
+    console.log("✅ Cliente autenticado anonimamente:", userCredential.user.uid);
+    return userCredential.user;
 
-      if (!atendimentoId) return;
-
-      const db = window.FirebaseApp.db;
-      const { doc, updateDoc, serverTimestamp } = window.FirebaseApp.fStore;
-
-      await updateDoc(doc(db, "atend_chat_fila", atendimentoId), {
-        status: "concluido",
-        finalizadoEm: serverTimestamp(),
-        finalizadoPor: "cliente"
-      });
-
-      toast("Atendimento finalizado!", "success");
-
-    } catch (error) {
-      console.error("❌ Erro ao finalizar:", error);
-      toast("Erro ao finalizar atendimento", "error");
-    }
-  };
+  } catch (error) {
+    console.error("❌ Erro na autenticação:", error);
+    throw error;
+  }
 }
-
-/* =====================================================
-   SISTEMA DE AVALIAÇÃO
-===================================================== */
-
-const stars = document.querySelectorAll(".star");
-stars.forEach((star, index) => {
-  star.addEventListener("click", () => {
-    notaSelecionada = index + 1;
-    stars.forEach((s, i) => {
-      if (i <= index) {
-        s.classList.add("selected");
-      } else {
-        s.classList.remove("selected");
-      }
-    });
-  });
-});
-
-const btnEnviarAvaliacao = document.getElementById('btnEnviarAvaliacao');
-if (btnEnviarAvaliacao) {
-  btnEnviarAvaliacao.onclick = async () => {
-    if (notaSelecionada === 0) {
-      toast("Por favor, selecione uma nota", "warning");
-      return;
-    }
-
-    const comentario = document.getElementById("comentarioAvaliacao")?.value || "";
-
-    try {
-      const atendimentoId = service.atendimentoAtivo ||
-        window.AtendimentoDataStructure?.state?.atendimentoId;
-
-      if (!atendimentoId) return;
-
-      const db = window.FirebaseApp.db;
-      const { doc, updateDoc, serverTimestamp } = window.FirebaseApp.fStore;
-
-      await updateDoc(doc(db, "atend_chat_fila", atendimentoId), {
-        avaliacao: notaSelecionada,
-        comentarioAvaliacao: comentario,
-        avaliadoEm: serverTimestamp()
-      });
-
-      toast("Obrigado pela sua avaliação!", "success");
-
-      // Esconder container de avaliação
-      const ratingContainer = document.getElementById('ratingContainer');
-      if (ratingContainer) {
-        ratingContainer.style.display = 'none';
-      }
-
-    } catch (error) {
-      console.error("❌ Erro ao salvar avaliação:", error);
-      toast("Erro ao enviar avaliação", "error");
-    }
-  };
-}
-
-const btnNovoAtendimento = document.getElementById("btnNovoAtendimento");
-if (btnNovoAtendimento) {
-  btnNovoAtendimento.onclick = () => {
-    // Limpar dados da sessão
-    sessionStorage.clear();
-    localStorage.removeItem('atendimentoId');
-
-    // Recarregar página
-    location.reload();
-  };
-}
-
-/* =====================================================
-   COPIAR MENSAGENS PARA HISTÓRICO
-===================================================== */
 
 async function copiarMensagensParaHistorico() {
   const messagesReadonly = document.getElementById('messagesReadonly');
   if (!messagesReadonly) return;
 
-  const atendimentoId = window.AtendimentoDataStructure?.state?.atendimentoId ||
-    sessionStorage.getItem('atendimentoId');
+  const atendimentoId = clienteState.atendimentoId || sessionStorage.getItem('atendimentoId');
 
   if (!atendimentoId) {
     // Fallback: se ainda tem mensagens no DOM, clona
@@ -586,10 +619,287 @@ async function copiarMensagensParaHistorico() {
   }
 }
 
+async function monitorarFinalizacaoPorOperador(atendimentoId) {
+  const db = window.FirebaseApp.db;
+  const fStore = window.FirebaseApp.fStore;
+  const { doc, onSnapshot, updateDoc, serverTimestamp } = fStore;
+
+  // Listener para monitorar mudanças no documento
+  const unsubscribe = onSnapshot(
+    doc(db, "atend_chat_fila", atendimentoId),
+    async (docSnap) => {
+      if (docSnap.exists()) {
+        const dados = docSnap.data();
+        const status = dados.status;
+        
+        // ✅ VERIFICAR SE STATUS MUDOU PARA "concluido"
+        if (status === "concluido" || status === "CONCLUIDO") {
+          console.log('🔔 Status mudou para CONCLUIDO');
+          
+          // Verificar se já tem quem finalizou
+          if (!dados.finalizadoPor || dados.finalizadoPor === "cliente") {
+            // Buscar UID do operador que está responsável
+            const operadorUid = dados.atribuido_para_uid || 
+                               dados.operador?.uid || 
+                               "operador_desconhecido";
+            
+            const operadorNome = dados.operador?.nome || "Operador";
+            
+            console.log(`✅ Registrando finalização por operador: ${operadorNome} (${operadorUid})`);
+            
+            // Atualizar para registrar que foi o operador
+            try {
+              await updateDoc(doc(db, "atend_chat_fila", atendimentoId), {
+                finalizadoPor: "operador",
+                finalizadoPorUid: operadorUid,
+                finalizadoPorNome: operadorNome,
+                finalizadoEm: serverTimestamp(),
+                timeline: fStore.arrayUnion({
+                  evento: "finalizado_por_operador",
+                  timestamp: serverTimestamp(),
+                  usuario: operadorUid,
+                  descricao: `Finalizado por operador ${operadorNome}`
+                })
+              });
+              
+              console.log('✅ Finalização registrada para operador');
+              
+              // Parar o listener
+              unsubscribe();
+            } catch (error) {
+              console.error('❌ Erro ao registrar finalização:', error);
+            }
+          }
+        }
+      }
+    },
+    (error) => {
+      console.error('❌ Erro no monitor de finalização:', error);
+    }
+  );
+  
+  return unsubscribe;
+}
+
 /* =====================================================
-   CANCELAR FILA
+   FLUXO DE ATENDIMENTO (atualizado)
 ===================================================== */
 
+async function iniciarNovoAtendimento(dados) {
+  try {
+    mostrarLoading(true, "Iniciando atendimento...");
+    
+    // 1. Autenticar cliente anonimamente
+    const user = await autenticarClienteAnonimo();
+    dados.uid_cliente = user.uid;
+    clienteState.uid = user.uid;
+    
+    // 2. Criar atendimento usando o serviço integrado
+    const atendimentoId = await service.clienteIniciarAtendimento(dados);
+    
+    // 3. Salvar estado local
+    clienteState.atendimentoId = atendimentoId;
+    clienteState.status = 'FILA';
+    clienteState.segundosEspera = 0;
+    
+    // 4. Iniciar monitoramento
+    clienteListeners.iniciarMonitoramento(atendimentoId);
+    
+    // 5. Iniciar timer da fila
+    clienteState.timerInterval = setInterval(atualizarTimerFila, 1000);
+    
+    // 6. Salvar sessão
+    salvarEstadoSessao();
+    
+    // 7. Mostrar tela de fila
+    mostrarTela(screens.fila);
+    toast("Você entrou na fila de espera", "success");
+    
+  } catch (error) {
+    console.error('❌ Erro ao iniciar atendimento:', error);
+    toast("Falha ao iniciar atendimento. Tente novamente.", "error");
+    mostrarTela(screens.welcome);
+  } finally {
+    mostrarLoading(false);
+  }
+}
+
+/* =====================================================
+   ENVIO DE MENSAGENS (atualizado)
+===================================================== */
+
+async function enviarMensagem() {
+  const texto = messageInput?.value.trim();
+  if (!texto || !clienteState.atendimentoId) return;
+  
+  try {
+    // Limpar input imediatamente
+    const textoBackup = texto;
+    messageInput.value = '';
+    
+    // 🔥 CORREÇÃO: Enviar diretamente pelo Firebase, não pelo service
+    const db = window.FirebaseApp.db;
+    const fStore = window.FirebaseApp.fStore;
+    const auth = window.FirebaseApp.auth;
+    
+    await fStore.addDoc(
+      fStore.collection(
+        db,
+        "atend_chat_fila",
+        clienteState.atendimentoId,
+        "mensagem"
+      ),
+      {
+        autor: "cliente",
+        texto: textoBackup,
+        timestamp: fStore.serverTimestamp(),
+        uid_autor: auth.currentUser?.uid || clienteState.uid
+      }
+    );
+    
+    console.log('✅ Mensagem enviada pelo cliente');
+    
+    // Focar novamente no input
+    messageInput.focus();
+    
+  } catch (error) {
+    console.error('❌ Erro ao enviar mensagem:', error);
+    toast("Erro ao enviar mensagem", "error");
+    
+    // Restaurar texto
+    if (messageInput) {
+      messageInput.value = texto;
+    }
+  }
+}
+/* =====================================================
+   RESTAURAÇÃO DE SESSÃO AO CARREGAR
+===================================================== */
+
+async function restaurarSessao() {
+  console.log('🔍 Verificando sessão existente...');
+  
+  const estado = carregarEstadoSessao();
+  
+  if (!estado || !estado.atendimentoId) {
+    console.log('ℹ️ Nenhuma sessão ativa encontrada');
+    return;
+  }
+  
+  console.log('🔄 Restaurando sessão:', estado);
+  
+  try {
+    mostrarLoading(true, "Restaurando atendimento...");
+    
+    // 1. Autenticar novamente
+    await autenticarClienteAnonimo();
+    
+    // 2. Verificar se atendimento ainda existe
+    const db = window.FirebaseApp.db;
+    const fStore = window.FirebaseApp.fStore;
+    const docSnap = await fStore.getDoc(fStore.doc(db, "atend_chat_fila", estado.atendimentoId));
+    
+    if (!docSnap.exists()) {
+      console.warn('⚠️ Atendimento não encontrado no Firestore');
+      limparSessao();
+      return;
+    }
+    
+    const dados = docSnap.data();
+    const status = normalizarStatus(dados.status);
+    
+    // 3. Restaurar estado
+    clienteState.atendimentoId = estado.atendimentoId;
+    clienteState.status = status;
+    clienteState.uid = estado.uid;
+    clienteState.operador = dados.operador;
+    
+    // 4. Navegar para tela apropriada
+    if (status === 'FILA') {
+      mostrarTela(screens.fila);
+      clienteListeners.iniciarMonitoramento(estado.atendimentoId);
+      clienteState.timerInterval = setInterval(atualizarTimerFila, 1000);
+    } else if (status === 'NOVO' || status === 'EM_ATENDIMENTO') {
+      mostrarTela(screens.chat);
+      clienteListeners.iniciarMonitoramento(estado.atendimentoId);
+      // Simular evento de operador aceitar
+      clienteListeners.aoOperadorAceitar(dados);
+    } else if (status === 'CONCLUIDO') {
+      mostrarTela(screens.finalizado);
+      copiarMensagensParaHistorico();
+    } else {
+      mostrarTela(screens.welcome);
+    }
+    
+    console.log('✅ Sessão restaurada com sucesso');
+    
+  } catch (error) {
+    console.error('❌ Erro ao restaurar sessão:', error);
+    limparSessao();
+    mostrarTela(screens.welcome);
+  } finally {
+    mostrarLoading(false);
+  }
+}
+
+/* =====================================================
+   EVENT LISTENERS E INICIALIZAÇÃO
+===================================================== */
+
+// Botão iniciar atendimento
+const btnIniciar = document.getElementById("btnIniciarAtendimento");
+if (btnIniciar) {
+  btnIniciar.onclick = () => mostrarTela(screens.conta);
+}
+
+// Botões de navegação
+const btnVoltarWelcome = document.getElementById('btnVoltarWelcome');
+if (btnVoltarWelcome) btnVoltarWelcome.onclick = () => mostrarTela(screens.welcome);
+
+const btnVoltarConta = document.getElementById('btnVoltarConta');
+if (btnVoltarConta) btnVoltarConta.onclick = () => mostrarTela(screens.conta);
+
+// Formulário identificação conta
+const formConta = document.getElementById('formIdentificarConta');
+if (formConta) {
+  formConta.onsubmit = (e) => {
+    e.preventDefault();
+    mostrarTela(screens.pessoa);
+  };
+}
+
+// Formulário identificação pessoa
+const formPessoa = document.getElementById('formIdentificarPessoa');
+if (formPessoa) {
+  formPessoa.onsubmit = async (e) => {
+    e.preventDefault();
+    
+    const dados = {
+      nome: document.getElementById('nomeCompleto').value.trim(),
+      telefone: document.getElementById('telefone').value.trim(),
+      email: document.getElementById('emailConta').value.trim()
+    };
+    
+    await iniciarNovoAtendimento(dados);
+  };
+}
+
+// Botão enviar mensagem
+if (btnSend) {
+  btnSend.onclick = enviarMensagem;
+}
+
+// Enter para enviar mensagem
+if (messageInput) {
+  messageInput.onkeypress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      enviarMensagem();
+    }
+  };
+}
+
+// Botão cancelar fila
 const btnCancelarFila = document.getElementById('btnCancelarFila');
 if (btnCancelarFila) {
   btnCancelarFila.onclick = async () => {
@@ -598,26 +908,18 @@ if (btnCancelarFila) {
     }
 
     try {
-      const atendimentoId = service.atendimentoAtivo ||
-        window.AtendimentoDataStructure?.state?.atendimentoId;
-
-      if (!atendimentoId) return;
+      if (!clienteState.atendimentoId) return;
 
       const db = window.FirebaseApp.db;
       const { doc, updateDoc, serverTimestamp } = window.FirebaseApp.fStore;
 
-      await updateDoc(doc(db, "atend_chat_fila", atendimentoId), {
-        status: "cancelado",
+      await updateDoc(doc(db, "atend_chat_fila", clienteState.atendimentoId), {
+        status: "CANCELADO",
         canceladoEm: serverTimestamp(),
         canceladoPor: "cliente"
       });
 
-      // Limpar timer
-      if (atendimentoTimer) clearInterval(atendimentoTimer);
-
-      // Voltar para tela inicial
-      mostrarTela(screens.welcome);
-
+      // O listener vai detectar a mudança e limpar automaticamente
       toast("Você saiu da fila", "info");
 
     } catch (error) {
@@ -626,71 +928,98 @@ if (btnCancelarFila) {
     }
   };
 }
-/* =====================================================
-   PERSISTÊNCIA DE SESSÃO
-   Verifica se o usuário já tem um atendimento ativo ao carregar/recarregar
-===================================================== */
-window.addEventListener('DOMContentLoaded', async () => {
-  console.log("🔍 Verificando sessão existente...");
 
-  // Recupera o ID salvo pelo AtendimentoDataStructureManager
-  const atendimentoIdSalvo = sessionStorage.getItem('atendimentoId');
+// Sistema de avaliação
+let notaSelecionada = 0;
+const stars = document.querySelectorAll(".star");
+stars.forEach((star, index) => {
+  star.addEventListener("click", () => {
+    notaSelecionada = index + 1;
+    stars.forEach((s, i) => {
+      if (i <= index) {
+        s.classList.add("selected");
+      } else {
+        s.classList.remove("selected");
+      }
+    });
+  });
+});
 
-  if (atendimentoIdSalvo) {
-    console.log("✅ Atendimento encontrado na sessão:", atendimentoIdSalvo);
+const btnEnviarAvaliacao = document.getElementById('btnEnviarAvaliacao');
+if (btnEnviarAvaliacao) {
+  btnEnviarAvaliacao.onclick = async () => {
+    if (notaSelecionada === 0) {
+      toast("Por favor, selecione uma nota", "warning");
+      return;
+    }
+
+    const comentario = document.getElementById("comentarioAvaliacao")?.value || "";
 
     try {
-      if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+      if (!clienteState.atendimentoId) return;
 
-      // Garante que o cliente está autenticado para o Firebase aceitar a consulta
-      await autenticarClienteAnonimo();
+      const db = window.FirebaseApp.db;
+      const { doc, updateDoc, serverTimestamp } = window.FirebaseApp.fStore;
 
-      // Reativa o monitor de status para decidir em qual tela o usuário deve estar
-      ligarMonitorDeStatus(atendimentoIdSalvo);
+      await updateDoc(doc(db, "atend_chat_fila", clienteState.atendimentoId), {
+        avaliacao: notaSelecionada,
+        comentarioAvaliacao: comentario,
+        avaliadoEm: serverTimestamp()
+      });
 
-      console.log("🚀 Monitor de status reativado para:", atendimentoIdSalvo);
+      toast("Obrigado pela sua avaliação!", "success");
+
+      // Esconder container de avaliação
+      const ratingContainer = document.getElementById('ratingContainer');
+      if (ratingContainer) {
+        ratingContainer.style.display = 'none';
+      }
+
     } catch (error) {
-      console.error("❌ Erro ao recuperar sessão:", error);
-      sessionStorage.removeItem('atendimentoId');
-    } finally {
-      if (loadingOverlay) loadingOverlay.classList.add('hidden');
+      console.error("❌ Erro ao salvar avaliação:", error);
+      toast("Erro ao enviar avaliação", "error");
     }
-  } else {
-    console.log("ℹ️ Nenhuma sessão ativa encontrada.");
-  }
-});
+  };
+}
 
-
-/* =====================================================
-   LIMPEZA AO SAIR DA PÁGINA
-===================================================== */
-
-window.addEventListener('beforeunload', () => {
-  if (unsubscribeChat) {
-    unsubscribeChat();
-  }
-  if (service?.limpar) {
-    service.limpar();
-  }
-});
+// Botão novo atendimento
+const btnNovoAtendimento = document.getElementById("btnNovoAtendimento");
+if (btnNovoAtendimento) {
+  btnNovoAtendimento.onclick = () => {
+    limparSessao();
+    location.reload();
+  };
+}
 
 /* =====================================================
-   INICIALIZAÇÃO
+   INICIALIZAÇÃO DO SISTEMA
 ===================================================== */
-/* =====================================================
-   DEBUG – MOSTRAR UID LOGADA NO NAVEGADOR
-===================================================== */
-const auth = window.FirebaseApp?.auth;
 
-if (auth) {
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      console.log("🧑‍💻 UID logada no navegador:", user.uid);
-      console.log("🔐 Tipo de login:", user.isAnonymous ? "ANÔNIMO" : "REGISTRADO");
-    } else {
-      console.log("🚫 Nenhum usuário autenticado no navegador");
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('🚀 Chat Cliente inicializando...');
+  
+  // Restaurar sessão se existir
+  await restaurarSessao();
+  
+  // Configurar limpeza ao sair
+  window.addEventListener('beforeunload', () => {
+    clienteListeners.pararMonitoramento();
+    if (clienteState.timerInterval) {
+      clearInterval(clienteState.timerInterval);
     }
   });
-}
-console.log("✅ Chat do Cliente carregado e pronto!");
-console.log("📱 Aguardando ação do usuário...");
+  
+  // Debug - mostrar UID logada
+  const auth = window.FirebaseApp?.auth;
+  if (auth) {
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        console.log("🧑‍💻 UID logada no navegador:", user.uid);
+        console.log("🔐 Tipo de login:", user.isAnonymous ? "ANÔNIMO" : "REGISTRADO");
+      }
+    });
+  }
+  
+  console.log('✅ Chat Cliente pronto e funcional!');
+  console.log('📱 Aguardando ação do usuário...');
+});

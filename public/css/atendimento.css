@@ -2530,6 +2530,204 @@
   color: var(--color-text);
   font-weight: 600;
 }
+/* ============================================================
+   POPUP DE ENCAMINHAMENTO DE ATENDIMENTO
+============================================================ */
+
+/* Overlay do modal */
+.modal-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-popup.active {
+  display: flex;
+}
+
+/* Container do conteúdo do modal */
+.modal-content {
+  background: white;
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: modalSlide 0.3s ease;
+}
+
+/* Header do modal */
+.modal-header {
+  padding: 20px 25px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-secondary);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 18px;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-title i {
+  font-size: 20px;
+  color: var(--color-primary);
+}
+
+/* Botão de fechar */
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--color-text-light);
+  padding: 4px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: var(--transition);
+}
+
+.modal-close:hover {
+  background: var(--color-secondary);
+  color: var(--color-text);
+}
+
+/* Corpo do modal */
+.modal-body {
+  padding: 25px;
+}
+
+/* Campos de informação somente leitura */
+.info-display {
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.4;
+  margin-bottom: 15px;
+}
+
+/* Grupos de formulário */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-group label .required {
+  color: var(--color-danger);
+}
+
+/* Área de texto */
+.form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 100px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+}
+
+/* Contador de caracteres */
+.char-counter {
+  text-align: right;
+  font-size: 12px;
+  color: var(--color-text-light);
+  margin-top: 4px;
+}
+
+/* Mensagens de alerta/informação */
+.alert {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  margin-top: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.alert-info {
+  background: rgba(33, 150, 243, 0.1);
+  border: 1px solid rgba(33, 150, 243, 0.2);
+  color: #1565c0;
+}
+
+.alert i {
+  margin-right: 8px;
+}
+
+/* Footer do modal */
+.modal-footer {
+  padding: 20px 25px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: var(--color-secondary);
+}
+
+/* Estados de erro */
+.input-error {
+  border-color: var(--color-danger) !important;
+  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.1) !important;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 15px 20px;
+  }
+}
 
 /* Modal de justificativa (e-mail) */
 .modal-email-justificativa {
@@ -2759,6 +2957,501 @@
     gap: 12px;
   }
 }
+
+/* ============================================================
+   NOVOS ESTILOS - ABA DEMANDAS E HISTÓRICO
+============================================================ */
+
+/* Demandas - Card */
+.demanda-card {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.demanda-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.demanda-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.demanda-prioridade {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.prioridade-urgente {
+  background: #fee;
+  color: #c00;
+}
+
+.prioridade-alta {
+  background: #ffe8cc;
+  color: #e67700;
+}
+
+.prioridade-media {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.prioridade-baixa {
+  background: #f1f3f5;
+  color: #666;
+}
+
+.demanda-status {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-pendente {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.status-andamento {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-aguardando {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.status-concluido {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-cancelado {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.demanda-body {
+  margin-bottom: 12px;
+}
+
+.demanda-titulo {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.demanda-descricao {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-light);
+  line-height: 1.5;
+}
+
+.demanda-footer {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.demanda-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-light);
+}
+
+.demanda-info i {
+  font-size: 14px;
+}
+
+/* Demandas - Detalhes */
+.demanda-detalhes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detalhes-titulo-grupo h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: var(--color-text);
+}
+
+.detalhes-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.detalhes-badges .badge {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.btn-close-detalhes {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--color-text-light);
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.btn-close-detalhes:hover {
+  color: var(--color-danger);
+}
+
+.demanda-detalhes-body {
+  padding: 20px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.detalhes-secao {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detalhes-secao:last-child {
+  border-bottom: none;
+}
+
+.detalhes-secao-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-text-light);
+}
+
+.detalhes-secao-titulo i {
+  font-size: 16px;
+  color: var(--color-primary);
+}
+
+.detalhes-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.detalhes-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 12px;
+  color: var(--color-text-light);
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.detalhes-descricao {
+  padding: 16px;
+  background: var(--color-secondary);
+  border-radius: 8px;
+  line-height: 1.6;
+}
+
+.detalhes-descricao p {
+  margin: 0;
+  color: var(--color-text);
+}
+
+.detalhes-dados {
+  background: var(--color-secondary);
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.detalhes-acoes {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.setor-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Histórico - Melhorias */
+.historico-item {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.historico-item:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.historico-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.historico-cliente {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.historico-cliente i {
+  font-size: 16px;
+  color: var(--color-primary);
+}
+
+.cliente-nome {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+.historico-status {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-concluido {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-derivado {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.status-devolvido {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.status-reaberto {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.historico-item-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.historico-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 11px;
+  color: var(--color-text-light);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.info-value {
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+/* Modal Histórico - Melhorias */
+.info-item-modal {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--color-secondary);
+  border-radius: 6px;
+}
+
+.info-label-modal {
+  font-size: 13px;
+  color: var(--color-text-light);
+  font-weight: 500;
+}
+
+.info-value-modal {
+  font-size: 13px;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.timeline-item-modal {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 16px;
+  position: relative;
+}
+
+.timeline-item-modal:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 24px;
+  bottom: -16px;
+  width: 2px;
+  background: var(--color-border);
+}
+
+.timeline-dot-modal {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 3px solid var(--color-secondary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.timeline-content-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.timeline-time-modal {
+  font-size: 12px;
+  color: var(--color-text-light);
+  font-weight: 500;
+}
+
+.timeline-text-modal {
+  font-size: 13px;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.validacao-identidade {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--color-secondary);
+  border-radius: 8px;
+}
+
+.validacao-icon {
+  font-size: 32px;
+}
+
+.validacao-text strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.validacao-text p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-light);
+}
+
+.descricao-box {
+  padding: 16px;
+  background: var(--color-secondary);
+  border-radius: 8px;
+  line-height: 1.6;
+}
+
+.descricao-box p {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+/* Sub-abas (WhatsApp / Gmail) */
+.sub-abas-historico {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: white;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sub-aba-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--color-border);
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.sub-aba-btn:hover {
+  background: var(--color-secondary);
+  border-color: var(--color-primary);
+}
+
+.sub-aba-btn.ativa {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
 
 /* ============================================================
    FIM DO ARQUIVO

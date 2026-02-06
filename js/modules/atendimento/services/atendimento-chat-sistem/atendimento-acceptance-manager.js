@@ -128,12 +128,7 @@ class AtendimentoAcceptanceManager {
 
     // 2. TRANSACTION: Aceitar atomicamente
     try {
-      const docRef = this.fStore.doc(
-        this.db,
-        'atend_chat_fila',
-        atendimentoId
-      );
-
+      const docRef = this.fStore.doc(this.db, 'atend_chat_fila', atendimentoId);
       // Executar transação
       const resultado = await this.fStore.runTransaction(this.db, async (transaction) => {
         // LEITURA: Buscar status atual dentro da transação
@@ -144,11 +139,20 @@ class AtendimentoAcceptanceManager {
         }
 
         const data = docSnap.data();
+        if (data.status !== 'FILA') {
+          throw new Error(`STATUS_MUDOU_${data.status}`);
+        }
 
         // VALIDAÇÃO: Status deve ser "novo" ou "fila"
         // Se mudou para "em_atendimento" ou outro, significa que outro operador pegou
-        if (data.status !== 'novo' && data.status !== 'fila') {
-          throw new Error(`STATUS_MUDOU_${data.status}`);
+        const validacao = window.StateMachineManager?.validarTransicao(
+        'FILA',
+        'NOVO',
+        window.AuthSystem?.getCurrentUser()?.role || 'ATENDENTE'
+        );
+
+        if (!validacao?.valido) {
+        throw new Error(`TRANSICAO_INVALIDA: ${validacao?.erro}`);
         }
 
         // Se já tem alguém responsável, significa que outro operador pegou
@@ -158,9 +162,9 @@ class AtendimentoAcceptanceManager {
 
         // ESCRITA: Tomar posse atomicamente
         const agora = window.FirebaseApp?.fStore.Timestamp.now();
-        
+
         transaction.update(docRef, {
-          status: 'em_atendimento',
+          status: 'NOVO',
           atribuido_para_uid: this.operadorUid,
           canal: canal,
           puxado_em: agora,
@@ -199,7 +203,7 @@ class AtendimentoAcceptanceManager {
       this.monitorarAtendimento(atendimentoId);
 
       console.log(`✅ Atendimento aceito: ${atendimentoId}`);
-      
+
       return {
         sucesso: true,
         atendimentoId,

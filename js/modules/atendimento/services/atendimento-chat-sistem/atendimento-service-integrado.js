@@ -127,11 +127,11 @@ class AtendimentoServiceIntegrado {
       const atendimentoId = dadosCliente.atendimentoId;
       console.log(`✓ Operador aceitando atendimento: ${atendimentoId}`);
 
-      // 1. Validar transição de estado (NOVO → EM_ATENDIMENTO)
+      // 1. Validar transição de estado (FILA → NOVO)
       const userRole = localStorage.getItem('userRole') || "ATENDENTE";
       const validacao = this.stateMachine.validarTransicao(
+        "FILA",
         "NOVO",
-        "EM_ATENDIMENTO",
         userRole
       );
 
