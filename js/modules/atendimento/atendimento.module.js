@@ -103,7 +103,7 @@ const AtendimentoModule = {
       await import('./services/atendimento-chat-sistem/atendimento-restoration-manager.js');
       await import('./services/atendimento-chat-sistem/state-machine-manager.js');
       await import('./services/ticketstatemachine.js');
-      await import('./services/demandas-service.js');
+      await import('./services/demandas-service/demandas-service.js');
       
       if (!window.AtendimentoDataStructure && typeof AtendimentoDataStructureManager !== 'undefined') {
         window.AtendimentoDataStructure = new AtendimentoDataStructureManager();
@@ -205,6 +205,7 @@ const AtendimentoModule = {
   /**
    * ✅ Cleanup granular de uma aba específica
    */
+  
   cleanupTab(tabId) {
     console.log(`🧹 Limpando aba: ${tabId}`);
 

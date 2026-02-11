@@ -28,6 +28,7 @@ const WhatsAppTab = {
       concluida: false,
       campos_verificados: []
     },
+    tipo_conta: '',
     tipo_demanda: '',
     setor_responsavel: '',
     descricao_solicitacao: '',
@@ -100,6 +101,7 @@ const WhatsAppTab = {
       clienteNome: document.getElementById('clienteNome'),
       clienteTelefone: document.getElementById('clienteTelefone'),
       clienteEmail: document.getElementById('clienteEmail'),
+      tipoConta: document.getElementById('tipoConta'),
 
       // ✅ NOVO: Checkboxes de validação
       checkNome: document.getElementById('checkNome'),
@@ -571,8 +573,8 @@ const WhatsAppTab = {
     }
 
     // ✅ Verificar se há dados preenchidos
-    if (!this.dadosAtendimento.setor_responsavel || !this.dadosAtendimento.descricao_solicitacao) {
-      alert('⚠️ Para encaminhar, é necessário preencher o setor responsável e a descrição da solicitação.');
+    if (!this.dadosAtendimento.setor_responsavel || !this.dadosAtendimento.descricao_solicitacao || !this.dadosAtendimento.tipo_conta) {
+      alert('⚠️ Para encaminhar, é necessário preencher o setor responsável, a descrição da solicitação e o tipo de conta.');
 
       // Destacar campos que precisam ser preenchidos
       if (this.elements.setorResponsavel) {
@@ -583,7 +585,9 @@ const WhatsAppTab = {
       if (this.elements.descricaoSolicitacao && !this.dadosAtendimento.descricao_solicitacao) {
         this.elements.descricaoSolicitacao.classList.add('input-error');
       }
-
+      if (this.elements.tipoConta && !this.dadosAtendimento.tipo_conta) {
+        this.elements.tipoConta.classList.add('input-error');
+      }
       return;
     }
 
@@ -657,6 +661,7 @@ const WhatsAppTab = {
    */
   async confirmarEncaminhamento() {
     const atendimentoId = localStorage.getItem('atendimento_ativo_id');
+    const btnConfirmar = document.querySelector('#popupEncaminhar .btn-confirmar-encaminhamento'); // Ajuste o seletor se necessário
 
     if (!atendimentoId) {
       alert('❌ Nenhum atendimento ativo');
@@ -665,6 +670,13 @@ const WhatsAppTab = {
     }
 
     try {
+      if (btnConfirmar) {
+        btnConfirmar.disabled = true;
+        btnConfirmar.innerHTML = '<i class="fi fi-rr-spinner spinner"></i> Processando...';
+        btnConfirmar.style.opacity = '0.7';
+        btnConfirmar.style.cursor = 'not-allowed';
+      }
+
       const user = window.AuthSystem.getCurrentUser();
       if (!user) throw new Error('Usuário não autenticado');
 
@@ -709,7 +721,7 @@ const WhatsAppTab = {
         encaminhado_por: user.name || 'Operador',
         encaminhado_por_uid: user.uid,
         encaminhado_em: fStore.serverTimestamp()
-      };
+        };
 
       // Adicionar observações se existirem
       if (this.dadosAtendimento.observacoes_internas) {
@@ -720,11 +732,41 @@ const WhatsAppTab = {
       if (this.dadosAtendimento.tipo_demanda) {
         updateData.tipo_demanda = this.dadosAtendimento.tipo_demanda;
       }
+      // Adicionar tipo de conta se existir
+      if (this.dadosAtendimento.tipo_conta) {
+        updateData.tipo_conta = this.dadosAtendimento.tipo_conta;
+      }
 
       await fStore.updateDoc(
         fStore.doc(window.FirebaseApp.db, "atend_chat_fila", atendimentoId),
         updateData
       );
+      
+
+      // 3️⃣ TERCEIRO: CRIAR REGISTRO NA COLEÇÃO DE DEMANDAS (NOVA INTEGRAÇÃO)
+      const dadosDemanda = {
+        setor_responsavel: this.dadosAtendimento.setor_responsavel,
+        descricao_solicitacao: this.dadosAtendimento.descricao_solicitacao,
+        justificativa: justificativa,
+        observacoes_internas: this.dadosAtendimento.observacoes_internas,
+        tipo_demanda: this.dadosAtendimento.tipo_demanda,
+        tipo_conta: this.dadosAtendimento.tipo_conta,
+        prioridade: await this.determinarPrioridade(this.dadosAtendimento)
+      };
+
+      
+
+
+      // Executa em paralelo, não bloqueia o fluxo principal
+      await this.encaminharParaColecaoGeral(atendimentoId, dadosDemanda)
+        .then(success => {
+          if (success) {
+            console.log('📋 Demanda registrada na coleção geral com sucesso');
+          }
+        })
+        .catch(err => {
+          console.warn('⚠️ Demanda não registrada na coleção geral, mas atendimento foi encaminhado:', err);
+        });
 
       // Fechar popup
       this.fecharPopupEncaminhar();
@@ -749,124 +791,308 @@ const WhatsAppTab = {
     } catch (error) {
       console.error('❌ Erro ao confirmar encaminhamento:', error);
       alert(`Erro: ${error.message}`);
+      if (btnConfirmar) {
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerHTML = 'Confirmar Encaminhamento';
+        btnConfirmar.style.opacity = '1';
+        btnConfirmar.style.cursor = 'pointer';
+      }
     }
   },
   /**
+ * ✅ NOVA FUNÇÃO: Encaminhar para coleção geral_demandas (Integração paralela)
+ */
+  async encaminharParaColecaoGeral(atendimentoId, dadosEncaminhamento) {
+    try {
+      const fStore = window.FirebaseApp.fStore;
+      const db = window.FirebaseApp.db;
+      const user = window.AuthSystem.getCurrentUser();
+
+      if (!user) {
+        console.warn('⚠️ Usuário não autenticado para criar demanda externa');
+        return false;
+      }
+
+      // 1. Buscar dados completos do atendimento
+      const atendimentoDoc = await fStore.getDoc(
+        fStore.doc(db, "atend_chat_fila", atendimentoId)
+      );
+
+      if (!atendimentoDoc.exists()) {
+        console.error('❌ Documento do atendimento não encontrado:', atendimentoId);
+        return false;
+      }
+
+      const atendimentoData = atendimentoDoc.data();
+
+      // 2. Gerar ID único para a demanda
+      const timestamp = Date.now();
+      const demandaId = `DEM-${timestamp}-${Math.random().toString(36).substr(2, 6)}`;
+
+      // 3. Mapear setor responsável para o formato da demanda
+      const setorDestino = this.mapearSetorDestino(dadosEncaminhamento.setor_responsavel);
+
+      // 4. Criar documento na coleção geral_demandas
+      const demandaRef = fStore.doc(db, "geral_demandas", demandaId);
+
+      const demandaData = {
+        demandaId: demandaId,
+        atendimentoId: atendimentoId,
+
+        // Dados para o Card (evita fetch extra)
+        cliente: {
+          nome: atendimentoData.cliente?.nome || 'Não informado',
+          uid: atendimentoData.uid_cliente || '',
+          email: atendimentoData.cliente?.email || '',
+          telefone: atendimentoData.cliente?.telefone || ''
+        },
+
+        // Roteamento
+        setor_origem: "atendimento",
+        setor_destino: setorDestino,
+        operador_origem_uid: user.uid,
+        operador_origem_nome: user.name || 'Operador',
+        operador_destino_uid: null,
+        operador_destino_nome: null,
+
+        // Status e Prioridade
+        status: "PENDENTE",
+        prioridade: dadosEncaminhamento.prioridade || this.determinarPrioridade(atendimentoData),
+        resumo: dadosEncaminhamento.descricao_solicitacao || 'Solicitação encaminhada',
+        justificativa_encaminhamento: dadosEncaminhamento.justificativa || '',
+
+        // Dados adicionais para referência rápida
+        tipo: atendimentoData.tipo || 'suporte',
+        canal: atendimentoData.canal || 'web',
+        criado_em_chat: atendimentoData.criadoEm,
+
+        // Marcos Temporais
+        timestamps: {
+          criada_em: fStore.serverTimestamp(),
+          encaminhada_em: fStore.serverTimestamp(),
+          assumida_em: null,
+          concluida_em: null,
+          ultima_atualizacao: fStore.serverTimestamp()
+        },
+
+        // Histórico resumido de transições
+        historico_status: [{
+          status: "PENDENTE",
+          timestamp: new Date().toISOString(),
+          usuario: user.name || 'Operador',
+          acao: 'encaminhado',
+          setor_destino: setorDestino,
+          justificativa: dadosEncaminhamento.justificativa?.substring(0, 100) || ''
+        }]
+      };
+
+      // Adicionar observações se existirem
+      if (dadosEncaminhamento.observacoes_internas) {
+        demandaData.observacoes_internas = dadosEncaminhamento.observacoes_internas;
+      }
+
+      // Adicionar tipo de demanda se existir
+      if (dadosEncaminhamento.tipo_demanda) {
+        demandaData.tipo_demanda = dadosEncaminhamento.tipo_demanda;
+      }
+
+      // Adicionar dados do atendimento original para referência
+      demandaData.atendimento_info = {
+        status_atual: atendimentoData.status,
+        setor_anterior: atendimentoData.setor_responsavel,
+        ultima_mensagem_em: atendimentoData.ultimaMensagemEm,
+        timeline_count: atendimentoData.timeline?.length || 0
+      };
+
+      await fStore.setDoc(demandaRef, demandaData);
+
+      console.log('✅ Demanda externa criada na coleção geral_demandas:', {
+        demandaId: demandaId,
+        atendimentoId: atendimentoId,
+        setorDestino: setorDestino
+      });
+
+      return true;
+
+    } catch (error) {
+      console.error('❌ Erro ao criar demanda na coleção geral:', error);
+      // Não interrompe o fluxo principal, apenas loga o erro
+      return false;
+    }
+  },
+
+  /**
+   * ✅ FUNÇÃO AUXILIAR: Mapear setor responsável para formato padronizado
+   */
+  mapearSetorDestino(setorInput) {
+    if (!setorInput) return 'outros';
+
+    const mapeamento = {
+      'financeiro': 'financeiro',
+      'financeira': 'financeiro',
+      'finanças': 'financeiro',
+      'suporte': 'suporte',
+      'tecnico': 'suporte',
+      'técnico': 'suporte',
+      'comercial': 'comercial',
+      'vendas': 'comercial',
+      'juridico': 'juridico',
+      'jurídico': 'juridico',
+      'marketing': 'marketing',
+      'administrativo': 'administrativo',
+      'rh': 'rh',
+      'recursoshumanos': 'rh',
+      'atendimento': 'atendimento',
+      'operacional': 'operacional'
+    };
+
+    const setorLower = setorInput.toLowerCase().trim();
+    return mapeamento[setorLower] || setorLower;
+  },
+
+  /**
+   * ✅ FUNÇÃO AUXILIAR: Determinar prioridade da demanda
+   */
+async determinarPrioridade(atendimentoData) {
+    const demanda = this.dadosAtendimento.tipo_demanda;
+    let complexidade = 'media';
+
+    // 1. Define as listas de exceção para o Score
+    const demandasAlta = ['Aprovar Advanced', 'Takedown', 'Aplicar Strike', 'Analisar conteúdo'];
+    const demandasBaixa = ['Smart-Links', 'Resetar Tipaldi', 'Liberar Verificador em Dois Fatores'];
+
+    if (demandasAlta.includes(demanda)) {
+        complexidade = 'alta';
+    } else if (demandasBaixa.includes(demanda)) {
+        complexidade = 'baixa';
+    }
+
+    // 2. Calcula via PriorityMaster
+    const resultado = await window.PriorityMaster.calcularScore({
+        tipoConta: this.dadosAtendimento.tipo_conta,
+        emailCliente: atendimentoData.cliente?.email || '',
+        complexidade: complexidade
+    });
+
+    return resultado.total;
+},
+
+  /**
    * ✅ NOVO: Concluir atendimento (SALVA TUDO) + INTEGRAÇÃO STATE MACHINE
    */
- async concluirAtendimento() {
-  const atendimentoId = localStorage.getItem('atendimento_ativo_id');
+  async concluirAtendimento() {
+    const atendimentoId = localStorage.getItem('atendimento_ativo_id');
 
-  if (!atendimentoId) {
-    alert('❌ Nenhum atendimento ativo');
-    return;
-  }
-
-  // ✅ VALIDAÇÃO: Verificar se identidade foi confirmada
-  if (!this.dadosAtendimento.validacao_identidade.concluida) {
-    alert('⚠️ Por favor, confirme a validação de identidade antes de concluir.');
-    return;
-  }
-
-  // ✅ Confirmar ação
-  if (!confirm('Deseja realmente concluir este atendimento?')) {
-    return;
-  }
-
-  try {
-    const user = window.AuthSystem.getCurrentUser();
-    if (!user) throw new Error('Usuário não autenticado');
-
-    console.log('📤 Finalizando atendimento e salvando todos os dados...');
-
-    // ✅ Validar transição usando estado FIXO (igual ao encaminhamento)
-    const validacao = window.StateMachineManager.validarTransicao(
-      'EM_ATENDIMENTO',    // ⭐ ESTADO FIXO - igual ao encaminhar
-      'CONCLUIDO',
-      user.role || 'ATENDENTE'
-    );
-
-    if (!validacao.valido) {
-      alert(`❌ Transição não permitida: ${validacao.erro}`);
+    if (!atendimentoId) {
+      alert('❌ Nenhum atendimento ativo');
       return;
     }
 
-    // ✅ Executar transição usando executarTransicao (igual ao encaminhar)
-    await window.StateMachineManager.executarTransicao(
-      atendimentoId,
-      'EM_ATENDIMENTO',
-      'CONCLUIDO',
-      'Atendimento finalizado pelo operador'
-    );
+    // ✅ VALIDAÇÃO: Verificar se identidade foi confirmada
+    if (!this.dadosAtendimento.validacao_identidade.concluida) {
+      alert('⚠️ Por favor, confirme a validação de identidade antes de concluir.');
+      return;
+    }
 
-    // ✅ Atualizar dados locais com valores atuais
-    this.atualizarDadosLocais();
+    // ✅ Confirmar ação
+    if (!confirm('Deseja realmente concluir este atendimento?')) {
+      return;
+    }
 
-    // ✅ Preparar dados para salvar (igual ao encaminhar, mas para CONCLUIDO)
-    const fStore = window.FirebaseApp.fStore;
-    const updateData = {
-      status: 'CONCLUIDO',
-      concluido_em: fStore.serverTimestamp(),
-      concluido_por: user.name || 'Operador',
-      concluido_por_uid: user.uid
-    };
+    try {
+      const user = window.AuthSystem.getCurrentUser();
+      if (!user) throw new Error('Usuário não autenticado');
 
-    // ✅ Adicionar validação (se não foi salva antes)
-    if (this.dadosAtendimento.validacao_identidade.concluida) {
-      updateData.validacao_identidade = {
-        concluida: true,
-        validado_por: this.dadosAtendimento.validacao_identidade.validado_por,
-        validado_em: this.dadosAtendimento.validacao_identidade.validado_em || fStore.serverTimestamp(),
-        campos_verificados: this.dadosAtendimento.validacao_identidade.campos_verificados
+      console.log('📤 Finalizando atendimento e salvando todos os dados...');
+
+      // ✅ Validar transição usando estado FIXO (igual ao encaminhamento)
+      const validacao = window.StateMachineManager.validarTransicao(
+        'EM_ATENDIMENTO',    // ⭐ ESTADO FIXO - igual ao encaminhar
+        'CONCLUIDO',
+        user.role || 'ATENDENTE'
+      );
+
+      if (!validacao.valido) {
+        alert(`❌ Transição não permitida: ${validacao.erro}`);
+        return;
+      }
+
+      // ✅ Executar transição usando executarTransicao (igual ao encaminhar)
+      await window.StateMachineManager.executarTransicao(
+        atendimentoId,
+        'EM_ATENDIMENTO',
+        'CONCLUIDO',
+        'Atendimento finalizado pelo operador'
+      );
+
+      // ✅ Atualizar dados locais com valores atuais
+      this.atualizarDadosLocais();
+
+      // ✅ Preparar dados para salvar (igual ao encaminhar, mas para CONCLUIDO)
+      const fStore = window.FirebaseApp.fStore;
+      const updateData = {
+        status: 'CONCLUIDO',
+        concluido_em: fStore.serverTimestamp(),
+        concluido_por: user.name || 'Operador',
+        concluido_por_uid: user.uid
       };
+
+      // ✅ Adicionar validação (se não foi salva antes)
+      if (this.dadosAtendimento.validacao_identidade.concluida) {
+        updateData.validacao_identidade = {
+          concluida: true,
+          validado_por: this.dadosAtendimento.validacao_identidade.validado_por,
+          validado_em: this.dadosAtendimento.validacao_identidade.validado_em || fStore.serverTimestamp(),
+          campos_verificados: this.dadosAtendimento.validacao_identidade.campos_verificados
+        };
+      }
+
+      // ✅ Adicionar campos do formulário (igual ao encaminhar)
+      if (this.dadosAtendimento.tipo_demanda) {
+        updateData.tipo_demanda = this.dadosAtendimento.tipo_demanda;
+      }
+
+      if (this.dadosAtendimento.setor_responsavel) {
+        updateData.setor_responsavel = this.dadosAtendimento.setor_responsavel;
+      }
+
+      if (this.dadosAtendimento.descricao_solicitacao) {
+        updateData.descricao_solicitacao = this.dadosAtendimento.descricao_solicitacao;
+      }
+
+      if (this.dadosAtendimento.observacoes_internas) {
+        updateData.observacoes_internas = this.dadosAtendimento.observacoes_internas;
+      }
+
+      console.log('📊 Dados a salvar:', updateData);
+
+      // ✅ Salvar no Firebase (igual ao encaminhar)
+      await fStore.updateDoc(
+        fStore.doc(window.FirebaseApp.db, "atend_chat_fila", atendimentoId),
+        updateData
+      );
+
+      console.log('✅ Atendimento concluído com sucesso');
+
+      // ✅ Feedback visual
+      if (window.ToastManager) {
+        window.ToastManager.show('✅ Atendimento concluído com sucesso!', 'success');
+      } else {
+        alert('✅ Atendimento concluído com sucesso!');
+      }
+
+      // ✅ Limpar interface (igual ao encaminhar)
+      this.limparInterface();
+
+      // ✅ Limpar localStorage
+      localStorage.removeItem('atendimento_ativo_id');
+      window.StateManager.set('atendimento', { currentTicketId: null });
+
+    } catch (error) {
+      console.error('❌ Erro ao concluir atendimento:', error);
+      alert(`Erro: ${error.message}`);
     }
-
-    // ✅ Adicionar campos do formulário (igual ao encaminhar)
-    if (this.dadosAtendimento.tipo_demanda) {
-      updateData.tipo_demanda = this.dadosAtendimento.tipo_demanda;
-    }
-
-    if (this.dadosAtendimento.setor_responsavel) {
-      updateData.setor_responsavel = this.dadosAtendimento.setor_responsavel;
-    }
-
-    if (this.dadosAtendimento.descricao_solicitacao) {
-      updateData.descricao_solicitacao = this.dadosAtendimento.descricao_solicitacao;
-    }
-
-    if (this.dadosAtendimento.observacoes_internas) {
-      updateData.observacoes_internas = this.dadosAtendimento.observacoes_internas;
-    }
-
-    console.log('📊 Dados a salvar:', updateData);
-
-    // ✅ Salvar no Firebase (igual ao encaminhar)
-    await fStore.updateDoc(
-      fStore.doc(window.FirebaseApp.db, "atend_chat_fila", atendimentoId),
-      updateData
-    );
-
-    console.log('✅ Atendimento concluído com sucesso');
-
-    // ✅ Feedback visual
-    if (window.ToastManager) {
-      window.ToastManager.show('✅ Atendimento concluído com sucesso!', 'success');
-    } else {
-      alert('✅ Atendimento concluído com sucesso!');
-    }
-
-    // ✅ Limpar interface (igual ao encaminhar)
-    this.limparInterface();
-
-    // ✅ Limpar localStorage
-    localStorage.removeItem('atendimento_ativo_id');
-    window.StateManager.set('atendimento', { currentTicketId: null });
-
-  } catch (error) {
-    console.error('❌ Erro ao concluir atendimento:', error);
-    alert(`Erro: ${error.message}`);
-  }
-},
+  },
   /**
    * ✅ NOVO: Limpar interface após conclusão
    */
@@ -1260,7 +1486,13 @@ const WhatsAppTab = {
       console.error("❌ Falha ao vincular operador:", error);
     }
   },
-
+  atualizarDadosLocal(campo, valor) {
+    this.dadosAtendimento[campo] = valor;
+    
+    // Isso aqui remove a borda vermelha de erro assim que o usuário preenche
+    const el = document.getElementById(campo === 'tipo_conta' ? 'tipoConta' : campo);
+    if (el) el.classList.remove('input-error');
+},
   async refresh() {
     console.log('🔄 Atualizando WhatsAppTab...');
 

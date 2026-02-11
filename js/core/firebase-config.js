@@ -20,7 +20,8 @@ import {
   arrayUnion,
   runTransaction,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  startAfter
 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -61,6 +62,7 @@ window.FirebaseApp = {
         runTransaction,
         serverTimestamp,
         Timestamp,
+        startAfter
         
     },
     fAuth: { 

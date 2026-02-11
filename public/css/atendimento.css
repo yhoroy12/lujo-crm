@@ -1309,457 +1309,814 @@
    [6] MÓDULO DEMANDAS EXTERNAS - GESTÃO DE DEMANDAS
 ============================================================ */
 
-.modulo-painel-atendimento .demandas-externas-container {
-  display: grid;
-  grid-template-columns: 280px 1fr 400px;
-  gap: 20px;
-  height: calc(100vh - 200px);
-  padding: 20px;
-}
+/* ============================================================
+   SUB-ABAS (igual ao .sub-abas-historico)
+============================================================ */
 
-/* --- SIDEBAR DE FILTROS --- */
-.modulo-painel-atendimento .demandas-sidebar {
-  background: white;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.modulo-painel-atendimento .filtros-section h3 {
-  font-size: 16px;
-  margin-bottom: 15px;
-  color: var(--color-text);
-}
-
-.modulo-painel-atendimento .filtro-group {
-  margin-bottom: 15px;
-}
-
-.modulo-painel-atendimento .filtro-group label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: #666;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-}
-
-.modulo-painel-atendimento .filtro-group select {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 14px;
-}
-
-/* Estatísticas da sidebar */
-.modulo-painel-atendimento .demandas-stats {
-  margin-top: 25px;
-  padding-top: 20px;
-  border-top: 1px solid var(--color-border);
-}
-
-.modulo-painel-atendimento .demandas-stats h4 {
-  font-size: 14px;
-  margin-bottom: 12px;
-  color: var(--color-text);
-}
-
-.modulo-painel-atendimento .stat-mini {
+.sub-abas-demandas {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.modulo-painel-atendimento .stat-mini:last-child {
-  border-bottom: none;
-}
-
-.modulo-painel-atendimento .stat-mini .stat-label {
-  font-size: 13px;
-  color: #666;
-}
-
-.modulo-painel-atendimento .stat-mini .stat-value {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-primary);
-}
-
-.modulo-painel-atendimento .stat-mini .stat-value.urgent {
-  color: var(--color-danger);
-}
-
-/* --- LISTA DE DEMANDAS --- */
-.modulo-painel-atendimento .demandas-lista-container {
+  gap: 8px;
+  padding: 12px;
   background: white;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* Botões das sub-abas já estão definidos em .sub-aba-btn no CSS principal */
+/* Apenas controlamos a visibilidade da 3ª sub-aba */
+
+.subaba-encaminhadas-only {
+  display: none !important;
+}
+
+.modulo-atendimento .subaba-encaminhadas-only {
+  display: flex !important;
+}
+
+/* ============================================================
+   CONTAINER PRINCIPAL
+============================================================ */
+
+.demandas-container {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  background: var(--color-secondary);
+  padding: 20px;
+  gap: 20px;
   overflow: hidden;
 }
 
-.modulo-painel-atendimento .demandas-header {
-  padding: 20px;
+/* ============================================================
+   CONTEÚDO DAS SUB-ABAS (SEM usar .aba-conteudo)
+============================================================ */
+
+.demandas-conteudo {
+  display: none !important;
+  flex: 1 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.demandas-conteudo.ativa {
+  display: flex !important;
+  flex-direction: column !important;
+}
+/* ============================================================
+   GRID DE 3 COLUNAS
+============================================================ */
+
+.demandas-grid-3col {
+  display: grid !important;
+  grid-template-columns: 280px 1fr 360px;
+  gap: 15px !important;
+  height: calc(100% - 20px) !important;
+  width: 100% !important;
+  flex: 1 !important;
+  overflow: hidden !important;
+}
+
+.demandas-grid-3col > .card {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+/* ============================================================
+   PAINÉIS (Headers e Bodies)
+============================================================ */
+
+.painel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-secondary);
-}
-
-.modulo-painel-atendimento .demandas-header h2 {
-  font-size: 18px;
-  margin-bottom: 12px;
-}
-
-.modulo-painel-atendimento .demandas-search input {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 14px;
-}
-
-.modulo-painel-atendimento .demandas-lista {
-  flex: 1;
-  overflow-y: auto;
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* Cards de demanda */
-.modulo-painel-atendimento .demanda-card {
   background: white;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: 15px;
-  cursor: pointer;
-  transition: var(--transition);
+  flex-shrink: 0;
 }
 
-.modulo-painel-atendimento .demanda-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.modulo-painel-atendimento .demanda-card.active {
-  border-color: var(--color-primary);
-  background: #f8f9ff;
-  box-shadow: 0 2px 8px rgba(0, 102, 255, 0.15);
-}
-
-.modulo-painel-atendimento .demanda-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-/* Badges de área */
-.modulo-painel-atendimento .demanda-area {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.modulo-painel-atendimento .demanda-area.area-financeiro {
-  background: #e6f6ea;
-  color: #1a7b3f;
-}
-
-.modulo-painel-atendimento .demanda-area.area-copyright {
-  background: #ffebee;
-  color: #c62828;
-}
-
-.modulo-painel-atendimento .demanda-area.area-marketing {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.modulo-painel-atendimento .demanda-area.area-tecnico {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.modulo-painel-atendimento .demanda-area.area-conteudo {
-  background: #f3e5f5;
-  color: #7b1fa2;
-}
-
-.modulo-painel-atendimento .demanda-area.area-gerencia {
-  background: #f5f5f5;
-  color: #616161;
-}
-
-.modulo-painel-atendimento .demanda-prioridade {
-  font-size: 16px;
-}
-
-.modulo-painel-atendimento .demanda-titulo {
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: var(--color-text);
-}
-
-.modulo-painel-atendimento .demanda-desc {
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 10px;
-  line-height: 1.5;
-}
-
-.modulo-painel-atendimento .demanda-meta {
-  display: flex;
-  gap: 15px;
-  font-size: 12px;
-  color: #999;
-  margin-bottom: 10px;
-}
-
-.modulo-painel-atendimento .demanda-meta i {
-  margin-right: 4px;
-}
-
-.modulo-painel-atendimento .demanda-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 10px;
-  border-top: 1px solid #f0f0f0;
-}
-
-/* Badges de status */
-.modulo-painel-atendimento .demanda-status {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.modulo-painel-atendimento .demanda-status.status-pendente {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.modulo-painel-atendimento .demanda-status.status-andamento {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.modulo-painel-atendimento .demanda-status.status-aguardando {
-  background: #fff3cd;
-  color: #f57c00;
-}
-
-.modulo-painel-atendimento .demanda-status.status-concluido {
-  background: #e6f6ea;
-  color: #1a7b3f;
-}
-
-.modulo-painel-atendimento .demanda-prazo {
-  font-size: 12px;
-  color: #666;
-  font-weight: 500;
-}
-
-/* --- DETALHES DA DEMANDA --- */
-.modulo-painel-atendimento .demanda-detalhes {
-  background: white;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-.modulo-painel-atendimento .detalhes-header {
-  padding: 20px;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-secondary);
-}
-
-.modulo-painel-atendimento .detalhes-titulo-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 10px;
-}
-
-.modulo-painel-atendimento .detalhes-titulo-row h3 {
-  font-size: 18px;
-  flex: 1;
+.painel-header h3 {
   margin: 0;
-}
-
-.modulo-painel-atendimento .detalhes-meta {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-}
-
-.modulo-painel-atendimento .demanda-id {
-  font-size: 12px;
-  color: #999;
+  font-size: 16px;
   font-weight: 600;
-}
-
-.modulo-painel-atendimento .detalhes-body {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.modulo-painel-atendimento .detalhes-section {
-  margin-bottom: 25px;
-}
-
-.modulo-painel-atendimento .detalhes-section h4 {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 12px;
   color: var(--color-text);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.modulo-painel-atendimento .detalhes-section p {
-  font-size: 14px;
-  color: #666;
-  line-height: 1.6;
+.painel-header h3 i {
+  font-size: 18px;
+  color: var(--color-primary);
 }
 
-.modulo-painel-atendimento .detalhes-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
+.resultado-contador {
+  font-size: 13px;
+  color: var(--color-text-light);
+  background: var(--color-secondary);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+.painel-body-buscademanda {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  min-height: 0 !important; /* ESSENCIAL para scroll funcionar */
+}
+
+.painel-body {
+  display: block !important;
+  overflow-y: auto !important;
+  min-height: 0 !important; /* ESSENCIAL para scroll funcionar */
+}
+
+.painel-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.painel-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.painel-body::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+
+.painel-body::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* ============================================================
+   COLUNA 1: FILTROS
+============================================================ */
+
+.demandas-filtros-painel .campo {
+  grid-column: 1;
+  min-height: 100%;
+}
+
+.demandas-filtros-painel .campo:last-of-type {
+  margin-bottom: 24px;
+}
+
+.demandas-filtros-painel label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.demandas-filtros-painel label i {
+  font-size: 14px;
+  color: var(--color-primary);
+}
+
+.demandas-filtros-painel .form-input,
+.demandas-filtros-painel .form-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  transition: border 0.2s ease;
+  background: white;
+}
+
+.demandas-filtros-painel .form-input:focus,
+.demandas-filtros-painel .form-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+}
+
+.filtros-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+/* ============================================================
+   COLUNA 2: RESULTADOS/LISTA
+============================================================ */
+.estado-container {
+  /* Sempre oculto por padrão */
+  display: none ;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-text-light);
+  width: 100%;
+  min-height: 300px;
+}
+
+.estado-container.ativa {
+  display: flex;
+}
+/* ============================================================
+   ESTADO 1: VAZIO INICIAL
+============================================================ */
+
+.estado-vazio i {
+  font-size: 64px;
+  color: #ddd;
   margin-bottom: 20px;
 }
 
-.modulo-painel-atendimento .detalhes-item {
+.estado-vazio h4 {
+  font-size: 16px;
+  color: var(--color-text);
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+.estado-vazio p {
+  font-size: 14px;
+  color: var(--color-text-light);
+  margin: 0;
+}
+/* ============================================================
+   ESTADO 2: CARREGANDO
+============================================================ */
+
+.estado-carregando .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--color-secondary);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.estado-carregando p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-light);
+  font-weight: 500;
+}
+
+/* ============================================================
+   ESTADO 3: NÃO ENCONTRADO / VAZIO
+============================================================ */
+
+.estado-nao-encontrado i {
+  font-size: 64px;
+  color: #e0e0e0;
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.estado-nao-encontrado h4 {
+  font-size: 16px;
+  color: var(--color-text);
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+.estado-nao-encontrado p {
+  font-size: 14px;
+  color: var(--color-text-light);
+  margin: 0;
+}
+
+/* ============================================================
+   LISTA DE DEMANDAS - QUANDO HÁ DADOS
+============================================================ */
+.demandas-resultados-painel .painel-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.demandas-lista {
+  overflow-y: auto;
+  max-height: calc(100vh - 300px);
+  padding-right: 8px;
+}
+
+.demandas-lista::-webkit-scrollbar {
+  width: 6px;
+}
+
+.demandas-lista::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+
+.demandas-lista::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+.demandas-lista:not(.hidden) {
+  display: flex;
+}
+
+
+/* ============================================================
+   CARDS DE DEMANDA
+============================================================ */
+
+.demanda-card {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+.demanda-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.demanda-card.selecionado {
+  background: #f8f9ff;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(11, 102, 255, 0.1);
+}
+
+/* Badges - reutiliza do CSS principal */
+.badge-pendente {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.badge-em-andamento {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.badge-aguardando-setor {
+  background: #fff9c4;
+  color: #f57f17;
+}
+
+.badge-concluido {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.badge-cancelado {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.badge-encaminhado {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.badge-setor,
+.badge-origem {
+  background: var(--color-primary);
+  color: white;
+}
+
+.demanda-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.demanda-titulo {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.4;
+}
+
+.demanda-descricao {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-light);
+  line-height: 1.5;
+  display: -webkit-box;
+  /*-webkit-line-clamp: 2;*/
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.demanda-card-footer {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.demanda-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-light);
+}
+
+.demanda-info i {
+  font-size: 14px;
+  color: var(--color-primary);
+}
+.demandas-resultados-painel {
+  grid-column: 2;
+  min-height: 100%;
+}
+/* ============================================================
+   COLUNA 3: DETALHES
+============================================================ */
+.demandas-detalhes-painel {
+  grid-column: 3;
+  min-height: 100%;
+}
+
+.demandas-detalhes-painel .painel-body {
+  padding: 0;
+}
+
+.demandas-detalhes-painel .estado-vazio {
+  /* Estados vazios na coluna de detalhes seguem mesma lógica */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-text-light);
+  min-height: 400px;
+}
+.demandas-detalhes-painel .estado-vazio i {
+  font-size: 48px;
+  color: #e0e0e0;
+  margin-bottom: 16px;
+}
+
+.demandas-detalhes-painel .estado-vazio h4 {
+  font-size: 14px;
+  color: var(--color-text);
+  margin: 0 0 6px 0;
+  font-weight: 600;
+}
+
+.demandas-detalhes-painel .estado-vazio p {
+  font-size: 13px;
+  color: var(--color-text-light);
+  margin: 0;
+}
+
+.detalhes-conteudo {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.detalhes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  border-bottom: 1px solid var(--color-border);
+  background: white;
+  flex-shrink: 0;
+}
+
+.detalhes-titulo-grupo {
+  flex: 1;
+}
+
+.detalhes-titulo-grupo h3 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+.detalhes-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-close-detalhes {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--color-text-light);
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+.btn-close-detalhes:hover {
+  color: var(--color-danger);
+}
+
+.detalhes-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+}
+
+.detalhes-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detalhes-body::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+
+.detalhes-secao {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detalhes-secao:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.detalhes-secao-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-text-light);
+  letter-spacing: 0.5px;
+}
+
+.detalhes-secao-titulo i {
+  font-size: 16px;
+  color: var(--color-primary);
+}
+
+.detalhes-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.detalhes-info-item {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.modulo-painel-atendimento .detalhes-item label {
-  font-size: 11px;
-  color: #999;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-.modulo-painel-atendimento .detalhes-item span {
-  font-size: 14px;
-  color: var(--color-text);
-}
-
-/* Badges de prioridade */
-.modulo-painel-atendimento .prioridade-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.modulo-painel-atendimento .prioridade-badge.prioridade-urgente {
-  background: #ffebee;
-  color: #c62828;
-}
-
-.modulo-painel-atendimento .prioridade-badge.prioridade-alta {
-  background: #fff3cd;
-  color: #f57c00;
-}
-
-.modulo-painel-atendimento .prioridade-badge.prioridade-media {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.modulo-painel-atendimento .prioridade-badge.prioridade-baixa {
-  background: #f5f5f5;
-  color: #757575;
-}
-
-.modulo-painel-atendimento .detalhes-especificos {
+.detalhes-descricao {
+  padding: 16px;
   background: var(--color-secondary);
-  padding: 15px;
   border-radius: var(--radius);
+  line-height: 1.6;
+  border: 1px solid var(--color-border);
 }
 
-.modulo-painel-atendimento .detalhe-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #e0e0e0;
-  font-size: 13px;
-}
-
-.modulo-painel-atendimento .detalhe-row:last-child {
-  border-bottom: none;
-}
-
-.modulo-painel-atendimento .detalhe-row strong {
-  color: #666;
-}
-
-.modulo-painel-atendimento .detalhe-row span {
+.detalhes-descricao p {
+  margin: 0;
   color: var(--color-text);
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+.detalhes-dados {
+  background: var(--color-secondary);
+  padding: 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+}
+
+.detalhes-dados pre {
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.detalhes-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 20px;
+  position: relative;
+}
+
+.timeline-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 24px;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-border);
+}
+
+.timeline-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 3px solid white;
+  box-shadow: 0 0 0 2px var(--color-border);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.timeline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.timeline-time {
+  font-size: 12px;
+  color: var(--color-text-light);
   font-weight: 500;
 }
 
-.modulo-painel-atendimento .timeline-mini {
-  position: relative;
-  padding-left: 20px;
+.timeline-text {
+  font-size: 13px;
+  color: var(--color-text);
+  line-height: 1.5;
 }
 
-.modulo-painel-atendimento .detalhes-actions {
-  padding: 20px;
-  border-top: 1px solid var(--color-border);
+.timeline-text strong {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.detalhes-acoes {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  flex-wrap: wrap;
-  background: var(--color-secondary);
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
 }
 
-.modulo-painel-atendimento .detalhes-actions .btn {
-  flex: 1;
-  min-width: 150px;
-  justify-content: center;
+/* ============================================================
+   CORREÇÃO DOS IDs CONFLITANTES
+============================================================ */
+
+/* Use seletores mais específicos para demandas */
+.demandas-conteudo .estado-vazio,
+.demandas-conteudo .estado-carregando {
+  padding: 60px 20px !important;
 }
 
-.modulo-painel-atendimento .empty-state-mini {
-  text-align: center;
-  padding: 60px 20px;
-  color: #999;
+.demandas-conteudo .spinner {
+  margin-bottom: 16px !important;
 }
 
-.modulo-painel-atendimento .empty-state-mini i {
-  font-size: 48px;
-  margin-bottom: 15px;
-  opacity: 0.3;
+/* IDs específicos para demanda-consulta */
+#estadoAguardando,
+#estadoCarregando,
+#estadoVazio,
+#listaResultados {
+  display: flex !important;
+  flex-direction: column !important;
 }
 
-.modulo-painel-atendimento .empty-state-mini p {
-  font-size: 14px;
+/* IDs específicos para demanda-recebidas */
+#estadoCarregandoRecebidas,
+#estadoVazioRecebidas,
+#listaDemandasRecebidas {
+  display: flex ;
+  flex-direction: column;
 }
 
+/* IDs específicos para demanda-encaminhadas */
+#estadoCarregandoEncaminhadas,
+#estadoVazioEncaminhadas,
+#listaDemandasEncaminhadas {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   RESPONSIVIDADE
+============================================================ */
+
+@media (max-width: 1024px) {
+  .demandas-grid-3col {
+    grid-template-columns: 240px 1fr 320px;
+    gap: 12px;
+  }
+  
+  .detalhes-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .demandas-grid-3col {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 12px;
+  }
+  
+  .demandas-detalhes-painel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-modal);
+    display: none;
+  }
+  
+  .demandas-detalhes-painel.aberto {
+    display: flex !important;
+  }
+  
+  .painel-body {
+    padding: 12px;
+  }
+  
+  .demanda-card {
+    padding: 12px;
+  }
+}
+@media (max-width: 1400px) {
+  .demandas-grid-3col {
+    grid-template-columns: 250px 1fr 320px !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  .demandas-grid-3col {
+    grid-template-columns: 220px 1fr 300px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .demandas-grid-3col {
+    grid-template-columns: 200px 1fr !important;
+    grid-template-rows: 1fr auto !important;
+  }
+  
+  .demandas-detalhes-painel {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    max-height: 400px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .demandas-grid-3col {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto auto !important;
+    gap: 12px !important;
+  }
+  
+  .demandas-filtros-painel,
+  .demandas-resultados-painel,
+  .demandas-detalhes-painel {
+    grid-column: 1 !important;
+  }
+}
 /* ============================================================
    [7] MÓDULO HISTÓRICO - VISUALIZAÇÃO DE ATENDIMENTOS
 ============================================================ */
@@ -2874,6 +3231,14 @@
 /* ============================================================
    [9] UTILITÁRIOS - CLASSES AUXILIARES
 ============================================================ */
+.hidden {
+  display: none !important;
+}
+
+/* Classe helper para mostrar elementos */
+.visible {
+  display: flex !important;
+}
 
 .modulo-painel-atendimento .hidden {
   display: none !important;
@@ -3453,6 +3818,112 @@
 }
 
 
+/* Corrigir problema dos 6 espaços */
+.demandas-grid-3col {
+  display: grid !important;
+  grid-template-columns: 280px 1fr 360px !important;
+  grid-template-rows: 1fr !important; /* APENAS UMA LINHA */
+  grid-template-areas: 
+    "filtros resultados detalhes" !important;
+}
+
+.demandas-filtros-painel { grid-area: filtros; }
+.demandas-resultados-painel { grid-area: resultados; }
+.demandas-detalhes-painel { grid-area: detalhes; }
+
 /* ============================================================
    FIM DO ARQUIVO
 ============================================================ */
+
+/* Todos os estados ocultos por padrão */
+[class^="estado-"] {
+  display: none !important;
+}
+
+/* Estado ativo fica visível */
+[class^="estado-"].ativa {
+  display: flex !important;
+}
+
+
+/* Listas ocultas por padrão */
+.demandas-lista {
+  display: none;
+}
+
+/* Lista ativa (quando tem dados) */
+.demandas-lista.ativa {
+  display: block;
+}
+
+/* ============================================================
+   ANIMAÇÕES DE TRANSIÇÃO
+============================================================ */
+
+.estado-container {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.demandas-lista {
+  animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   RESPONSIVIDADE
+============================================================ */
+
+@media (max-width: 1200px) {
+  .estado-container {
+    padding: 40px 16px;
+    min-height: 250px;
+  }
+
+  .estado-vazio i,
+  .estado-nao-encontrado i {
+    font-size: 48px;
+  }
+
+  .estado-vazio h4,
+  .estado-nao-encontrado h4 {
+    font-size: 15px;
+  }
+
+  .estado-vazio p,
+  .estado-nao-encontrado p {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .estado-container {
+    padding: 30px 12px;
+    min-height: 200px;
+  }
+
+  .estado-vazio i,
+  .estado-nao-encontrado i {
+    font-size: 40px;
+  }
+}

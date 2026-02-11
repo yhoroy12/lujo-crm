@@ -1,5 +1,5 @@
 <!-- atendimento.html (CORRIGIDO) -->
-<section class="modulo-painel-atendimento">
+<section class="modulo-painel-atendimento modulo-atendimento">
   <div class="painel-atendimento">
 
     <!-- ==================== ABAS SUPERIORES ==================== -->
@@ -323,17 +323,59 @@
               <i class="fi fi-rr-edit"></i>
               Detalhes do Atendimento
             </h4>
-
+            <div class="form-group">
+              <label>Tipo de Conta</label>
+              <select id="tipoConta" onchange="WhatsAppTab.atualizarDadosLocal('tipo_conta', this.value)">
+                <option value="">Selecione o tipo...</option>
+                <option value="selo">Selo</option>
+                <option value="artista">Artista</option>
+                <option value="portador">Portador de Direitos</option>
+              </select>
+            </div>
             <div class="form-row">
-              <div class="campo">
+
+              <div class="form-group">
                 <label>Tipo de Demanda</label>
-                <select id="tipoDemanda">
-                  <option value="">Selecione...</option>
-                  <option value="conteudo">Conteúdo</option>
-                  <option value="financeiro">Financeiro</option>
-                  <option value="conta">Conta</option>
-                  <option value="strike">Strike/Copyright</option>
-                  <option value="tecnico">Técnico</option>
+                <select id="tipoDemanda" onchange="WhatsAppTab.atualizarDadosLocal('tipo_demanda', this.value)">
+                  <option value="">Selecione a demanda...</option>
+
+                  <optgroup label="Conteúdo">
+                    <option value="Aprovar conteúdo">Aprovar conteúdo</option>
+                    <option value="Enviar conteúdo">Enviar conteúdo</option>
+                    <option value="Analisar conteúdo">Analisar conteúdo</option>
+                    <option value="Conteúdo">Conteúdo (Geral)</option>
+                  </optgroup>
+
+                  <optgroup label="Copyright">
+                    <option value="Criar Conta">Criar Conta</option>
+                    <option value="Migrar Conta">Migrar Conta</option>
+                    <option value="Reenviar Contrato">Reenviar Contrato</option>
+                    <option value="Aplicar Strike">Aplicar Strike</option>
+                  </optgroup>
+
+                  <optgroup label="Financeiro">
+                    <option value="Aprovar pagamento">Aprovar pagamento</option>
+                    <option value="Aprovar Advanced">Aprovar Advanced</option>
+                    <option value="Pagamento">Pagamento</option>
+                    <option value="Resetar Tipaldi">Resetar Tipaldi</option>
+                  </optgroup>
+
+                  <optgroup label="Técnico">
+                    <option value="Verificar Conteúdos Plataforma">Verificar Conteúdos Plataforma</option>
+                    <option value="Liberar Verificador em Dois Fatores">Liberar Verificador em Dois Fatores</option>
+                    <option value="Liberar Content ID">Liberar Content ID</option>
+                    <option value="Update de Conteúdo">Update de Conteúdo</option>
+                    <option value="Redelivery de Conteúdo">Redelivery de Conteúdo</option>
+                    <option value="Takedown">Takedown</option>
+                    <option value="MCN/Canais Youtube">MCN/Canais Youtube</option>
+                  </optgroup>
+
+                  <optgroup label="Marketing / Atendimento">
+                    <option value="Realizar Pitching">Realizar Pitching</option>
+                    <option value="Atualizar Royalties">Atualizar Royalties</option>
+                    <option value="Smart-Links">Smart-Links</option>
+                    <option value="Prospectação">Prospectação</option>
+                  </optgroup>
                 </select>
               </div>
               <div class="campo">
@@ -342,6 +384,7 @@
                   <option value="">Selecione...</option>
                   <option value="atendimento">Atendimento</option>
                   <option value="conteudo">Conteúdo</option>
+                  <option value="marketing">Marketing</option>
                   <option value="financeiro">Financeiro</option>
                   <option value="copyright">Copyright</option>
                   <option value="tecnico">Técnico</option>
@@ -458,94 +501,662 @@
     </div>
     <!-- ==================== ABA: DEMANDAS EXTERNAS ==================== -->
     <div class="aba-conteudo aba-demandas">
-      <div class="demandas-externas-container">
 
-        <!-- Sidebar com Filtros -->
-        <aside class="demandas-sidebar">
-          <div class="filtros-section">
-            <h3>Filtros</h3>
+      <!-- SUB-ABAS (igual ao histórico: .sub-abas-XXX) -->
+      <div class="sub-abas-demandas">
+        <button class="sub-aba-btn ativa" data-subaba="consulta">
+          <i class="fi fi-rr-search"></i>
+          Consulta de Status
+        </button>
+        <button class="sub-aba-btn" data-subaba="recebidas">
+          <i class="fi fi-rr-inbox-in"></i>
+          Demandas Recebidas
+        </button>
+        <!-- Sub-aba 3: Apenas no ATENDIMENTO -->
+        <button class="sub-aba-btn subaba-encaminhadas-only" data-subaba="encaminhadas">
+          <i class="fi fi-rr-inbox-out"></i>
+          Minhas Encaminhadas
+        </button>
+      </div>
 
-            <div class="filtro-group">
-              <label>Área</label>
-              <select id="filtroDemandaArea">
-                <option value="">Todas as Áreas</option>
-                <option value="financeiro">Financeiro</option>
-                <option value="copyright">Copyright</option>
-                <option value="marketing">Marketing</option>
-                <option value="tecnico">Técnico</option>
-                <option value="conteudo">Conteúdo</option>
-                <option value="gerencia">Gerência</option>
-              </select>
-            </div>
+      <!-- CONTAINER PRINCIPAL -->
+      <div class="demandas-container">
 
-            <div class="filtro-group">
-              <label>Status</label>
-              <select id="filtroDemandaStatus">
-                <option value="">Todos os Status</option>
-                <option value="pendente">Pendente</option>
-                <option value="andamento">Em Andamento</option>
-                <option value="aguardando">Aguardando Resposta</option>
-                <option value="concluido">Concluído</option>
-              </select>
-            </div>
+        <!-- ==================== SUB-ABA 1: CONSULTA ==================== -->
+        <div class="demandas-conteudo demandas-consulta ativa">
+          <div class="demandas-grid-3col">
 
-            <div class="filtro-group">
-              <label>Prioridade</label>
-              <select id="filtroDemandaPrioridade">
-                <option value="">Todas</option>
-                <option value="urgente">Urgente</option>
-                <option value="alta">Alta</option>
-                <option value="media">Média</option>
-                <option value="baixa">Baixa</option>
-              </select>
-            </div>
+            <!-- COLUNA 1: FILTROS DE BUSCA -->
+            <aside class="demandas-filtros-painel card">
+              <div class="painel-header">
+                <h3>
+                  <i class="fi fi-rr-search"></i>
+                  Buscar Demanda
+                </h3>
+              </div>
 
-            <button class="btn btn-secondary btn-sm" id="btnLimparFiltrosDemandas"
-              style="width: 100%; margin-top: 10px;">
-              Limpar Filtros
-            </button>
-          </div>
+              <div class="painel-body">
+                <form id="formBuscaDemanda">
 
-          <div class="demandas-stats">
-            <h4>Estatísticas</h4>
-            <div class="stat-mini">
-              <span class="stat-label">Total</span>
-              <span class="stat-value" id="statTotalDemandas">0</span>
-            </div>
-            <div class="stat-mini">
-              <span class="stat-label">Pendentes</span>
-              <span class="stat-value" id="statPendentes">0</span>
-            </div>
-            <div class="stat-mini">
-              <span class="stat-label">Urgentes</span>
-              <span class="stat-value urgent" id="statUrgentes">0</span>
-            </div>
-          </div>
-        </aside>
+                  <div class="campo">
+                    <label for="buscaTicket">
+                      <i class="fi fi-rr-ticket"></i>
+                      Número do Ticket
+                    </label>
+                    <input type="text" id="buscaTicket" class="form-input" placeholder="Ex: TK-2025-001">
+                  </div>
 
-        <!-- Lista de Demandas -->
-        <div class="demandas-lista-container">
-          <div class="demandas-header">
-            <h2>Minhas Demandas</h2>
-            <div class="demandas-search">
-              <input type="text" id="searchDemandas" placeholder="🔍 Buscar demanda...">
-            </div>
-          </div>
+                  <div class="campo">
+                    <label for="buscaCliente">
+                      <i class="fi fi-rr-user"></i>
+                      E-mail do Cliente
+                    </label>
+                    <input type="text" id="buscaCliente" class="form-input" placeholder="Digite o e-mail...">
+                  </div>
 
-          <div class="demandas-lista" id="listaDemandas">
-            <!-- Preenchido via JS -->
+                  <div class="campo">
+                    <label for="buscaSetor">
+                      <i class="fi fi-rr-building"></i>
+                      Setor Responsável
+                    </label>
+                    <select id="buscaSetor" class="form-select">
+                      <option value="">Todos os setores</option>
+                      <option value="atendimento">Atendimento</option>
+                      <option value="conteudo">Conteúdo</option>
+                      <option value="marketing">Marketing</option>
+                      <option value="financeiro">Financeiro</option>
+                      <option value="copyright">Copyright</option>
+                      <option value="tecnico">Técnico</option>
+                    </select>
+                  </div>
+
+                  <div class="campo">
+                    <label for="buscaStatus">
+                      <i class="fi fi-rr-checkbox"></i>
+                      Status
+                    </label>
+                    <select id="buscaStatus" class="form-select">
+                      <option value="">Todos os status</option>
+                      <option value="PENDENTE">Pendente</option>
+                      <option value="EM_ANDAMENTO">Em Andamento</option>
+                      <option value="AGUARDANDO_GERENCIA">Aguardando Gerência</option>
+                      <option value="RECUSADO">Recusado</option>
+                      <option value="CONCLUIDO">Concluído</option>
+                    </select>
+                  </div>
+
+                  <div class="campo">
+                    <label for="buscaPeriodo">
+                      <i class="fi fi-rr-calendar"></i>
+                      Período
+                    </label>
+                    <select id="buscaPeriodo" class="form-select">
+                      <option value="hoje">Hoje</option>
+                      <option value="semana">Última Semana</option>
+                      <option value="mes">Último Mês</option>
+                      <option value="todos">Todos</option>
+                    </select>
+                  </div>
+
+                  <div class="filtros-acoes">
+                    <button type="button" class="btn btn-primary btn-block" id="btnExecutarBusca">
+                      <i class="fi fi-rr-search"></i>
+                      Buscar
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-block" id="btnLimparBusca">
+                      <i class="fi fi-rr-refresh"></i>
+                      Limpar
+                    </button>
+                  </div>
+
+                </form>
+              </div>
+            </aside>
+
+            <!-- COLUNA 2: RESULTADOS -->
+            <main class="demandas-resultados-painel card">
+              <div class="painel-header">
+                <h3>
+                  <i class="fi fi-rr-list"></i>
+                  Resultados
+                </h3>
+                <span class="resultado-contador" id="contadorResultados">0 encontrados</span>
+              </div>
+
+              <div class="painel-body">
+
+                <!-- ✅ ESTADO 1: VAZIO INICIAL (ativa por padrão) -->
+                <div class="estado-container estado-vazio ativa" id="estadoAguardandoConsulta">
+                  <i class="fi fi-rr-search"></i>
+                  <h4>Utilize os filtros para buscar</h4>
+                  <p>Preencha pelo menos um campo e clique em "Buscar"</p>
+                </div>
+
+                <!-- ✅ ESTADO 2: CARREGANDO -->
+                <div class="estado-container estado-carregando" id="estadoCarregandoConsulta">
+                  <div class="spinner"></div>
+                  <p>Buscando demandas...</p>
+                </div>
+
+                <!-- ✅ ESTADO 3: NÃO ENCONTRADO -->
+                <div class="estado-container estado-nao-encontrado" id="estadoNaoEncontradoConsulta">
+                  <i class="fi fi-rr-inbox"></i>
+                  <h4>Nenhuma demanda encontrada</h4>
+                  <p>Tente ajustar os filtros de busca</p>
+                </div>
+
+                <!-- ✅ LISTA DE RESULTADOS (oculta por padrão) -->
+                <div class="demandas-lista hidden" id="listaResultadosConsulta">
+                  <!-- Cards gerados via JavaScript -->
+                </div>
+
+              </div>
+            </main>
+
+            <!-- COLUNA 3: DETALHES -->
+            <aside class="demandas-detalhes-painel card">
+
+              <div class="estado-vazio" id="detalhesVazioConsulta">
+                <i class="fi fi-rr-document"></i>
+                <h4>Selecione uma demanda</h4>
+                <p>Clique em uma demanda da lista para ver os detalhes completos</p>
+              </div>
+
+              <div class="detalhes-conteudo hidden" id="detalhesConteudoConsulta">
+                <div class="detalhes-header">
+                  <div class="detalhes-titulo-grupo">
+                    <h3 id="detalhesTituloConsulta">Título da Demanda</h3>
+                    <div class="detalhes-badges">
+                      <span class="badge" id="detalhesStatusConsulta">Status</span>
+                      <span class="badge badge-setor" id="detalhesSetorConsulta">Setor</span>
+                    </div>
+                  </div>
+                  <button class="btn-close-detalhes" id="btnFecharDetalhesConsulta">
+                    <i class="fi fi-rr-cross"></i>
+                  </button>
+                </div>
+
+                <div class="detalhes-body">
+                  <div class="detalhes-secao">
+                    <h4 class="detalhes-secao-titulo">
+                      <i class="fi fi-rr-info"></i>
+                      Informações Gerais
+                    </h4>
+                    <div class="detalhes-info-grid">
+                      <div class="detalhes-info-item">
+                        <span class="info-label">Ticket</span>
+                        <span class="info-value" id="detalhesTicketConsulta">-</span>
+                      </div>
+                      <div class="detalhes-info-item">
+                        <span class="info-label">Cliente</span>
+                        <span class="info-value" id="detalhesClienteConsulta">-</span>
+                      </div>
+                      <div class="detalhes-info-item">
+                        <span class="info-label">Data de Criação</span>
+                        <span class="info-value" id="detalhesDataCriacaoConsulta">-</span>
+                      </div>
+                      <div class="detalhes-info-item">
+                        <span class="info-label">Última Atualização</span>
+                        <span class="info-value" id="detalhesDataAtualizacaoConsulta">-</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="detalhes-secao">
+                    <h4 class="detalhes-secao-titulo">
+                      <i class="fi fi-rr-document"></i>
+                      Descrição
+                    </h4>
+                    <div class="detalhes-descricao" id="detalhesDescricaoConsulta">
+                      <p>Descrição completa da demanda será exibida aqui...</p>
+                    </div>
+                  </div>
+
+                  <div class="detalhes-secao">
+                    <h4 class="detalhes-secao-titulo">
+                      <i class="fi fi-rr-time-past"></i>
+                      Histórico de Atualizações
+                    </h4>
+                    <div class="detalhes-timeline" id="detalhesTimelineConsulta">
+                      <!-- Timeline via JavaScript -->
+                    </div>
+                  </div>
+
+                  <div class="detalhes-acoes">
+                    <button class="btn btn-secondary btn-block" id="btnSolicitarAtualizacaoConsulta">
+                      <i class="fi fi-rr-refresh"></i>
+                      Solicitar Atualização
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </aside>
+
           </div>
         </div>
 
-        <!-- Detalhes da Demanda -->
-        <div class="demanda-detalhes" id="demandaDetalhes">
-          <div class="empty-state">
-            <i class="fi fi-rr-inbox"></i>
-            <h3>Selecione uma Demanda</h3>
-            <p>Clique em uma demanda para ver os detalhes</p>
+        <!-- ==================== SUB-ABA 2: RECEBIDAS ==================== -->
+        <div class="demandas-conteudo demandas-recebidas">
+          <div class="demandas-grid-3col">
+
+            <!-- COLUNA 1: FILTROS -->
+            <aside class="demandas-filtros-painel card">
+              <div class="painel-header">
+                <h3>
+                  <i class="fi fi-rr-filter"></i>
+                  Filtros
+                </h3>
+              </div>
+
+              <div class="painel-body">
+                <form id="formFiltrosRecebidas">
+                  <div class="campo">
+                    <label for="filtroStatusRecebidas">
+                      <i class="fi fi-rr-checkbox"></i>
+                      Status
+                    </label>
+                    <select id="filtroStatusRecebidas" class="form-select">
+                      <option value="">Todos os status</option>
+                      <option value="PENDENTE">Pendente</option>
+                      <option value="EM_ANDAMENTO">Em Andamento</option>
+                      <option value="AGUARDANDO_GERENCIA">Aguardando Gerência</option>
+                      <option value="RECUSADO">Recusado</option>
+                      <option value="CONCLUIDO">Concluído</option>
+                    </select>
+                  </div>
+
+                  <div class="campo">
+                    <label for="filtroOrigemRecebidas">
+                      <i class="fi fi-rr-arrow-small-left"></i>
+                      Origem
+                    </label>
+                    <select id="filtroOrigemRecebidas" class="form-select">
+                      <option value="">Todas as origens</option>
+                      <option value="atendimento">Atendimento</option>
+                      <option value="conteudo">Conteúdo</option>
+                      <option value="marketing">Marketing</option>
+                      <option value="financeiro">Financeiro</option>
+                      <option value="copyright">Copyright</option>
+                      <option value="tecnico">Técnico</option>
+                    </select>
+                  </div>
+
+                  <div class="campo">
+                    <label for="filtroPrioridadeRecebidas">
+                      <i class="fi fi-rr-exclamation"></i>
+                      Prioridade
+                    </label>
+                    <select id="filtroPrioridadeRecebidas" class="form-select">
+                      <option value="">Todas</option>
+                      <option value="URGENTE">Crítica</option>
+                      <option value="ALTA">Alta</option>
+                      <option value="MEDIA">Média</option>
+                      <option value="BAIXA">Baixa</option>
+                    </select>
+                  </div>
+
+                  <div class="campo">
+                    <label for="filtroPeriodoRecebidas">
+                      <i class="fi fi-rr-calendar"></i>
+                      Período
+                    </label>
+                    <select id="filtroPeriodoRecebidas" class="form-select">
+                      <option value="hoje">Hoje</option>
+                      <option value="semana">Última Semana</option>
+                      <option value="mes">Último Mês</option>
+                      <option value="todos">Todos</option>
+                    </select>
+                  </div>
+
+                  <div class="filtros-acoes">
+                    <button type="button" class="btn btn-primary btn-block" id="btnAplicarFiltrosRecebidas">
+                      <i class="fi fi-rr-filter"></i>
+                      Aplicar Filtros
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-block" id="btnLimparFiltrosRecebidas">
+                      <i class="fi fi-rr-refresh"></i>
+                      Limpar
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </aside>
+
+            <!-- COLUNA 2: LISTA -->
+            <main class="demandas-resultados-painel card">
+              <div class="painel-header">
+                <h3>
+                  <i class="fi fi-rr-inbox-in"></i>
+                  Demandas Recebidas
+                </h3>
+                <span class="resultado-contador" id="contadorRecebidas">0 demandas</span>
+              </div>
+
+              <div class="painel-body">
+
+                <!-- ✅ ESTADO 1: CARREGANDO (ativa por padrão - autoload) -->
+                <div class="estado-container estado-carregando ativa" id="estadoCarregandoRecebidas">
+                  <div class="spinner"></div>
+                  <p>Carregando demandas...</p>
+                </div>
+
+                <!-- ✅ ESTADO 2: NÃO ENCONTRADO -->
+                <div class="estado-container estado-nao-encontrado" id="estadoNaoEncontradoRecebidas">
+                  <i class="fi fi-rr-inbox"></i>
+                  <h4>Nenhuma demanda recebida</h4>
+                  <p>Você não possui demandas pendentes no momento</p>
+                </div>
+
+                <!-- ✅ LISTA DE DEMANDAS (oculta por padrão) -->
+                <div class="demandas-lista hidden" id="listaDemandasRecebidas">
+                  <!-- Cards gerados via JavaScript -->
+                </div>
+
+              </div>
+            </main>
+
+            <!-- COLUNA 3: DETALHES -->
+            <aside class="demandas-detalhes-painel card">
+
+              <div class="estado-vazio" id="detalhesVazioRecebidas">
+                <i class="fi fi-rr-document"></i>
+                <h4>Selecione uma demanda</h4>
+                <p>Clique em uma demanda da lista para ver os detalhes e ações disponíveis</p>
+              </div>
+
+              <div class="detalhes-conteudo hidden" id="detalhesConteudoRecebidas">
+                <div class="detalhes-header">
+                  <div class="detalhes-titulo-grupo">
+                    <h3 id="detalhesTituloRecebidas">Título da Demanda</h3>
+                    <div class="detalhes-badges">
+                      <span class="badge" id="detalhesStatusRecebidas">Status</span>
+                      <span class="badge badge-origem" id="detalhesOrigemRecebidas">Origem</span>
+                    </div>
+                  </div>
+                  <button class="btn-close-detalhes" id="btnFecharDetalhesRecebidas">
+                    <i class="fi fi-rr-cross"></i>
+                  </button>
+                </div>
+
+                <div class="detalhes-body">
+                  <div class="detalhes-secao">
+                    <h4 class="detalhes-secao-titulo">
+                      <i class="fi fi-rr-info"></i>
+                      Informações
+                    </h4>
+                    <div class="detalhes-info-grid">
+                      <div class="detalhes-info-item">
+                        <span class="info-label">Ticket</span>
+                        <span class="info-value" id="detalhesTicketRecebidas">-</span>
+                      </div>
+                      <div class="detalhes-info-item">
+                        <span class="info-label">Cliente</span>
+                        <span class="info-value" id="detalhesClienteRecebidas">-</span>
+                      </div>
+                      <div class="detalhes-info-item">
+                        <span class="info-label">Recebido em</span>
+                        <span class="info-value" id="detalhesDataRecebidoRecebidas">-</span>
+                      </div>
+                      <div class="detalhes-info-item">
+                        <span class="info-label">Prioridade</span>
+                        <span class="info-value" id="detalhesPrioridadeRecebidas">-</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="detalhes-secao">
+                    <h4 class="detalhes-secao-titulo">
+                      <i class="fi fi-rr-document"></i>
+                      Solicitação
+                    </h4>
+                    <div class="detalhes-descricao" id="detalhesDescricaoRecebidas">
+                      <p>-</p>
+                    </div>
+                  </div>
+
+                  <div class="detalhes-secao">
+                    <h4 class="detalhes-secao-titulo">
+                      <i class="fi fi-rr-user"></i>
+                      Dados do Cliente
+                    </h4>
+                    <div class="detalhes-dados" id="detalhesDadosClienteRecebidas">
+                      <pre>-</pre>
+                    </div>
+                  </div>
+
+                  <div class="detalhes-secao">
+                    <h4 class="detalhes-secao-titulo">
+                      <i class="fi fi-rr-time-past"></i>
+                      Histórico
+                    </h4>
+                    <div class="detalhes-timeline" id="detalhesTimelineRecebidas">
+                      <!-- Timeline via JavaScript -->
+                    </div>
+                  </div>
+
+                  <div class="detalhes-acoes">
+                    <button class="btn btn-success btn-block" id="btnAceitarDemanda">
+                      <i class="fi fi-rr-check"></i>
+                      Aceitar Demanda
+                    </button>
+                    <button class="btn btn-primary btn-block hidden" id="btnConcluirDemanda">
+                      <i class="fi fi-rr-check-circle"></i>
+                      Concluir Demanda
+                    </button>
+                    <button class="btn btn-secondary btn-block" id="btnAdicionarObservacao">
+                      <i class="fi fi-rr-comment"></i>
+                      Adicionar Observação
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+            </aside>
+
           </div>
         </div>
 
+        <!-- ==================== SUB-ABA 3: ENCAMINHADAS ==================== -->
+        <div class="demandas-conteudo demandas-encaminhadas">
+          <div class="demandas-grid-3col">
+
+            <!-- COLUNA 1: FILTROS -->
+            <aside class="demandas-filtros-painel card">
+              <div class="painel-header">
+                <h3>
+                  <i class="fi fi-rr-filter"></i>
+                  Filtros
+                </h3>
+              </div>
+
+              <div class="painel-body">
+                <form id="formFiltrosEncaminhadas">
+                  <div class="campo">
+                    <label for="filtroStatusEncaminhadas">
+                      <i class="fi fi-rr-checkbox"></i>
+                      Status
+                    </label>
+                    <select id="filtroStatusEncaminhadas" class="form-select">
+                      <option value="">Todos os status</option>
+                      <option value="PENDENTE">Pendente</option>
+                      <option value="EM_ANDAMENTO">Em Andamento</option>
+                      <option value="AGUARDANDO_GERENCIA">Aguardando Gerência</option>
+                      <option value="RECUSADO">Recusado</option>
+                      <option value="CONCLUIDO">Concluído</option>
+                    </select>
+                  </div>
+
+                  <div class="campo">
+                    <label for="filtroSetorEncaminhadas">
+                      <i class="fi fi-rr-building"></i>
+                      Setor de Destino
+                    </label>
+                    <select id="filtroSetorEncaminhadas" class="form-select">
+                      <option value="">Todos os setores</option>
+                      <option value="atendimento">Atendimento</option>
+                      <option value="conteudo">Conteúdo</option>
+                      <option value="marketing">Marketing</option>
+                      <option value="financeiro">Financeiro</option>
+                      <option value="copyright">Copyright</option>
+                      <option value="tecnico">Técnico</option>
+                    </select>
+                  </div>
+
+                  <div class="campo">
+                    <label for="filtroPeriodoEncaminhadas">
+                      <i class="fi fi-rr-calendar"></i>
+                      Período
+                    </label>
+                    <select id="filtroPeriodoEncaminhadas" class="form-select">
+                      <option value="hoje">Hoje</option>
+                      <option value="semana">Última Semana</option>
+                      <option value="mes">Último Mês</option>
+                      <option value="todos">Todos</option>
+                    </select>
+                  </div>
+
+                  <div class="filtros-acoes">
+                    <button type="button" class="btn btn-primary btn-block" id="btnAplicarFiltrosEncaminhadas">
+                      <i class="fi fi-rr-filter"></i>
+                      Aplicar Filtros
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-block" id="btnLimparFiltrosEncaminhadas">
+                      <i class="fi fi-rr-refresh"></i>
+                      Limpar
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </aside>
+
+            <!-- COLUNA 2: LISTA -->
+            <main class="demandas-resultados-painel card">
+              <div class="painel-header">
+                <h3>
+                  <i class="fi fi-rr-inbox-out"></i>
+                  Demandas que Encaminhei
+                </h3>
+                <span class="resultado-contador" id="contadorEncaminhadas">0 demandas</span>
+              </div>
+
+              <div class="painel-body">
+
+                <!-- ✅ ESTADO 1: VAZIO INICIAL (ativa por padrão) -->
+                <div class="estado-container estado-vazio ativa" id="estadoVazioEncaminhadas">
+                  <i class="fi fi-rr-filter"></i>
+                  <h4>Use os filtros acima</h4>
+                  <p>Clique em "Aplicar Filtros" para visualizar suas demandas encaminhadas</p>
+                </div>
+
+                <!-- ✅ ESTADO 2: CARREGANDO -->
+                <div class="estado-container estado-carregando" id="estadoCarregandoEncaminhadas">
+                  <div class="spinner"></div>
+                  <p>Carregando demandas...</p>
+                </div>
+
+                <!-- ✅ ESTADO 3: NÃO ENCONTRADO -->
+                <div class="estado-container estado-nao-encontrado" id="estadoNaoEncontradoEncaminhadas">
+                  <i class="fi fi-rr-inbox"></i>
+                  <h4>Nenhuma demanda encaminhada</h4>
+                  <p>Você ainda não encaminhou nenhuma demanda para outros setores</p>
+                </div>
+
+                <!-- ✅ LISTA DE DEMANDAS (oculta por padrão) -->
+                <div class="demandas-lista hidden" id="listaDemandasEncaminhadas">
+                  <!-- Cards gerados via JavaScript -->
+                </div>
+
+              </div>
+            </main>
+
+            <!-- COLUNA 3: DETALHES -->
+            <aside class="demandas-detalhes-painel card">
+
+              <div class="estado-vazio" id="detalhesVazioEncaminhadas">
+                <i class="fi fi-rr-document"></i>
+                <h4>Selecione uma demanda</h4>
+                <p>Clique em uma demanda da lista para acompanhar o andamento</p>
+              </div>
+
+              <div class="detalhes-conteudo hidden" id="detalhesConteudoEncaminhadas">
+                <div class="detalhes-header">
+                  <div class="detalhes-titulo-grupo">
+                    <h3 id="detalhesTituloEncaminhadas">Título da Demanda</h3>
+                    <div class="detalhes-badges">
+                      <span class="badge" id="detalhesStatusEncaminhadas">Status</span>
+                      <span class="badge badge-setor" id="detalhesSetorEncaminhadas">Setor</span>
+                    </div>
+                  </div>
+                  <button class="btn-close-detalhes" id="btnFecharDetalhesEncaminhadas">
+                    <i class="fi fi-rr-cross"></i>
+                  </button>
+                </div>
+
+                <div class="detalhes-body">
+                  <div class="detalhes-secao">
+                    <h4 class="detalhes-secao-titulo">
+                      <i class="fi fi-rr-info"></i>
+                      Informações do Encaminhamento
+                    </h4>
+                    <div class="detalhes-info-grid">
+                      <div class="detalhes-info-item">
+                        <span class="info-label">Ticket</span>
+                        <span class="info-value" id="detalhesTicketEncaminhadas">-</span>
+                      </div>
+                      <div class="detalhes-info-item">
+                        <span class="info-label">Cliente</span>
+                        <span class="info-value" id="detalhesClienteEncaminhadas">-</span>
+                      </div>
+                      <div class="detalhes-info-item">
+                        <span class="info-label">Encaminhado em</span>
+                        <span class="info-value" id="detalhesDataEncaminhadoEncaminhadas">-</span>
+                      </div>
+                      <div class="detalhes-info-item">
+                        <span class="info-label">Tempo Decorrido</span>
+                        <span class="info-value" id="detalhesTempoDecorridoEncaminhadas">-</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="detalhes-secao">
+                    <h4 class="detalhes-secao-titulo">
+                      <i class="fi fi-rr-document"></i>
+                      Solicitação Enviada
+                    </h4>
+                    <div class="detalhes-descricao" id="detalhesDescricaoEncaminhadas">
+                      <p>-</p>
+                    </div>
+                  </div>
+
+                  <div class="detalhes-secao">
+                    <h4 class="detalhes-secao-titulo">
+                      <i class="fi fi-rr-comment-alt"></i>
+                      Justificativa do Encaminhamento
+                    </h4>
+                    <div class="detalhes-descricao" id="detalhesJustificativaEncaminhadas">
+                      <p>-</p>
+                    </div>
+                  </div>
+
+                  <div class="detalhes-secao">
+                    <h4 class="detalhes-secao-titulo">
+                      <i class="fi fi-rr-time-past"></i>
+                      Histórico de Acompanhamento
+                    </h4>
+                    <div class="detalhes-timeline" id="detalhesTimelineEncaminhadas">
+                      <!-- Timeline via JavaScript -->
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+            </aside>
+
+          </div>
+        </div>
       </div>
     </div>
     <!-- ==================== ABA: HISTÓRICO ==================== -->
@@ -850,7 +1461,8 @@
 
           <div class="alert alert-info">
             <i class="fi fi-rr-info"></i>
-            <strong>Atenção:</strong> Após encaminhar, este atendimento sairá da sua responsabilidade e será transferido
+            <strong>Atenção:</strong> Após encaminhar, este atendimento sairá da sua responsabilidade e será
+            transferido
             para o setor selecionado.
           </div>
         </div>
@@ -877,7 +1489,9 @@
           <button onclick="EmailsTab.fecharModalDevolucao()" class="btn-modal-close-x"
             style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
         </div>
-        <p style="font-size: 14px; color: #666; margin-bottom: 10px;">Por que você está devolvendo este atendimento para
+        <p style="font-size: 14px; color: #666; margin-bottom: 10px;">Por que você está devolvendo este
+          atendimento
+          para
           a fila?</p>
 
         <textarea id="justificativaDevolucaoTexto"

@@ -824,7 +824,7 @@ async function restaurarSessao() {
       clienteListeners.iniciarMonitoramento(estado.atendimentoId);
       // Simular evento de operador aceitar
       clienteListeners.aoOperadorAceitar(dados);
-    } else if (status === 'CONCLUIDO') {
+    } else if (status === 'CONCLUIDO' || status === 'ENCAMINHADO') {
       mostrarTela(screens.finalizado);
       copiarMensagensParaHistorico();
     } else {
