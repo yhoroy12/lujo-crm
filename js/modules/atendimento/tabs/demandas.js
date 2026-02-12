@@ -43,7 +43,16 @@ const EstadoManager = (function () {
       listaResultados: 'listaDemandasEncaminhadas',
       contador: 'contadorEncaminhadas',
       estadoInicial: 'vazio'
+    },
+    minhas: {
+      estadoVazio: 'detalhesVazioMinhas', // O estado inicial de "selecione uma demanda"
+      estadoCarregando: 'estadoCarregandoMinhas',
+      estadoNaoEncontrado: 'estadoNaoEncontradoMinhas',
+      listaResultados: 'listaDemandasMinhas',
+      contador: 'contadorMinhas',
+      estadoInicial: 'carregando'
     }
+
   };
 
   function setEstado(subAba, novoEstado, dados = []) {
@@ -214,11 +223,12 @@ const DemandasTab = {
   _eventsBound: false,
   _activeSubTab: 'consulta',
   _ultimoDocConsulta: null,
-  _unsubscribeRecebidas: null,
   _cacheRecebidas: [],
   _cacheEncaminhadas: [],
   _cacheConsulta: [],
-
+  _cacheMinhas: [], // Novo cache
+  _unsubscribeMinhas: null,
+  _unsubscribeRecebidas: null,
   // ==================================================================================
   // INICIALIZAÇÃO
   // ==================================================================================
@@ -310,8 +320,17 @@ const DemandasTab = {
       // Detalhes Encaminhadas
       detalhesConteudoEncaminhadas: document.getElementById('detalhesConteudoEncaminhadas'),
       detalhesVazioEncaminhadas: document.getElementById('detalhesVazioEncaminhadas'),
-      btnFecharDetalhesEncaminhadas: document.getElementById('btnFecharDetalhesEncaminhadas')
-    };
+      btnFecharDetalhesEncaminhadas: document.getElementById('btnFecharDetalhesEncaminhadas'),
+      // ============ MINHAS DEMANDAS ============
+      conteudoMinhas: document.querySelector('.demandas-minhas'),
+      listaDemandasMinhas: document.getElementById('listaDemandasMinhas'),
+      inputResolucao: document.getElementById('inputResolucao'),
+      btnConcluirTrabalho: document.getElementById('btnConcluirTrabalho'),
+      btnDevolverDemanda: document.getElementById('btnDevolverDemanda'),
+      detalhesConteudoMinhas: document.getElementById('detalhesConteudoMinhas'),
+      detalhesVazioMinhas: document.getElementById('detalhesVazioMinhas'),
+    }
+
 
     console.log(`✅ ${Object.keys(this.elements).length} elementos cacheados`);
   },
@@ -440,6 +459,22 @@ const DemandasTab = {
         this.fecharDetalhes('encaminhadas');
       }, this.moduleId);
     }
+    // Botão Concluir Trabalho
+    if (this.elements.btnConcluirTrabalho) {
+      window.ModuleLifecycle.addListener(this.elements.btnConcluirTrabalho, 'click', (e) => {
+        // Pegar o ID da demanda selecionada no cache ou via data-attribute
+        const id = this.elements.detalhesConteudoMinhas.dataset.id;
+        if (id) this.handleConcluirDemanda(id);
+      }, this.moduleId);
+    }
+
+    // Botão Devolver (Recusar)
+    if (this.elements.btnDevolverDemanda) {
+      window.ModuleLifecycle.addListener(this.elements.btnDevolverDemanda, 'click', (e) => {
+        const id = this.elements.detalhesConteudoMinhas.dataset.id;
+        if (id) this.handleRecusarDemanda(id);
+      }, this.moduleId);
+    }
 
     console.log('✅ Eventos vinculados (sem refresh)');
     this._eventsBound = true;
@@ -451,7 +486,7 @@ const DemandasTab = {
   activateSubTab(subTabId) {
     console.log(`📑 Ativando sub-aba: ${subTabId}`);
 
-    const validSubTabs = ['consulta', 'recebidas', 'encaminhadas'];
+    const validSubTabs = ['consulta', 'recebidas', 'encaminhadas', 'minhas'];
     if (!validSubTabs.includes(subTabId)) {
       console.error(`❌ Sub-aba inválida: ${subTabId}`);
       return;
@@ -476,7 +511,9 @@ const DemandasTab = {
     if (this.elements.conteudoEncaminhadas) {
       this.elements.conteudoEncaminhadas.classList.toggle('ativa', subTabId === 'encaminhadas');
     }
-
+    if (this.elements.conteudoMinhas) {
+      this.elements.conteudoMinhas.classList.toggle('ativa', subTabId === 'minhas');
+    }
     // Se saiu da aba de recebidas, opcionalmente encerra a escuta
     if (subTabId !== 'recebidas' && this._unsubscribeRecebidas) {
       this._unsubscribeRecebidas();
@@ -510,6 +547,9 @@ const DemandasTab = {
       case 'encaminhadas':
         // 🔥 Carregar automaticamente ao entrar na aba
         this.aplicarFiltrosEncaminhadas();
+        break;
+      case 'minhas':
+        this.carregarMinhasDemandas();
         break;
     }
   },
@@ -801,9 +841,6 @@ const DemandasTab = {
       <div class="card-footer-clean">
         <span style="font-size: 0.7rem; color: #cbd5e1; font-family: monospace;">#${demanda.id.substring(0, 8)}</span>
         <div class="btn-group">
-          <button class="btn-mini btn-devolver" onclick="event.stopPropagation(); DemandasTab.handleDevolverDemanda('${demanda.id}')">
-            Devolver
-          </button>
           <button class="btn-mini btn-aceitar" onclick="event.stopPropagation(); DemandasTab.handleAceitarDemanda('${demanda.id}')">
             Aceitar
           </button>
@@ -816,26 +853,42 @@ const DemandasTab = {
     lista.innerHTML = styleTag + `<div class="recebidas-container">${htmlCards}</div>`;
   },
 
-  // Handler para o clique no botão
-  async handleAceitarDemanda(id) {
-    if (!confirm('Deseja assumir a responsabilidade por esta demanda?')) return;
+ async handleAceitarDemanda(id) {
+    // 1. Pega o usuário do seu objeto global FirebaseApp
+    const user = window.FirebaseApp?.auth?.currentUser;
 
-    // Pegamos o usuário do StateManager global ou Auth
-    const user = window.Auth?.currentUser;
-    // Nota: Ajuste acima para buscar o nome do seu StateManager se preferir
-
-    const result = await window.DemandasService.aceitarDemanda(id, {
-      uid: user.uid,
-      nome: user.displayName || 'Operador'
-    });
-
-    if (result.success) {
-      // 1. Remove da Aba 2 (Recebidas)
-      this.carregarDemandasRecebidas();
-      // 2. Opcional: Avisa o usuário
-      alert('Demanda aceita! Ela agora aparecerá na sua gestão de processos.');
+    if (!user) {
+        alert('❌ Erro: Usuário não autenticado no sistema.');
+        console.error('Usuário não encontrado em window.FirebaseApp.auth');
+        return;
     }
-  },
+
+    // 2. Verificar limite de 15 demandas no cache local
+    if (this._cacheMinhas && this._cacheMinhas.length >= 15) {
+        alert('⚠️ Limite atingido! Você já possui 15 demandas em aberto. Conclua algumas antes de aceitar novas.');
+        return;
+    }
+
+    if (!confirm('Deseja assumir esta demanda?')) return;
+
+    try {
+        // 3. Chama o service passando os dados do operador
+        const result = await window.DemandasService.aceitarDemanda(id, {
+            uid: user.uid,
+            nome: user.displayName || user.email.split('@')[0]
+        });
+
+        if (result.success) {
+            // Se funcionou, troca para a aba "Minhas"
+            this.activateSubTab('minhas');
+        } else {
+            alert('Erro ao aceitar demanda: ' + result.error);
+        }
+    } catch (error) {
+        console.error("Erro no processo de aceitação:", error);
+        alert('Erro interno ao processar aceitação.');
+    }
+},
   // ==================================================================================
   // LÓGICA DE NEGÓCIO - ENCAMINHADAS
   // ==================================================================================
@@ -956,13 +1009,117 @@ const DemandasTab = {
     // Aqui você pode buscar os dados completos da demanda
     // e preencher o painel de detalhes
   },
+
+  // ==================================================================================
+  // LÓGICA DE NEGÓCIO - MINHAS DEMANDAS
+  // ==================================================================================
+  async carregarMinhasDemandas() {
+    if (this._unsubscribeMinhas) return;
+
+    // Use o caminho modular que você configurou no firebase-config.js
+    const user = window.FirebaseApp?.auth?.currentUser;
+    
+    if (!user) {
+        console.error("Usuário não localizado para carregar fila individual.");
+        return;
+    }
+
+    EstadoManager.setEstado('minhas', 'carregando');
+
+    this._unsubscribeMinhas = window.DemandasService.escutarMinhasDemandas(
+        user.uid, 
+        (demandas) => {
+            this._cacheMinhas = demandas;
+            if (demandas.length === 0) {
+                EstadoManager.setEstado('minhas', 'nao-encontrado');
+            } else {
+                this.renderizarListaMinhas(demandas);
+                EstadoManager.setEstado('minhas', 'dados', demandas);
+            }
+        }
+    );
+},
+preencherDetalhesMinhas(demanda) {
+    const container = document.getElementById('detalhesConteudoMinhas');
+    const isVip = demanda.cliente?.vip === true;
+
+    // Aplicar estilo VIP no container de detalhes
+    container.classList.toggle('vip-detail-border', isVip);
+    
+    // IDs das informações principais
+    document.getElementById('detalhesDataMinhas').textContent = demanda.timestamps?.criada_em?.toDate().toLocaleString() || '-';
+    document.getElementById('detalhesStatusMinhas').textContent = demanda.status;
+    document.getElementById('detalhesTicketMinhas').textContent = demanda.demandaId || demanda.id;
+    document.getElementById('detalhesOrigemMinhas').textContent = demanda.setor_origem?.toUpperCase();
+    document.getElementById('detalhesNomeClienteTopoMinhas').textContent = demanda.cliente?.nome || 'Não informado';
+
+    // Coluna Dados do Cliente
+    document.getElementById('detalhesDadosClienteMinhas').innerHTML = `
+        <p><strong>Nome:</strong> ${demanda.cliente?.nome || '-'}</p>
+        <p><strong>Email:</strong> ${demanda.cliente?.email || '-'}</p>
+        <p><strong>Telefone:</strong> ${demanda.cliente?.telefone || '-'}</p>
+        ${isVip ? '<span class="badge-vip">CLIENTE VIP</span>' : ''}
+    `;
+
+    // Coluna Detalhes da Demanda (Descrição do operador de origem)
+    document.getElementById('detalhesDescricaoMinhas').innerHTML = `
+        <p>${demanda.justificativa_encaminhamento || 'Nenhuma descrição detalhada fornecida.'}</p>
+    `;
+    
+    container.classList.remove('hidden');
+    document.getElementById('detalhesVazioMinhas').classList.add('hidden');
+},
+  renderizarListaMinhas(demandas) {
+    const lista = document.getElementById('listaDemandasMinhas');
+    if (!lista) return;
+
+    lista.innerHTML = demandas.map(demanda => `
+      <div class="demanda-card" onclick="DemandasTab.selecionarDemanda('minhas', '${demanda.id}')">
+        <div class="demanda-card-header">
+           <span class="demanda-status status-andamento">EM ANDAMENTO</span>
+           <span class="demanda-data">${demanda.criado_em_formatado || 'Hoje'}</span>
+        </div>
+        <div class="demanda-card-body">
+           <h4>${demanda.resumo}</h4>
+           <p><i class="fi fi-rr-user"></i> ${demanda.cliente?.nome || 'Cliente'}</p>
+        </div>
+      </div>
+    `).join('');
+  },
+  async handleConcluirDemanda(id) {
+    const resolucao = this.elements.inputResolucao.value;
+    if (!resolucao || resolucao.length < 10) {
+      alert('Por favor, descreva a solução técnica (mínimo 10 caracteres).');
+      return;
+    }
+
+    const ok = confirm("Confirmar conclusão desta demanda?");
+    if (!ok) return;
+
+    const result = await window.DemandasService.concluirDemanda(id, resolucao);
+    if (result.success) {
+      this.fecharDetalhes('minhas');
+      this.elements.inputResolucao.value = '';
+    }
+  },
+
+  async handleRecusarDemanda(id) {
+    const motivo = prompt("Informe o motivo da recusa (informação insuficiente):");
+    if (!motivo) return;
+
+    const result = await window.DemandasService.recusarDemanda(id, motivo);
+    if (result.success) {
+      this.fecharDetalhes('minhas');
+    }
+  },
+
   // ==================================================================================
   // DETALHES
   // ==================================================================================
 
   selecionarDemanda(subAba, demandaId) {
     console.log(`📄 Selecionando demanda: ${demandaId} (${subAba})`);
-    
+
     // Busca no cache correspondente
     const cacheMap = {
       'consulta': this._cacheConsulta,
@@ -989,53 +1146,55 @@ const DemandasTab = {
       if (el) el.textContent = valor || "-";
     };
 
-    // --- CAMPOS COMUNS ---
+    // --- 1. IDENTIFICAÇÃO DO CLIENTE (Topo) ---
+    const cliente = demanda.cliente || {};
+    preencher('Cliente', cliente.nome || cliente.email || 'Não identificado');
+
+    // --- 2. CAMPOS GERAIS ---
     preencher('Titulo', demanda.resumo);
     preencher('Status', demanda.status);
-    preencher('Ticket', demanda.id);
-    preencher('Cliente', demanda.cliente_nome || demanda.email_cliente || 'Não identificado');
+    preencher('Ticket', demanda.demandaId || demanda.id);
 
-    // --- CAMPOS ESPECÍFICOS (Lidando com as variações do seu HTML) ---
-    if (subAba === 'consulta') {
-      preencher('Setor', demanda.setor_responsavel?.toUpperCase());
-      preencher('DataCriacao', demanda.criado_em_formatado);
-      preencher('DataAtualizacao', demanda.atualizado_em_formatado || demanda.criado_em_formatado);
-    } 
-    
-    if (subAba === 'recebidas') {
-      preencher('Origem', demanda.setor_origem?.toUpperCase());
-      preencher('DataRecebido', demanda.criado_em_formatado);
-      preencher('Prioridade', demanda.prioridade_score ? `${demanda.prioridade_score} pts` : (demanda.prioridade || 'Normal'));
-      
-      // JSON de metadados
-      const dadosEl = document.getElementById('detalhesDadosClienteRecebidas');
-      if (dadosEl) {
-        const dados = demanda.metadados || demanda.dados_cliente || {};
-        dadosEl.innerHTML = `<pre style="font-size:0.8rem; background:#f8fafc; padding:12px; border:1px solid #e2e8f0; border-radius:6px; overflow-x:auto;">${JSON.stringify(dados, null, 2)}</pre>`;
+    // Datas
+    const dataCriacao = demanda.timestamps?.criada_em;
+    const dataFormatada = dataCriacao?.toDate ? dataCriacao.toDate().toLocaleString() : (demanda.criado_em_formatado || "-");
+
+    if (subAba === 'consulta') preencher('DataCriacao', dataFormatada);
+    if (subAba === 'recebidas') preencher('DataRecebido', dataFormatada);
+    if (subAba === 'encaminhadas') preencher('DataEncaminhado', dataFormatada);
+
+    // --- 3. DADOS DO CLIENTE (Formatado amigável) ---
+    const dadosEl = document.getElementById(`detalhesDadosCliente${sufixo}`);
+    if (dadosEl) {
+      if (cliente.email || cliente.nome || cliente.telefone) {
+        dadosEl.innerHTML = `
+                <div style="font-size: 0.9rem; line-height: 1.6;">
+                    <p><strong>Email:</strong> ${cliente.email || '-'}</p>
+                    <p><strong>Nome:</strong> ${cliente.nome || '-'}</p>
+                    <p><strong>Telefone:</strong> ${cliente.telefone || '-'}</p>
+                </div>
+            `;
+      } else {
+        dadosEl.innerHTML = `<p class="text-muted">Sem dados de contato.</p>`;
       }
     }
 
-    if (subAba === 'encaminhadas') {
-      preencher('Setor', demanda.setor_responsavel?.toUpperCase());
-      preencher('DataEncaminhado', demanda.criado_em_formatado);
-      preencher('TempoDecorrido', demanda.tempo_aberto || 'Menos de 1h');
-      
-      const justEl = document.getElementById('detalhesJustificativaEncaminhadas');
-      if (justEl) justEl.innerHTML = `<p>${demanda.justificativa || 'Nenhuma justificativa informada.'}</p>`;
+    // --- 4. DESCRIÇÃO / SOLICITAÇÃO (justificativa_encaminhamento) ---
+    const descEl = document.getElementById(`detalhesDescricao${sufixo}`);
+    if (descEl) {
+      descEl.innerHTML = `<p>${demanda.justificativa_encaminhamento || demanda.resumo || 'Sem detalhes informados.'}</p>`;
     }
 
-    // --- DESCRIÇÃO (HTML) ---
-    const descEl = document.getElementById(`detalhesDescricao${sufixo}`);
-    if (descEl) descEl.innerHTML = `<p>${demanda.descricao || demanda.resumo || 'Sem descrição.'}</p>`;
+    // --- 5. HISTÓRICO (Data, Status e Setor apenas) ---
+    const timelineEl = document.getElementById(`detalhesTimeline${sufixo}`);
+    if (timelineEl) {
+      this.renderizarTimelineSimples(timelineEl, demanda.historico_status || []);
+    }
 
-    // --- LÓGICA DE BOTÕES (Ações) ---
+    // --- 6. ESPECÍFICOS ---
     if (subAba === 'recebidas') {
-        const btnAceitar = document.getElementById('btnAceitarDemanda');
-        if (btnAceitar) {
-            btnAceitar.onclick = () => this.handleAceitarDemanda(demanda.id);
-            // Se a demanda já estiver em andamento, esconde o botão aceitar
-            btnAceitar.classList.toggle('hidden', demanda.status !== 'PENDENTE');
-        }
+      preencher('Origem', demanda.setor_origem?.toUpperCase());
+      preencher('Prioridade', `${demanda.prioridade || 0} pts`);
     }
   },
 
@@ -1058,6 +1217,26 @@ const DemandasTab = {
         detalhes.conteudo.scrollIntoView({ behavior: 'smooth' });
       }
     }
+  },
+
+  renderizarTimelineSimples(container, historico) {
+    if (!historico || historico.length === 0) {
+      container.innerHTML = `<p class="text-muted" style="font-size:0.85rem;">Sem histórico.</p>`;
+      return;
+    }
+
+    container.innerHTML = historico.map(item => {
+      const data = item.timestamp ? new Date(item.timestamp).toLocaleString() : "-";
+      return `
+            <div class="timeline-item" style="border-left: 2px solid #3b82f6; padding-left: 12px; margin-bottom: 12px; position: relative; margin-left: 5px;">
+                <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; position: absolute; left: -5px; top: 6px;"></div>
+                <small style="display: block; color: #64748b;">${data}</small>
+                <div style="font-size: 0.85rem; color: #1e293b;">
+                    <strong>Nome:</strong> ${item.usuario || '-'} | <strong>Setor:</strong> ${item.setor_destino || '-'}
+                </div>
+            </div>
+        `;
+    }).join('');
   },
 
   fecharDetalhes(subAba) {

@@ -1364,6 +1364,59 @@
   flex-direction: column !important;
 }
 /* ============================================================
+   AJUSTE DE LAYOUT - MINHAS DEMANDAS (2 COLUNAS)
+============================================================ */
+
+/* Container que segura as duas colunas principais */
+.demandas-grid-principal {
+    display: grid !important;
+    grid-template-columns: 350px 1fr !important; /* Coluna 1: 350px | Coluna 2: Restante */
+    gap: 20px;
+    height: calc(100vh - 180px);
+    margin-top: 15px;
+    align-items: stretch;
+}
+
+/* Grid interna da Coluna 2 (Dados Cliente vs Detalhes Demanda) */
+.detalhes-grid-interna {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important; /* Divide ao meio */
+    gap: 20px;
+    margin: 20px 0;
+}
+
+/* Estilo dos Boxes de conteúdo */
+.info-render {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 15px;
+    border-radius: 8px;
+    min-height: 180px;
+}
+
+/* Estilo VIP */
+.vip-trabalho-ativa {
+    border: 2px solid #ffd700 !important;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2) !important;
+}
+
+/* Botões em linha */
+.trabalho-acoes {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.trabalho-acoes button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    color: white;
+}
+/* ============================================================
    GRID DE 3 COLUNAS
 ============================================================ */
 
@@ -2040,7 +2093,7 @@
 
 @media (max-width: 1024px) {
   .demandas-grid-3col {
-    grid-template-columns: 240px 1fr 320px;
+    grid-template-columns: 240px 1fr 480px;
     gap: 12px;
   }
   
@@ -2080,7 +2133,7 @@
 }
 @media (max-width: 1400px) {
   .demandas-grid-3col {
-    grid-template-columns: 250px 1fr 320px !important;
+    grid-template-columns: 250px 1fr 480px !important;
     gap: 12px !important;
   }
 }
@@ -3821,7 +3874,7 @@
 /* Corrigir problema dos 6 espaços */
 .demandas-grid-3col {
   display: grid !important;
-  grid-template-columns: 280px 1fr 360px !important;
+  grid-template-columns: 280px 1fr 480px !important;
   grid-template-rows: 1fr !important; /* APENAS UMA LINHA */
   grid-template-areas: 
     "filtros resultados detalhes" !important;
@@ -3927,3 +3980,24 @@
     font-size: 40px;
   }
 }
+
+/*/ ============================================================
+// Estilos de vips para as abas de detalhes (demandas e histórico)
+// ============================================================ */
+
+.trabalho-header { padding: 15px; background: #f8fafc; border-radius: 8px; margin-bottom: 15px; }
+.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.85rem; }
+.trabalho-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.info-box { background: #fff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; min-height: 120px; }
+.descricao-box { border-left: 4px solid #3b82f6; }
+.trabalho-solucao textarea { width: 100%; border-radius: 6px; border: 1px solid #cbd5e1; padding: 10px; height: 100px; margin-top: 5px; }
+.trabalho-acoes { display: flex; gap: 10px; margin-top: 20px; }
+.btn-acao { flex: 1; padding: 12px; border: none; border-radius: 6px; color: white; cursor: pointer; font-weight: bold; }
+.btn-concluir { background: #10b981; }
+.btn-recusar { background: #ef4444; }
+.btn-aprovar { background: #6366f1; }
+
+/* Estilo VIP */
+.vip-detail-border { border: 2px solid #ffd700 !important; box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
+.badge-vip { background: gold; color: #000; padding: 2px 6px; font-size: 0.7rem; font-weight: bold; border-radius: 4px; }
+

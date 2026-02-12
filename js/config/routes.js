@@ -14,7 +14,7 @@ window.ROUTES = {
     color: '#3498db',
     permission: 'atendimento.view',
     modulePath: 'js/modules/atendimento/atendimento.module.js',
-    cssPath: '../public/css/atendimento.css',
+    cssPath: '../public/css/atendimento/atendimento.css',
     roles: ['CEO', 'GERENTE_MASTER', 'GERENTE', 'SUPERVISOR', 'OPERADOR'],
     order: 1
   },
@@ -27,7 +27,7 @@ window.ROUTES = {
     color: '#9b59b6',
     permission: 'conteudo.view',
     modulePath: 'js/modules/conteudo/conteudo.module.js',
-    cssPath: '../public/css/conteudo.css',
+    cssPath: '../public/css/conteudo/conteudo.css',
     roles: ['CEO', 'GERENTE_MASTER', 'GERENTE'],
     order: 2
   },
@@ -40,7 +40,7 @@ window.ROUTES = {
     color: '#e74c3c',
     permission: 'copyright.view',
     modulePath: 'js/modules/copyright/copyright.module.js',
-    cssPath: '../public/css/copyright.css',
+    cssPath: '../public/css/copyright/copyright.css',
     roles: ['CEO', 'GERENTE_MASTER', 'GERENTE', 'SUPERVISOR'],
     order: 3
   },
@@ -53,7 +53,7 @@ window.ROUTES = {
     color: '#2ecc71',
     permission: 'financeiro.view',
     modulePath: 'js/modules/financeiro/financeiro.module.js',
-    cssPath: '../public/css/financeiro.css',
+    cssPath: '../public/css/financeiro/financeiro.css',
     roles: ['CEO', 'GERENTE_MASTER', 'GERENTE'],
     order: 4
   },
@@ -66,7 +66,7 @@ window.ROUTES = {
     color: '#f39c12',
     permission: 'tecnico.view',
     modulePath: 'js/modules/tecnico/tecnico.module.js',
-    cssPath: '../public/css/tecnico.css',
+    cssPath: '../public/css/tecnico/tecnico.css',
     roles: ['CEO', 'GERENTE_MASTER', 'GERENTE', 'SUPERVISOR', 'OPERADOR'],
     order: 5
   },
@@ -79,7 +79,7 @@ window.ROUTES = {
     color: '#1abc9c',
     permission: 'marketing.view',
     modulePath: 'js/modules/marketing/marketing.module.js',
-    cssPath: '../public/css/marketing.css',
+    cssPath: '../public/css/marketing/marketing.css',
     roles: ['CEO', 'GERENTE_MASTER'],
     order: 6
   },
@@ -105,7 +105,7 @@ window.ROUTES = {
     color: '#16a085',
     permission: 'relatorios.view',
     modulePath: 'js/modules/relatorios/relatorios.module.js',
-    cssPath: '../public/css/relatorios.css',
+    cssPath: '../public/css/relatorios/relatorios.css',
     roles: ['CEO', 'GERENTE_MASTER', 'GERENTE', 'SUPERVISOR'],
     order: 8
   },
@@ -118,7 +118,7 @@ window.ROUTES = {
     color: '#c0392b',
     permission: 'admin.view',
     modulePath: 'js/modules/usuarios-permissoes/usuarios-permissoes.module.js',
-    cssPath: '../public/css/admin.css',
+    cssPath: '../public/css/administrativo/admin.css',
     roles: ['CEO', 'GERENTE_MASTER', 'ADMIN'],
     order: 99
   }

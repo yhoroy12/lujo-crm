@@ -12,7 +12,7 @@ const SPA = {
   isLoading: false,
   loadedModules: new Map(),
   cssCache: new Set(),
-  
+
 
   /**
    * Inicializa a SPA
@@ -24,14 +24,14 @@ const SPA = {
       // 1. Aguardar autenticação
       await this.waitForAuth();
       console.log('✅ Autenticação pronta');
-      
+
       // ✅ CORRIGIDO: Removido setupNavigation() - agora é gerenciado pelo permission-filter.js
       // Isso evita duplicação de listeners
-      
+
       // 2. Modal de noticias
       this.showNewsModal();
       console.log('✅ Modal de notícias exibido');
-            
+
       // 3. Setup hotkeys e atalhos globais
       this.setupHotkeys();
       console.log('✅ Hotkeys configurados');
@@ -59,7 +59,7 @@ const SPA = {
       this.showError('Erro ao inicializar sistema. Recarregue a página.');
     }
   },
-  
+
 
   /**
    * Aguarda autenticação estar pronta
@@ -293,14 +293,14 @@ const SPA = {
   async loadModule(moduleId) {
     // Se já estiver carregando algo, ignora o novo clique
     if (this.isLoading) {
-       console.warn(`⏳ Já existe um carregamento em curso. Ignorando: ${moduleId}`);
-       return;
+      console.warn(`⏳ Já existe um carregamento em curso. Ignorando: ${moduleId}`);
+      return;
     }
 
     // Se o módulo já é o atual, não recarrega (Evita duplicar listeners)
     if (this.currentModuleId === moduleId) {
-       console.log(`ℹ️ Módulo ${moduleId} já está ativo.`);
-       return;
+      console.log(`ℹ️ Módulo ${moduleId} já está ativo.`);
+      return;
     }
 
     this.isLoading = true; // Inicia trava
@@ -399,8 +399,8 @@ const SPA = {
           </div>
         `;
       }
-    } finally{
-        this.isLoading = false; // Libera trava
+    } finally {
+      this.isLoading = false; // Libera trava
     }
   },
   /**
@@ -409,45 +409,50 @@ const SPA = {
   async loadModuleCSS(route) {
     if (!route.cssPath) return;
 
+    // Se o CSS já estiver no cache, não faz nada
     if (this.cssCache.has(route.cssPath)) {
       console.log(`♻️ CSS já em cache: ${route.cssPath}`);
       return;
     }
 
+    // Identificador único para o link de estilo do módulo
     const linkId = `style-${route.id}`;
 
-    if (document.getElementById(linkId)) {
-      console.log(`♻️ CSS já no DOM: ${route.cssPath}`);
-      this.cssCache.add(route.cssPath);
-      return;
-    }
-
-    const link = document.createElement('link');
-    link.id = linkId;
-    link.rel = 'stylesheet';
-    link.href = route.cssPath;
-
+    // Remove qualquer CSS de módulo anterior para evitar conflitos (Race Conditions de estilo)
     this.removeOtherModuleCSS(route.id);
 
-    document.head.appendChild(link);
-    this.cssCache.add(route.cssPath);
+    return new Promise((resolve, reject) => {
+      const link = document.createElement('link');
+      link.id = linkId;
+      link.rel = 'stylesheet';
+      link.href = route.cssPath; // Ex: "css/atendimento/atendimento.css"
 
-    console.log(`📄 CSS carregado: ${route.cssPath}`);
+      link.onload = () => {
+        this.cssCache.add(route.cssPath);
+        console.log(`📄 CSS carregado com sucesso: ${route.cssPath}`);
+        resolve();
+      };
+
+      link.onerror = () => {
+        console.error(`❌ Falha ao carregar CSS: ${route.cssPath}`);
+        reject(new Error(`Erro ao carregar estilo: ${route.cssPath}`));
+      };
+
+      document.head.appendChild(link);
+    });
   },
 
   /**
    * Remove CSS de outros módulos
    */
   removeOtherModuleCSS(currentModuleId) {
-    const keepCSS = ['global'];
-
+    // Mantém apenas o global e utilitários
     document.querySelectorAll('link[id^="style-"]').forEach(link => {
       const moduleId = link.id.replace('style-', '');
-
-      if (!keepCSS.includes(moduleId) && moduleId !== currentModuleId) {
+      if (moduleId !== currentModuleId) {
         link.remove();
         this.cssCache.delete(link.href);
-        console.log(`🧹 CSS removido: ${link.href}`);
+        console.log(`🧹 Limpeza de estilo: removido ${moduleId}`);
       }
     });
   },
@@ -455,7 +460,7 @@ const SPA = {
   /**
    * Atualiza highlight do link ativo no sidebar
    */
-updateSidebarActive(moduleId) {
+  updateSidebarActive(moduleId) {
     document.querySelectorAll('.sidebar-link').forEach(link => {
       const isHome = link.id === 'btnGoHome';
       if (moduleId) {

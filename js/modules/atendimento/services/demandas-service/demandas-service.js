@@ -240,25 +240,41 @@ async listarDemandasRecebidas(setorId) {
 /**
  * Ação de Aceitar a Demanda (Transição PENDENTE -> EM_PROCESSO)
  */
-async aceitarDemanda(demandaId, usuario) {
-  try {
-    const { doc, updateDoc, serverTimestamp } = this.fStore;
-    const demandaRef = doc(this.db, 'geral_demandas', demandaId);
+async aceitarDemanda(demandaId, operador) {
+    const { doc, runTransaction, serverTimestamp } = window.FirebaseApp.fStore;
+    const db = window.FirebaseApp.db;
+    const demandaRef = doc(db, "geral_demandas", demandaId);
 
-    const dadosUpdate = {
-      status: 'EM_PROCESSO',
-      operador_destino_uid: usuario.uid,
-      operador_destino_nome: usuario.nome || usuario.displayName,
-      data_aceite: serverTimestamp(),
-      atualizado_em: serverTimestamp()
-    };
+    try {
+        await runTransaction(db, async (transaction) => {
+            const sfDoc = await transaction.get(demandaRef);
+            if (!sfDoc.exists()) {
+                throw "Documento não existe!";
+            }
 
-    await updateDoc(demandaRef, dadosUpdate);
-    return { success: true };
-  } catch (error) {
-    console.error('❌ Erro ao aceitar demanda:', error);
-    return { success: false, error };
-  }
+            const statusAtual = sfDoc.data().status;
+
+            // VERIFICAÇÃO DE SEGURANÇA
+            if (statusAtual !== "PENDENTE") {
+                throw "Esta demanda já foi aceita por outro operador.";
+            }
+
+            // SE PASSOU, ATUALIZA
+            transaction.update(demandaRef, {
+                status: "EM_ANDAMENTO",
+                operador_destino_uid: operador.uid,
+                operador_destino_nome: operador.nome,
+                "timestamps.assumida_em": serverTimestamp(),
+                "timestamps.ultima_atualizacao": serverTimestamp()
+            });
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Erro na transação de aceite:", error);
+        // Retorna o erro amigável para o front-end
+        return { success: false, error: typeof error === 'string' ? error : "Erro ao processar aceite." };
+    }
 }
 // Regra de negócio: O atendente só vê as demandas que ele mesmo criou (aba minhas demandas)  
   /**
@@ -372,6 +388,94 @@ async aceitarDemanda(demandaId, usuario) {
     console.error('❌ Erro ao buscar demandas:', error);
     throw error;
   }
+}
+
+/**
+ * Escuta em tempo real as demandas atribuídas ao operador logado
+ */
+escutarMinhasDemandas(operadorUid, callback) {
+    // 1. Desestruturar as funções necessárias do seu objeto global
+    const { query, collection, where, orderBy, onSnapshot } = window.FirebaseApp.fStore;
+    const db = window.FirebaseApp.db;
+
+    // 2. Montar a query usando as referências corretas
+    const q = query(
+        collection(db, "geral_demandas"),
+        where("operador_destino_uid", "==", operadorUid),
+        where("status", "==", "EM_PROCESSO"),
+        orderBy("timestamps.ultima_atualizacao", "desc")
+    );
+
+    // 3. Executar o snapshot
+    return onSnapshot(q, (snapshot) => {
+        const demandas = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        callback(demandas);
+    }, (error) => {
+        console.error("Erro no listener de Minhas Demandas:", error);
+    });
+}
+
+/**
+ * Finaliza uma demanda com parecer técnico
+ */
+async concluirDemanda(demandaId, resolucao) {
+    try {
+        const demandaRef = doc(db, "demandas", demandaId);
+        const agora = new Date();
+
+        await updateDoc(demandaRef, {
+            status: "CONCLUIDO",
+            "timestamps.concluida_em": Timestamp.fromDate(agora),
+            "timestamps.ultima_atualizacao": Timestamp.fromDate(agora),
+            resolucao_final: resolucao,
+            // Adiciona ao histórico
+            historico_status: arrayUnion({
+                acao: "concluido",
+                status: "CONCLUIDO",
+                timestamp: agora.toISOString(),
+                usuario: window.Auth?.currentUser?.displayName || "Operador",
+                justificativa: "Demanda finalizada com sucesso."
+            })
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Erro ao concluir demanda:", error);
+        return { success: false, error };
+    }
+}
+
+/**
+ * Recusa uma demanda (Devolução por info insuficiente)
+ */
+async recusarDemanda(demandaId, motivo) {
+    try {
+        const demandaRef = doc(db, "demandas", demandaId);
+        const agora = new Date();
+
+        await updateDoc(demandaRef, {
+            status: "RECUSADO",
+            operador_destino_uid: null, // Remove a atribuição para voltar à fila
+            operador_destino_nome: null,
+            "timestamps.ultima_atualizacao": Timestamp.fromDate(agora),
+            // Adiciona ao histórico
+            historico_status: arrayUnion({
+                acao: "recusado",
+                status: "RECUSADO",
+                timestamp: agora.toISOString(),
+                usuario: window.Auth?.currentUser?.displayName || "Operador",
+                justificativa: motivo
+            })
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Erro ao recusar demanda:", error);
+        return { success: false, error };
+    }
 }
 
 // Funções auxiliares para formatação
