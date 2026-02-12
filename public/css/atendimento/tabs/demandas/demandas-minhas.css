@@ -1,0 +1,62 @@
+/* ==================================================================================
+   DEMANDAS-MINHAS.CSS - Sub-aba: Minhas Demandas
+   Autor: Sistema Lujo Network
+   
+   Exibe demandas que o usuário aceitou e está trabalhando
+================================================================================== */
+
+.modulo-painel-atendimento .demandas-minhas {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+}
+
+.modulo-painel-atendimento .demandas-minhas.ativa {
+  display: flex;
+}
+
+/* Usa o mesmo grid e estilos de demandas-recebidas.css */
+/* com customizações específicas para demandas em progresso */
+
+.modulo-painel-atendimento .demandas-minhas .demanda-item {
+  border-left-color: var(--color-info);
+}
+
+.modulo-painel-atendimento .demandas-minhas .demanda-progresso {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--atendimento-border);
+}
+
+.modulo-painel-atendimento .progresso-barra {
+  height: 4px;
+  background: var(--color-secondary);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.modulo-painel-atendimento .progresso-fill {
+  height: 100%;
+  background: var(--color-info);
+  transition: width 0.3s ease;
+}
+
+.modulo-painel-atendimento .progresso-texto {
+  font-size: 11px;
+  color: var(--color-text-light);
+}
+
+.modulo-painel-atendimento .btn-concluir-demanda {
+  background: var(--color-success);
+  color: var(--color-text-white);
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--radius);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  border: none;
+}
+
+.modulo-painel-atendimento .btn-concluir-demanda:hover:not(:disabled) {
+  background: #45a049;
+}

@@ -1,12 +1,21 @@
 /**
  * =====================================================
  * ROUTES.JS - Mapa de Rotas e Módulos da SPA
- * Define todos os módulos disponíveis, ícones, permissões
+ *
+ * Convenção de CSS:
+ *   cssPath  → string  — módulos com um único arquivo CSS (legado / simples)
+ *   cssPaths → array   — módulos com CSS modular (múltiplos arquivos)
+ *
+ * O main.js suporta ambos os formatos automaticamente.
  * =====================================================
  */
 
 window.ROUTES = {
-  // ===== MÓDULO: ATENDIMENTO =====
+
+  // ─────────────────────────────────────────────────
+  // MÓDULO: ATENDIMENTO
+  // CSS modular — cada aba/sub-aba tem seu próprio arquivo
+  // ─────────────────────────────────────────────────
   atendimento: {
     id: 'atendimento',
     name: 'Atendimento',
@@ -14,12 +23,41 @@ window.ROUTES = {
     color: '#3498db',
     permission: 'atendimento.view',
     modulePath: 'js/modules/atendimento/atendimento.module.js',
-    cssPath: '../public/css/atendimento/atendimento.css',
+    templatePaths: '../templates/modules/atendimento/atendimento.html',
+
+    // ✅ CSS MODULAR — carregados em cascata pelo main.js
+    cssPaths: [
+      // Nível 1 — Módulo (variáveis, reset, abas, estados vazios)
+      '../public/css/atendimento/modulo-atendimento.css',
+
+      // Nível 2 — Abas principais
+      '../public/css/atendimento/tabs/chat/aba-atendimento.css',
+      '../public/css/atendimento/tabs/emails/aba-emails.css',
+      '../public/css/atendimento/tabs/demandas/aba-demandas.css',
+      '../public/css/atendimento/tabs/historico/aba-historico.css',
+
+      // Nível 3 — Sub-abas de Demandas
+      '../public/css/atendimento/tabs/demandas/demandas-consulta.css',
+      '../public/css/atendimento/tabs/demandas/demandas-recebidas.css',
+      '../public/css/atendimento/tabs/demandas/demandas-minhas.css',
+      '../public/css/atendimento/tabs/demandas/demandas-encaminhadas.css',
+
+      // Nível 3 — Sub-abas de Histórico
+      '../public/css/atendimento/tabs/historico/historico-whatsapp.css',
+      '../public/css/atendimento/tabs/historico/historico-gmail.css',
+
+      // Utilitários compartilhados
+      '../public/css/utils/modais.css',
+      '../public/css/utils/utilitarios.css',
+    ],
+
     roles: ['CEO', 'GERENTE_MASTER', 'GERENTE', 'SUPERVISOR', 'OPERADOR'],
     order: 1
   },
 
-  // ===== MÓDULO: CONTEÚDO =====
+  // ─────────────────────────────────────────────────
+  // MÓDULO: CONTEÚDO
+  // ─────────────────────────────────────────────────
   conteudo: {
     id: 'conteudo',
     name: 'Conteúdo',
@@ -32,11 +70,13 @@ window.ROUTES = {
     order: 2
   },
 
-  // ===== MÓDULO: COPYRIGHT =====
+  // ─────────────────────────────────────────────────
+  // MÓDULO: COPYRIGHT
+  // ─────────────────────────────────────────────────
   copyright: {
     id: 'copyright',
     name: 'Copyright',
-    icon: 'fi-rr-shield-check',
+    icon: 'fi fi-rr-shield-check',
     color: '#e74c3c',
     permission: 'copyright.view',
     modulePath: 'js/modules/copyright/copyright.module.js',
@@ -45,11 +85,13 @@ window.ROUTES = {
     order: 3
   },
 
-  // ===== MÓDULO: FINANCEIRO =====
+  // ─────────────────────────────────────────────────
+  // MÓDULO: FINANCEIRO
+  // ─────────────────────────────────────────────────
   financeiro: {
     id: 'financeiro',
     name: 'Financeiro',
-    icon: 'fi-rr-dollar',
+    icon: 'fi fi-rr-dollar',
     color: '#2ecc71',
     permission: 'financeiro.view',
     modulePath: 'js/modules/financeiro/financeiro.module.js',
@@ -58,7 +100,9 @@ window.ROUTES = {
     order: 4
   },
 
-  // ===== MÓDULO: TÉCNICO =====
+  // ─────────────────────────────────────────────────
+  // MÓDULO: TÉCNICO
+  // ─────────────────────────────────────────────────
   tecnico: {
     id: 'tecnico',
     name: 'Suporte Técnico',
@@ -71,7 +115,9 @@ window.ROUTES = {
     order: 5
   },
 
-  // ===== MÓDULO: MARKETING =====
+  // ─────────────────────────────────────────────────
+  // MÓDULO: MARKETING
+  // ─────────────────────────────────────────────────
   marketing: {
     id: 'marketing',
     name: 'Marketing',
@@ -84,7 +130,10 @@ window.ROUTES = {
     order: 6
   },
 
-  // ===== MÓDULO: GESTÃO/GERÊNCIA =====
+  // ─────────────────────────────────────────────────
+  // MÓDULO: GESTÃO / GERÊNCIA
+  // CSS modular — já existem múltiplos arquivos em /gerencia
+  // ─────────────────────────────────────────────────
   gestor: {
     id: 'gestor',
     name: 'Gestão',
@@ -92,12 +141,22 @@ window.ROUTES = {
     color: '#34495e',
     permission: 'gestor.view',
     modulePath: 'js/modules/gestor/gestor.module.js',
-    cssPath: '../public/css/gerencia/gerencia.css',
+
+    // ✅ Já existem múltiplos arquivos em /gerencia — use cssPaths
+    cssPaths: [
+      '../public/css/gerencia/gerencia.css',
+      '../public/css/gerencia/gerencia-indicadores.css',
+      '../public/css/gerencia/gerencia-operadores.css',
+      '../public/css/gerencia/gerencia-controle.css',
+    ],
+
     roles: ['CEO', 'GERENTE_MASTER', 'GERENTE'],
     order: 7
   },
 
-  // ===== MÓDULO: RELATÓRIOS =====
+  // ─────────────────────────────────────────────────
+  // MÓDULO: RELATÓRIOS
+  // ─────────────────────────────────────────────────
   relatorios: {
     id: 'relatorios',
     name: 'Relatórios',
@@ -110,7 +169,9 @@ window.ROUTES = {
     order: 8
   },
 
-  // ===== MÓDULO: USUÁRIOS E PERMISSÕES (ADMIN) =====
+  // ─────────────────────────────────────────────────
+  // MÓDULO: USUÁRIOS E PERMISSÕES (ADMIN)
+  // ─────────────────────────────────────────────────
   'usuarios-permissoes': {
     id: 'usuarios-permissoes',
     name: 'Administração',
@@ -118,11 +179,12 @@ window.ROUTES = {
     color: '#c0392b',
     permission: 'admin.view',
     modulePath: 'js/modules/usuarios-permissoes/usuarios-permissoes.module.js',
-    cssPath: '../public/css/administrativo/admin.css',
+    cssPath: '../public/css/adiminstrativo/admin.css',
     roles: ['CEO', 'GERENTE_MASTER', 'ADMIN'],
     order: 99
   }
 };
+
 
 /**
  * =====================================================
@@ -131,37 +193,30 @@ window.ROUTES = {
  */
 
 window.RoutesUtil = {
+
   /**
-   * Retorna todas as rotas disponíveis para um usuário
-   * Filtra por permissões do usuário
+   * Retorna todas as rotas disponíveis para um usuário,
+   * filtradas por role e permissão, ordenadas por `order`.
    */
   getAvailableRoutes(user) {
     if (!user) return [];
 
     return Object.values(window.ROUTES).filter(route => {
-      // 1. Se o usuário for ADMIN, ele vê TUDO, independente do que diz a rota
       if (user.role === 'ADMIN') return true;
 
-      // 2. Senão, verifica se a role dele está permitida na rota
       const hasRole = route.roles && route.roles.includes(user.role);
-
-      // 3. E verifica se ele tem a permissão específica
       const hasPerm = window.PermissionsSystem.hasPermission(route.permission);
 
       return hasRole || hasPerm;
     }).sort((a, b) => a.order - b.order);
   },
 
-  /**
-   * Retorna uma rota específica
-   */
+  /** Retorna uma rota pelo ID */
   getRoute(routeId) {
     return window.ROUTES[routeId] || null;
   },
 
-  /**
-   * Valida se usuário pode acessar uma rota
-   */
+  /** Valida se um usuário pode acessar uma rota */
   canAccess(routeId, user) {
     const route = this.getRoute(routeId);
     if (!route) return false;
@@ -172,9 +227,7 @@ window.RoutesUtil = {
     return hasPermission && hasRole;
   },
 
-  /**
-   * Retorna a próxima rota disponível
-   */
+  /** Retorna a próxima rota disponível para o usuário */
   getNextRoute(currentRouteId, user) {
     const availableRoutes = this.getAvailableRoutes(user);
     const currentIndex = availableRoutes.findIndex(r => r.id === currentRouteId);
@@ -182,13 +235,10 @@ window.RoutesUtil = {
     if (currentIndex === -1 || currentIndex === availableRoutes.length - 1) {
       return availableRoutes[0] || null;
     }
-
     return availableRoutes[currentIndex + 1];
   },
 
-  /**
-   * Retorna a rota anterior disponível
-   */
+  /** Retorna a rota anterior disponível para o usuário */
   getPreviousRoute(currentRouteId, user) {
     const availableRoutes = this.getAvailableRoutes(user);
     const currentIndex = availableRoutes.findIndex(r => r.id === currentRouteId);
@@ -196,18 +246,15 @@ window.RoutesUtil = {
     if (currentIndex <= 0) {
       return availableRoutes[availableRoutes.length - 1] || null;
     }
-
     return availableRoutes[currentIndex - 1];
   },
 
-  /**
-   * Gera HTML para sidebar baseado em rotas disponíveis
-   */
+  /** Gera HTML para sidebar baseado nas rotas disponíveis para o usuário */
   generateSidebarHTML(user) {
     const routes = this.getAvailableRoutes(user);
 
     return routes.map(route => `
-      <a href="#" class="sidebar-link" data-module="${route.id}" 
+      <a href="#" class="sidebar-link" data-module="${route.id}"
          title="${route.name}">
         <i class="fi ${route.icon}"></i>
         <span class="link-label">${route.name}</span>
@@ -216,20 +263,41 @@ window.RoutesUtil = {
   },
 
   /**
-   * Debug: imprime todas as rotas
+   * Retorna todos os caminhos CSS de uma rota.
+   * Útil para pré-carregamento ou inspeção.
+   *
+   * @param {string} routeId
+   * @returns {string[]}
    */
+  getCSSPaths(routeId) {
+    const route = this.getRoute(routeId);
+    if (!route) return [];
+
+    const paths = [];
+    if (Array.isArray(route.cssPaths)) paths.push(...route.cssPaths);
+    if (typeof route.cssPath === 'string' && route.cssPath) paths.push(route.cssPath);
+    return paths;
+  },
+
+  /** Debug: imprime tabela de todas as rotas no console */
   debug() {
-    console.group('📍 ROUTES DEBUG');
-    console.table(Object.values(window.ROUTES).map(r => ({
-      ID: r.id,
-      Nome: r.name,
-      Permissão: r.permission,
-      Roles: r.roles.join(', '),
-      Ordem: r.order
-    })));
+    console.group('🗺️ ROUTES DEBUG');
+    console.table(
+      Object.values(window.ROUTES).map(r => ({
+        ID: r.id,
+        Nome: r.name,
+        Permissão: r.permission,
+        Roles: r.roles.join(', '),
+        CSS: Array.isArray(r.cssPaths)
+          ? `${r.cssPaths.length} arquivos (cssPaths)`
+          : r.cssPath || '—',
+        Ordem: r.order
+      }))
+    );
     console.groupEnd();
   }
 };
+
 
 /**
  * =====================================================
@@ -237,10 +305,9 @@ window.RoutesUtil = {
  * =====================================================
  */
 
-console.log('✅ Routes.js carregado com sucesso');
-console.log(`📍 ${Object.keys(window.ROUTES).length} rotas disponíveis`);
+console.log('✅ routes.js carregado');
+console.log(`🗺️ ${Object.keys(window.ROUTES).length} rotas disponíveis`);
 
-// Debug em desenvolvimento
 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
   console.log('💡 Execute: window.RoutesUtil.debug() para ver todas as rotas');
 }
