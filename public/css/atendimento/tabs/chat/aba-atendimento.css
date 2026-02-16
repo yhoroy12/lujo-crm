@@ -7,9 +7,29 @@
    Veja ESTRUTURA_MODULAR.md para documentação completa.
 ==================================================================================
 
-[4] MÓDULO WHATSAPP - CHAT E ATENDIMENTO
+MÓDULO WHATSAPP - CHAT E ATENDIMENTO
 
 ============================================================ */
+.modulo-painel-atendimento .atendimento-workspace {
+  display: flex;
+  flex: 1; /* Alinha as colunas lado a lado */
+  flex-direction: row; /* Garante a direção horizontal */
+  gap: 15px; /* Espaçamento entre as colunas */
+  padding: 15px;
+  height: 100%; /* Ocupa a altura total disponível */
+  min-width: 0; /* Permite que as colunas encolham adequadamente */
+  overflow: hidden; /* Evita scroll na página inteira, o scroll deve ser interno às colunas */
+  box-sizing: border-box;
+  max-width: 100vw;  /* Não deixa passar da largura da tela */
+  max-height: 100%;  /* Não deixa passar da altura do pai */
+  overflow: hidden;  /* Corta qualquer coisa que tente sair */
+}
+/* Ajuste nas colunas para que respeitem o espaço */
+.modulo-painel-atendimento .workspace-context,
+.modulo-painel-atendimento .workspace-main,
+.modulo-painel-atendimento .workspace-support {
+  height: 100%; /* Força todas a terem a mesma altura do container pai */
+}
 
 /* --- COLUNA 1: CONTEXTO DO CLIENTE --- */
 .modulo-painel-atendimento .workspace-context {
@@ -20,7 +40,7 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  flex: 1 1 0;
+  flex: 0 0 300px; /* Largura fixa para contexto */
   min-width: 260px;
 }
 
@@ -223,10 +243,11 @@
   border: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  flex: 2.8 1 0;
+  flex: 2.8; /* Ocupa a maior parte do espaço */
   min-width: 480px;
-  height: 100%;
+  min-height: 0; /* Permite que o container encolha corretamente */
   position: relative;
+  overflow: hidden;
 }
 
 /* Barra de ações superior */
@@ -276,11 +297,12 @@
    min-height: 0 é ESSENCIAL para scroll funcionar
    flex: 1 faz ocupar todo espaço disponível */
 .modulo-painel-atendimento .chat-container {
-  flex: 1 1 auto;
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  position: relative;
 }
 
 .modulo-painel-atendimento .chat-header {
@@ -328,7 +350,7 @@
    MANTENHA border-radius e margin-bottom originais
    Alterações aqui afetam visual das mensagens */
 .modulo-painel-atendimento .chatbox {
-  flex: 1 1 auto;
+  flex: 1;
   padding: 20px;
   overflow-y: auto;
   display: flex;
@@ -393,6 +415,7 @@
 /* Input de chat - fixo na base */
 .modulo-painel-atendimento .chat-input-container {
   flex: 0 0 auto;
+  flex-shrink: 0;
   padding: 5px 5px;
   border-top: 1px solid var(--color-border);
   display: flex;
@@ -417,7 +440,8 @@
   font-family: inherit;
   font-size: 14px;
   color: var(--color-text);
-  max-height: 120px;
+  max-height: 150px;
+  overflow-y: auto;
 }
 .modulo-painel-atendimento .chat-input-tools {
   display: flex;
@@ -473,7 +497,8 @@
   border-top: 1px solid var(--color-border);
   background: var(--color-secondary);
   min-height: 0;
- box-sizing: border-box;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 .modulo-painel-atendimento .work-form.collapsed {
   max-height: 0 !important;
@@ -499,7 +524,7 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  flex: 1 1 0;
+  flex: 0 0 350px; /* Largura fixa para suporte */
   min-width: 280px;
 }
 

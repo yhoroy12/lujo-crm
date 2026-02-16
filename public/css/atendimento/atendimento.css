@@ -144,14 +144,14 @@
 }
 
 /* Conteúdo das abas */
-.modulo-painel-atendimento .aba-conteudo {
-  display: none;
+.modulo-painel-atendimento .aba-conteudo-container {
+  display: none !important;
   flex: 1;
   overflow: hidden;
 }
 
-.modulo-painel-atendimento .aba-conteudo.ativa {
-  display: flex;
+.modulo-painel-atendimento .aba-conteudo-container.ativa {
+  display: flex !important;
   flex-direction: column;
 }
 

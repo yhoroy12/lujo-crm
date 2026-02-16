@@ -141,17 +141,14 @@ async loadTemplate() {
       throw error;
     }
   },
-/*
-  setupTabs() {
-    if (!window.TabManager) {
-      throw new Error('TabManager não carregado');
-    }
-    
-    window.TabManager.init('.modulo-painel-atendimento', this.id, {
+
+setupTabs() {
+    // O TabManager gerencia a troca visual E inicialização
+    window.TabManager.init('.painel-atendimento', this.id, {
       tabButtonSelector: '.aba-btn',
       tabContentSelector: '.aba-conteudo-container',
       activeClass: 'ativa',
-      onTabChange: (tabId, tabContent) => {
+      onTabChange: (tabId) => {
         console.log(`📑 Aba alterada para: ${tabId}`);
         
         // ✅ Cleanup da aba anterior
@@ -162,78 +159,136 @@ async loadTemplate() {
         
         this._currentTab = tabId;
         window.StateManager.set(this.id, { activeTab: tabId });
-        this.loadTabContent(tabId);
+        
+        // ✅ CORREÇÃO: Carregar tanto HTML quanto Scripts
+        this.loadTabContentFull(tabId);
       }
     });
   },
-*/
-setupTabs() {
-    // O TabManager apenas gerencia a troca visual, o callback abaixo carrega o conteúdo
-    window.TabManager.init('.painel-atendimento', this.id, {
-      tabButtonSelector: '.aba-btn',
-      tabContentSelector: '.aba-conteudo-container',
-      activeClass: 'ativa',
-      onTabChange: (tabId) => {
-        // ESTA é a parte responsável por carregar o conteúdo das abas
-        this.renderTabContent(tabId); 
-      }
-    });
-  },
-  async renderTabContent(tabId) {
-    if (this._loadedTabs.has(tabId)) return; // Evita carregar o que já está no DOM
 
-    const container = document.getElementById(`container-${tabId}`);
-    if (!container) return;
-
-    try {
-      // Caminho para os fragmentos que você separou
-      const path = `/templates/modules/atendimento/tabs/aba-${tabId}/abas-${tabId}/aba-${tabId}.html`;
-      const response = await fetch(path);
-      if (!response.ok) throw new Error(`Erro ao carregar aba: ${tabId}`);
-      
-      const html = await response.text();
-      container.innerHTML = html;
-      
-      this._loadedTabs.add(tabId);
-      console.log(`✅ Conteúdo da aba [${tabId}] carregado.`);
-      
-      // Aqui você dispararia a inicialização de sub-abas se existirem no HTML carregado
-    } catch (error) {
-      console.error(`❌ Erro na fragmentação da aba ${tabId}:`, error);
-    }
-  },
-  /**
-   * ✅ Carregar conteúdo dinâmico das abas COM CACHE
+   /**
+   * ✅ NOVO: Carrega HTML E inicializa scripts da aba
    */
-  async loadTabContent(tabId) {
+  async loadTabContentFull(tabId) {
     try {
-      // ✅ VERIFICAÇÃO DE CACHE
+      // Passo 1: Verificar se já foi carregada (cache)
       if (this._loadedTabs.has(tabId)) {
         console.log(`♻️ Tab ${tabId} já carregada (usando cache)`);
         await this.reactivateTab(tabId);
         return;
       }
 
-      const scriptName = tabId.replace('aba-', '');
-      const modulePath = `./tabs/${scriptName}.js`; 
+      // Passo 2: Carregar o HTML da aba (se necessário)
+      await this.renderTabContent(tabId);
+
+      await this.loadExtraResources(tabId);
+
+      // Passo 3: Inicializar os scripts JavaScript da aba
+      const scriptName = tabId.replace('aba-', ''); // Remove prefixo 'aba-'
+      const modulePath = `/js/modules/atendimento/tabs/${scriptName}.js`;
       
       console.log(`📦 Carregando script da aba: ${modulePath}`);
       
       const tabModule = await import(modulePath);
-      const moduleInstance = tabModule.EmailsTab || tabModule.default || tabModule;
+      const moduleInstance = tabModule.EmailsTab || tabModule.DemandasTab || tabModule.HistoricoTab || tabModule.default || tabModule;
 
+      // Passo 4: Executar init() do módulo
       if (moduleInstance && typeof moduleInstance.init === 'function') {
         await moduleInstance.init();
       } else if (tabModule.init) {
         await tabModule.init();
       }
 
+      // Marcar como carregada
       this._loadedTabs.add(tabId);
-      console.log(`✅ Tab ${tabId} carregada e adicionada ao cache (${this._loadedTabs.size} tabs no cache)`);
+      console.log(`✅ Tab ${tabId} completamente carregada (HTML + Scripts)`);
       
     } catch (error) {
-      console.error(`❌ Erro ao carregar aba ${tabId}:`, error);
-      this._loadedTabs.delete(tabId);
+      console.error(`❌ Erro ao carregar tab ${tabId}:`, error);
+    }
+  },
+
+  async renderTabContent(tabId) {
+    // ✅ Se já foi renderizada, não fazer nada
+    if (this._loadedTabs.has(tabId)) {
+      console.log(`♻️ HTML da tab ${tabId} já renderizado`);
+      return;
+    }
+
+    const container = document.getElementById(`container-${tabId}`);
+    if (!container) {
+      console.warn(`⚠️ Container não encontrado: container-${tabId}`);
+      return;
+    }
+
+    try {
+      // ✅ IMPORTANTE: Verificar se o HTML já está no container
+      if (container.innerHTML.trim() !== '') {
+        console.log(`♻️ Container ${tabId} já possui conteúdo`);
+        return;
+      }
+
+      // Caminho para os fragmentos HTML das abas
+      const path = `/templates/modules/atendimento/tabs/aba-${tabId}/abas-${tabId}/aba-${tabId}.html`;
+      console.log(`📄 Carregando HTML: ${path}`);
+      
+      const response = await fetch(path);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${path}`);
+      }
+      
+      const html = await response.text();
+      container.innerHTML = html;
+      
+      console.log(`✅ HTML da aba [${tabId}] inserido no DOM`);
+      
+    } catch (error) {
+      console.error(`❌ Erro ao carregar HTML da aba ${tabId}:`, error);
+      container.innerHTML = `
+        <div style="padding: 20px; text-align: center; color: #999;">
+          <p>Erro ao carregar conteúdo da aba</p>
+          <small>${error.message}</small>
+        </div>
+      `;
+    }
+  },
+
+  async loadExtraResources(tabId) {
+    // Definimos quais recursos cada aba precisa carregar
+    const recursosMap = {
+      'atendimento': [
+        { id: 'atendimento-popups-container', file: 'POPUP NOVO ATENDIMENTO.html' },
+        { id: 'atendimento-popups-container', file: 'POPUP ENCAMINHAMENTO.html' }
+      ],
+      'emails': [
+        { id: 'atendimento-modais-container', file: 'MODAL DETALHES EMAIL.html' },
+        { id: 'atendimento-modais-container', file: 'MODAL DEVOLUÇÃO FILA.html' },
+        { id: 'atendimento-modais-container', file: 'MODAL DIRECIONAR EMAIL.html' }
+      ]
+      // Adicione demandas e historico conforme sua árvore
+    };
+
+    const recursos = recursosMap[tabId];
+    if (!recursos) return;
+
+    try {
+      // Ajuste o caminho conforme sua árvore: tabs/aba-atendimento/recursos/
+      const basePath = `/templates/modules/atendimento/tabs/aba-${tabId}/recursos`;
+
+      for (const item of recursos) {
+        const container = document.getElementById(item.id);
+        if (!container) continue;
+
+        const response = await fetch(`${basePath}/${item.file}`);
+        if (response.ok) {
+          const html = await response.text();
+          // Inserimos sem apagar o que já existe (caso haja múltiplos popups)
+          container.insertAdjacentHTML('beforeend', html);
+          console.log(`  📥 Recurso carregado: ${item.file}`);
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Erro ao carregar recursos extras para ${tabId}:`, error);
     }
   },
 

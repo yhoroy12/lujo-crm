@@ -1,28 +1,20 @@
-<!-- ==================== ABA: DEMANDAS EXTERNAS ==================== -->
-    <div class="aba-conteudo aba-demandas">
+<div class="abas-conteudo">
+      
+      <!-- container-demandas: renderTabContent() injeta aba-demandas.html aqui -->
+      <div class="aba-conteudo-container demandas ativa" id="container-demandas">
+        
+        <!-- ===== INÍCIO: conteúdo de aba-demandas.html (CORRIGIDO) ===== -->
+        <div class="sub-abas-demandas">
+          <button class="sub-aba-btn ativa" data-subaba="consulta">Consulta de Status</button>
+          <button class="sub-aba-btn" data-subaba="recebidas">Demandas Recebidas</button>
+          <button class="sub-aba-btn" data-subaba="minhas">Minhas Demandas</button>
+          <button class="sub-aba-btn" data-subaba="encaminhadas">Meus Encaminhamentos</button>
+        </div>
 
-      <!-- SUB-ABAS (igual ao histórico: .sub-abas-XXX) -->
-      <div class="sub-abas-demandas">
-        <button class="sub-aba-btn ativa" data-subaba="consulta">
-          <i class="fi fi-rr-search"></i>
-          Consulta de Status
-        </button>
-        <button class="sub-aba-btn" data-subaba="recebidas">
-          <i class="fi fi-rr-inbox-in"></i>
-          Demandas Recebidas
-        </button>
-        <button class="sub-aba-btn" data-subaba="minhas">
-          <i class="fi fi-rr-thumbtack"></i>
-          Minhas Demandas
-        </button>
-        <!-- Sub-aba 3: Apenas no ATENDIMENTO -->
-        <button class="sub-aba-btn subaba-encaminhadas-only" data-subaba="encaminhadas">
-          <i class="fi fi-rr-inbox-out"></i>
-          Meus Encaminhamentos
-        </button>
-      </div>
+        <div class="demandas-container">
+          <!-- carregarSubAbas() injeta os 4 fragmentos aqui -->
+        </div>
+        
 
-      <!-- CONTAINER PRINCIPAL -->
-      <div class="demandas-container">
       </div>
     </div>

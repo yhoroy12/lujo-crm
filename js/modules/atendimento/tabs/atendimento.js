@@ -1194,8 +1194,8 @@ async determinarPrioridade(atendimentoData) {
     }
 
     const state = window.StateManager.get('atendimento');
-    const abaAtiva = state?.activeTab || 'aba-atendimento';
-    const abasPermitidas = ['aba-atendimento', 'aba-demandas', 'aba-historico'];
+    const abaAtiva = state?.activeTab || 'atendimento';
+    const abasPermitidas = ['atendimento', 'demandas', 'historico'];
 
     if (!abasPermitidas.includes(abaAtiva)) {
       console.log(`🔕 Operador em aba não permitida (${abaAtiva})`);

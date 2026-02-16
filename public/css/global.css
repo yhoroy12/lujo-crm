@@ -32,6 +32,26 @@
   --color-info:          #2196F3;
   --color-info-light:    rgba(33, 150, 243, 0.1);
 
+  /* URGENTE - Vermelho Intenso / Crítico */
+  --color-urgente:       #e11d48;
+  --color-urgente-light: #fff1f2;
+  --color-urgente-hover: #be123c;
+
+  /* ALTA - Laranja Vibrante / Atenção */
+  --color-alta:          #f59e0b;
+  --color-alta-light:    #fffbeb;
+  --color-alta-hover:    #d97706;
+
+  /* MÉDIA - Azul / Informativo */
+  --color-media:         #3b82f6;
+  --color-media-light:   #eff6ff;
+  --color-media-hover:   #2563eb;
+
+  /* BAIXA - Cinza Azulado / Secundário */
+  --color-baixa:         #64748b;
+  --color-baixa-light:   #f8fafc;
+  --color-baixa-hover:   #475569;
+
   /* Texto */
   --color-text:       #333;
   --color-text-light: #666;
@@ -449,8 +469,7 @@ header {
 ============================================================ */
 main {
   grid-area: main;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   padding: 0;
   background: var(--color-secondary);
   width: 100%;
@@ -459,10 +478,20 @@ main {
 
 .app-container {
   width: 100%;
-  height: 100%;
+  height: calc(100vh - 69px); /* 69px é a altura do header */
   max-width: none;
   margin: 0;
   padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+#modulos-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Splash / loading inicial */
@@ -574,19 +603,26 @@ footer {
 
 /* Módulos genéricos (tela inteira) */
 .modulo-container,
-.modulo-painel-atendimento,
 .modulo-painel-admin,
 .modulo-painel-financeiro,
 .modulo-painel-conteudo {
   width: 100%;
   height: 100%;
-  min-height: 100%;
-  padding: 20px;
+  min-height: unset;
+  padding: 0;
   box-sizing: border-box;
-  overflow-y: auto;
+  overflow:auto !important;
   background: var(--color-secondary);
 }
 
+.modulo-painel-atendimento {
+  overflow: hidden !important;
+  min-height: unset !important;
+  padding: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
 /* Painéis sem max-width */
 .painel,
 .dashboard-main,
