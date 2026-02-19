@@ -372,19 +372,3 @@ class AtendimentoServiceIntegrado {
 window.AtendimentoServiceIntegrado = new AtendimentoServiceIntegrado();
 
 console.log("✅ AtendimentoServiceIntegrado carregado");
-console.log("🚀 TODOS OS 6 PROBLEMAS FORAM RESOLVIDOS!");
-console.log("");
-console.log("Disponível em: window.AtendimentoServiceIntegrado");
-console.log("");
-console.log("USO:");
-console.log("  // Cliente: iniciar atendimento");
-console.log("  await window.AtendimentoServiceIntegrado.clienteIniciarAtendimento({ nome, email, telefone });");
-console.log("");
-console.log("  // Operador: inicializar");
-console.log("  await window.AtendimentoServiceIntegrado.operadorInicializar();");
-console.log("");
-console.log("  // Enviar mensagem");
-console.log("  await window.AtendimentoServiceIntegrado.enviarMensagem('Texto', 'cliente|operador');");
-console.log("");
-console.log("  // Finalizar");
-console.log("  await window.AtendimentoServiceIntegrado.finalizarAtendimento();");

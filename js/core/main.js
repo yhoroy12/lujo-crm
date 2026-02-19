@@ -47,6 +47,9 @@ const SPA = {
       await this.waitForPermissions();
       console.log('✅ Permissões carregadas');
 
+      await this.NotificationManagerinit();
+      console.log('✅ NotificationManager configurado');
+
       this.filterDashboardCards();
       console.log('✅ Cards do dashboard filtrados por permissão');
 
@@ -122,7 +125,53 @@ const SPA = {
     console.log(`📊 Dashboard: ${visibleCount} cards visíveis de ${cards.length}`);
   },
 
+  // ============================================================
+  //INICIALIZAÇÃO SEGURA DAS NOTIFICAÇÕES
+  // ============================================================
+ async NotificationManagerinit() {
+    console.log('⏳ A aguardar prontidão para notificações (Via FirebaseApp)...');
 
+    // 1. Aguarda o utilizador no sessionStorage
+    const waitForUser = async () => {
+      let attempts = 0;
+      while (attempts < 30) {
+        const u = window.AuthSystem.getCurrentUser();
+        if (u && u.uid && u.setor) return u;
+        await new Promise(r => setTimeout(r, 200));
+        attempts++;
+      }
+      return null;
+    };
+
+    const user = await waitForUser();
+
+    // 2. Aguarda o window.FirebaseApp.db (Ajustado para sua estrutura!)
+    const waitForDB = async () => {
+      let attempts = 0;
+      while (!window.FirebaseApp?.db && attempts < 50) { 
+        await new Promise(r => setTimeout(r, 100));
+        attempts++;
+      }
+      return !!window.FirebaseApp?.db;
+    };
+
+    const dbReady = await waitForDB();
+
+    // 3. Inicialização
+    if (user && window.NotificationManager && dbReady) {
+      window.NotificationManager.listenToNotifications({
+        uid: user.uid,
+        role: user.setor
+      });
+      console.log('🔔 Notificações ativadas com sucesso.');
+    } else {
+      console.error('❌ Falha crítica no NotificationManagerinit:', { 
+        hasUser: !!user, 
+        hasManager: !!window.NotificationManager, 
+        hasFirebaseAppDB: dbReady 
+      });
+    }
+  },
   // ─────────────────────────────────────────────────
   // CARREGAMENTO DE MÓDULOS
   // ─────────────────────────────────────────────────
@@ -496,10 +545,10 @@ const SPA = {
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-    const modal    = document.getElementById('modalNews');
-    const btnClose  = document.getElementById('btnCloseNews');
+    const modal = document.getElementById('modalNews');
+    const btnClose = document.getElementById('btnCloseNews');
     const btnClose2 = document.getElementById('btnCloseNews2');
-    const checkbox  = document.getElementById('dontShowAgainToday');
+    const checkbox = document.getElementById('dontShowAgainToday');
 
     const closeModal = () => {
       if (checkbox?.checked) {
@@ -543,18 +592,18 @@ const SPA = {
   // ─────────────────────────────────────────────────
 
   setupGlobalSearch() {
-    const searchModal  = document.getElementById('globalSearch');
-    const btnSearch    = document.getElementById('btnSearch');
-    const searchInput  = document.getElementById('searchInput');
+    const searchModal = document.getElementById('globalSearch');
+    const btnSearch = document.getElementById('btnSearch');
+    const searchInput = document.getElementById('searchInput');
     const searchOverlay = document.querySelector('.search-overlay');
-    const btnClose     = document.querySelector('.btn-close-search');
+    const btnClose = document.querySelector('.btn-close-search');
 
     if (!searchModal || !btnSearch) {
       console.warn('⚠️ Elementos de busca não encontrados no DOM');
       return;
     }
 
-    const openSearch  = () => { searchModal.classList.add('active'); setTimeout(() => searchInput?.focus(), 100); };
+    const openSearch = () => { searchModal.classList.add('active'); setTimeout(() => searchInput?.focus(), 100); };
     const closeSearch = () => { searchModal.classList.remove('active'); if (searchInput) searchInput.value = ''; };
 
     btnSearch.addEventListener('click', (e) => { e.preventDefault(); openSearch(); });

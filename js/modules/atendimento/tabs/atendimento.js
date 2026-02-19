@@ -715,13 +715,21 @@ const WhatsAppTab = {
 
       // Atualizar documento no Firebase com todos os dados
       const fStore = window.FirebaseApp.fStore;
+      const timestampAgora = fStore.Timestamp.now(); // ← Firestore Timestamp, válido dentro de arrayUnion
       const updateData = {
         setor_responsavel: this.dadosAtendimento.setor_responsavel,
         descricao_solicitacao: this.dadosAtendimento.descricao_solicitacao,
         encaminhado_por: user.name || 'Operador',
         encaminhado_por_uid: user.uid,
-        encaminhado_em: fStore.serverTimestamp()
-        };
+        encaminhado_em: fStore.serverTimestamp(),
+        timeline: fStore.arrayUnion({
+          descricao: `Atendimento encaminhado para o setor: ${this.dadosAtendimento.setor_responsavel || 'Não definido'}. Justificativa: ${justificativa}`,
+          evento: "atendimento_encaminhado",
+          timestamp: timestampAgora,
+          usuario: user.uid,
+          nome_usuario: user.name || 'Operador'
+        })
+      };
 
       // Adicionar observações se existirem
       if (this.dadosAtendimento.observacoes_internas) {
@@ -741,7 +749,7 @@ const WhatsAppTab = {
         fStore.doc(window.FirebaseApp.db, "atend_chat_fila", atendimentoId),
         updateData
       );
-      
+
 
       // 3️⃣ TERCEIRO: CRIAR REGISTRO NA COLEÇÃO DE DEMANDAS (NOVA INTEGRAÇÃO)
       const dadosDemanda = {
@@ -754,7 +762,7 @@ const WhatsAppTab = {
         prioridade: await this.determinarPrioridade(this.dadosAtendimento)
       };
 
-      
+
 
 
       // Executa em paralelo, não bloqueia o fluxo principal
@@ -773,6 +781,8 @@ const WhatsAppTab = {
 
       // Limpar interface (pois não é mais responsabilidade deste operador)
       this.limparInterface();
+      localStorage.removeItem('atendimento_ativo_id');
+      if (window.StateManager) window.StateManager.set('atendimento', { currentTicketId: null });
 
       // Feedback
       const setorDestino = this.dadosAtendimento.setor_responsavel || 'outro setor';
@@ -953,7 +963,7 @@ const WhatsAppTab = {
   /**
    * ✅ FUNÇÃO AUXILIAR: Determinar prioridade da demanda
    */
-async determinarPrioridade(atendimentoData) {
+  async determinarPrioridade(atendimentoData) {
     const demanda = this.dadosAtendimento.tipo_demanda;
     let complexidade = 'media';
 
@@ -962,20 +972,20 @@ async determinarPrioridade(atendimentoData) {
     const demandasBaixa = ['Smart-Links', 'Resetar Tipaldi', 'Liberar Verificador em Dois Fatores'];
 
     if (demandasAlta.includes(demanda)) {
-        complexidade = 'alta';
+      complexidade = 'alta';
     } else if (demandasBaixa.includes(demanda)) {
-        complexidade = 'baixa';
+      complexidade = 'baixa';
     }
 
     // 2. Calcula via PriorityMaster
     const resultado = await window.PriorityMaster.calcularScore({
-        tipoConta: this.dadosAtendimento.tipo_conta,
-        emailCliente: atendimentoData.cliente?.email || '',
-        complexidade: complexidade
+      tipoConta: this.dadosAtendimento.tipo_conta,
+      emailCliente: atendimentoData.cliente?.email || '',
+      complexidade: complexidade
     });
 
     return resultado.total;
-},
+  },
 
   /**
    * ✅ NOVO: Concluir atendimento (SALVA TUDO) + INTEGRAÇÃO STATE MACHINE
@@ -1230,23 +1240,32 @@ async determinarPrioridade(atendimentoData) {
       const { doc, getDoc } = window.FirebaseApp.fStore;
       const docSnap = await getDoc(doc(db, "atend_chat_fila", atendimentoId));
 
-      if (docSnap.exists()) {
-        const ticket = docSnap.data();
-
-        if (ticket.status === 'concluido' || ticket.status === 'ENCAMINHADO') {
-          localStorage.removeItem('atendimento_ativo_id');
-          return;
-        }
-
-        this.ticketAtual = ticket;
-        window.AtendimentoDataStructure.state.atendimentoId = atendimentoId;
-
-        this.renderizarInterfaceAtendimento(ticket);
-        this.conectarChat(atendimentoId);
-
-        // ✅ NOVO: Restaurar campos do formulário
-        this.restaurarCamposFormulario(ticket);
+      if (!docSnap.exists()) {
+        localStorage.removeItem('atendimento_ativo_id');
+        return;
       }
+
+      const ticket = docSnap.data();
+      const statusNormalizado = (ticket.status || '').toUpperCase();
+
+      // ✅ Status final: limpa sem renderizar nada
+      if (statusNormalizado === 'CONCLUIDO' || statusNormalizado === 'ENCAMINHADO') {
+        console.log(`ℹ️ Atendimento restaurado com status final (${statusNormalizado}). Limpando.`);
+        localStorage.removeItem('atendimento_ativo_id');
+        if (window.StateManager) {
+          window.StateManager.set('atendimento', { currentTicketId: null });
+        }
+        return;
+      }
+
+      // Status ativo: restaura normalmente
+      this.ticketAtual = ticket;
+      window.AtendimentoDataStructure.state.atendimentoId = atendimentoId;
+
+      this.renderizarInterfaceAtendimento(ticket);
+      this.conectarChat(atendimentoId);
+      this.restaurarCamposFormulario(ticket);
+
     } catch (error) {
       console.error("❌ Erro ao restaurar:", error);
     }
@@ -1372,20 +1391,61 @@ async determinarPrioridade(atendimentoData) {
 
     console.log(`✅ Status badge atualizado: ${status} → ${statusInfo.text}`);
   },
+
   conectarChat(atendimentoId) {
+    // Para listeners anteriores
     if (this.unsubscribeChat) this.unsubscribeChat();
+    if (this.unsubscribeTicket) this.unsubscribeTicket();
 
     const db = window.FirebaseApp.db;
     const fStore = window.FirebaseApp.fStore;
 
+    // ----------------------------------------------------------------
+    // LISTENER DO DOCUMENTO (status, dados do ticket)
+    // ----------------------------------------------------------------
     const ticketRef = fStore.doc(db, "atend_chat_fila", atendimentoId);
+
     this.unsubscribeTicket = fStore.onSnapshot(ticketRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const ticket = docSnap.data();
-        this.atualizarInformacoesTicket(ticket);
+      if (!docSnap.exists()) return;
+
+      const ticket = docSnap.data();
+
+      // Atualiza badge e botões normalmente
+      this.atualizarInformacoesTicket(ticket);
+
+      // ✅ NOVO: Detecta estados finais e libera o painel automaticamente
+      const statusFinal = (ticket.status || '').toUpperCase();
+
+      if (statusFinal === 'ENCAMINHADO' || statusFinal === 'CONCLUIDO') {
+        console.log(`🔔 Status final detectado no listener: ${statusFinal}. Liberando painel.`);
+
+        // Para os listeners primeiro para não processar mais eventos
+        if (this.unsubscribeTicket) { this.unsubscribeTicket(); this.unsubscribeTicket = null; }
+        if (this.unsubscribeChat) { this.unsubscribeChat(); this.unsubscribeChat = null; }
+
+        // Limpa o localStorage e o StateManager
+        localStorage.removeItem('atendimento_ativo_id');
+        if (window.StateManager) {
+          window.StateManager.set('atendimento', { currentTicketId: null });
+        }
+
+        // Limpa a interface (volta para emptyState)
+        this.limparInterface();
+
+        // Feedback contextual para o operador
+        const mensagem = statusFinal === 'ENCAMINHADO'
+          ? '📤 Atendimento encaminhado. Painel liberado.'
+          : '✅ Atendimento concluído. Painel liberado.';
+
+        if (window.ToastManager) {
+          window.ToastManager.show(mensagem, 'info');
+        }
       }
     });
 
+    // ----------------------------------------------------------------
+    // LISTENER DE MENSAGENS (chat em tempo real)
+    // ----------------------------------------------------------------
     const q = fStore.query(
       fStore.collection(db, "atend_chat_fila", atendimentoId, "mensagem"),
       fStore.orderBy("timestamp", "asc")
@@ -1402,6 +1462,8 @@ async determinarPrioridade(atendimentoData) {
     });
   },
 
+
+
   renderizarMensagemNaTela(msg) {
     if (!this.elements.chatbox) return;
 
@@ -1414,7 +1476,7 @@ async determinarPrioridade(atendimentoData) {
       this.getCurrentTime();
 
     msgDiv.innerHTML = `
-      <div class="msg-content">${this.escapeHtml(msg.texto)}</div>
+      <div class="msg-content">${Utils.escapeHtml(msg.texto)}</div>
       <div class="msg-time">${hora}</div>
     `;
 
@@ -1455,13 +1517,6 @@ async determinarPrioridade(atendimentoData) {
     const now = new Date();
     return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   },
-
-  escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  },
-
   async vincularOperadorNoFirebase(atendimentoId) {
     try {
       const manager = window.AtendimentoDataStructure;
@@ -1488,11 +1543,11 @@ async determinarPrioridade(atendimentoData) {
   },
   atualizarDadosLocal(campo, valor) {
     this.dadosAtendimento[campo] = valor;
-    
+
     // Isso aqui remove a borda vermelha de erro assim que o usuário preenche
     const el = document.getElementById(campo === 'tipo_conta' ? 'tipoConta' : campo);
     if (el) el.classList.remove('input-error');
-},
+  },
   async refresh() {
     console.log('🔄 Atualizando WhatsAppTab...');
 

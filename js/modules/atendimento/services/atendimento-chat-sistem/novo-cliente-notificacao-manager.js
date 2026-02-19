@@ -323,6 +323,12 @@ class NovoClienteNotificacaoManager {
    */
   mostrarNotificacao(dadosCliente, onAceitar, onRejeitar) {
     const modal = document.getElementById('modal-novo-cliente');
+    if (this._notificacaoAtiva) {
+    this._filaNotificacoes = this._filaNotificacoes || [];
+    this._filaNotificacoes.push({ dadosCliente, onAceitar, onRejeitar });
+    return;
+  }
+  this._notificacaoAtiva = true;
     
     // Preencher informações do cliente
     document.getElementById('info-nome').textContent = dadosCliente.cliente?.nome || '--';
@@ -341,14 +347,19 @@ class NovoClienteNotificacaoManager {
     // Configurar novos listeners
     btnAceitar.onclick = async () => {
       this.fecharNotificacao();
+       this._notificacaoAtiva = false;        // ADICIONAR
+    this._mostrarProximaNotificacao();     // ADICIONAR
       if (onAceitar) await onAceitar(dadosCliente);
     };
 
     btnRejeitar.onclick = async () => {
       this.fecharNotificacao();
+          this._notificacaoAtiva = false;        // ADICIONAR
+    this._mostrarProximaNotificacao();     // ADICIONAR
       if (onRejeitar) await onRejeitar(dadosCliente);
     };
 
+ 
     // Mostrar modal
     modal.classList.remove('hidden');
     setTimeout(() => {
@@ -366,7 +377,14 @@ class NovoClienteNotificacaoManager {
 
     console.log("🔔 Notificação mostrada para:", dadosCliente.atendimentoId);
   }
-
+     _mostrarProximaNotificacao() {
+  if (this._filaNotificacoes && this._filaNotificacoes.length > 0) {
+    const proxima = this._filaNotificacoes.shift();
+    setTimeout(() => {
+      this.mostrarNotificacao(proxima.dadosCliente, proxima.onAceitar, proxima.onRejeitar);
+    }, 500);
+  }
+} 
   /**
    * Fechar notificação (modal)
    */

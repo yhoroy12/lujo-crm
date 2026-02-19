@@ -253,7 +253,7 @@ class AtendimentoAcceptanceManager {
 
       const q = query(
         collection(this.db, 'atend_chat_fila'),
-        where('status', '==', 'em_atendimento'),
+        where('status', '==', 'EM_ATENDIMENTO'),
         where('atribuido_para_uid', '==', this.operadorUid),
         where('canal', '==', canal),
         limit(1)

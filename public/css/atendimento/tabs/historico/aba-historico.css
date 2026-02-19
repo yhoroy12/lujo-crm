@@ -23,10 +23,10 @@
   background: white;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 0px;
 }
 
 .modulo-painel-atendimento .historico-header h2 {
@@ -71,7 +71,7 @@
 .modulo-painel-atendimento .historico-filtros {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  gap: 5px;
   margin-top: 10px;
 }
 
@@ -117,7 +117,7 @@
 
 .modulo-painel-atendimento .stat-historico {
   background: var(--color-secondary);
-  padding: 15px;
+  padding: 5px;
   border-radius: var(--radius);
   display: flex;
   justify-content: space-between;
@@ -142,11 +142,20 @@
 .modulo-painel-atendimento .historico-lista {
   flex: 1;
   overflow-y: auto;
-  display: flow-root;
+  display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
-  padding: 5px;
+  padding: 20px 5px;
+  height: auto;
+  min-width: 100px;
+  align-items: start;
+  position: relative !important; /* Isso força o card a respeitar o grid */
+    top: auto !important;
+    left: auto !important;
+    width: 100%;
 }
+
+
 
 .modulo-painel-atendimento .historico-card {
   background: white;
@@ -702,7 +711,4 @@
   justify-content: flex-end;
   gap: 10px;
 }
-
-/* ============================================================
-   
 

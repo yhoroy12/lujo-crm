@@ -20,7 +20,7 @@
                     <select id="filtroStatusEncaminhadas" class="form-select">
                       <option value="">Todos os status</option>
                       <option value="PENDENTE">Pendente</option>
-                      <option value="EM_ANDAMENTO">Em Andamento</option>
+                      <option value="EM_PROCESSO">Em Processo</option>
                       <option value="AGUARDANDO_GERENCIA">Aguardando Gerência</option>
                       <option value="RECUSADO">Recusado</option>
                       <option value="CONCLUIDO">Concluído</option>
@@ -186,6 +186,35 @@
                     </h4>
                     <div class="detalhes-timeline" id="detalhesTimelineEncaminhadas">
                       <!-- Timeline via JavaScript -->
+                    </div>
+                  </div>
+
+                  <!-- Seção de recusa: visível apenas quando status = RECUSADO -->
+                  <div class="secao-recusa hidden" id="secaoRecusaEncaminhadas">
+                    <div class="recusa-header">
+                      <i class="fi fi-rr-cross-circle"></i>
+                      <h4>Motivo da Recusa</h4>
+                    </div>
+                    <div class="recusa-parecer" id="parecerRecusaEncaminhadas">
+                      <p>-</p>
+                    </div>
+
+                    <div class="recusa-reenvio">
+                      <label for="inputComplementoReenvio">
+                        <i class="fi fi-rr-comment-alt"></i>
+                        Complemento / Informações Adicionadas
+                        <span class="required">*</span>
+                      </label>
+                      <textarea
+                        id="inputComplementoReenvio"
+                        class="form-textarea"
+                        rows="4"
+                        placeholder="Descreva o que foi ajustado ou as informações solicitadas pelo operador que recusou..."
+                      ></textarea>
+                      <button class="btn btn-primary btn-block" id="btnReenviarDemanda">
+                        <i class="fi fi-rr-paper-plane"></i>
+                        Reenviar para Análise
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -11,7 +11,7 @@ class RealtimeListenersManager {
   constructor() {
     this.db = window.FirebaseApp?.db;
     this.fStore = window.FirebaseApp?.fStore;
-    
+
     // Armazenar unsubscribe functions para limpeza depois
     this.unsubscribers = {
       filaClientes: null,
@@ -38,63 +38,87 @@ class RealtimeListenersManager {
    * Isto dispara o POP-UP de notificação
    */
   escutarFilaClientes(callback) {
-    try {
-      if (!this.db || !this.fStore) {
-        console.error("❌ Firebase não configurado");
-        return;
-      }
-
-      // Desinscrever listener anterior se existir
-      if (this.unsubscribers.filaClientes) {
-        this.unsubscribers.filaClientes();
-      }
-
-      // Query: buscar APENAS atendimentos em status "fila" ou "novo"
-      // Ordenar pelos mais recentes primeiro
-      const filaRef = this.fStore.collection(this.db, "atend_chat_fila");
-      
-      const q = this.fStore.query(
-        filaRef,
-        this.fStore.where("status", "==", "FILA"),
-        this.fStore.orderBy("criadoEm", "desc")
-      );
-
-      // Listener real-time
-      this.unsubscribers.filaClientes = this.fStore.onSnapshot(
-        q,
-        (snapshot) => {
-          snapshot.docChanges().forEach((change) => {
-            const atendimentoData = change.doc.data();
-
-            // Tipo "added" = novo cliente adicionado à fila
-            if (change.type === "added") {
-              console.log("🔔 NOVO CLIENTE NA FILA:", atendimentoData);
-
-              // Chamar callback se registrado
-              if (this.callbacks.onNovoClienteFila) {
-                this.callbacks.onNovoClienteFila({
-                  atendimentoId: change.doc.id,
-                  ...atendimentoData
-                });
-              }
-            }
-            
-            // Tipo "modified" = mudança no cliente (ex: entrou chat)
-            else if (change.type === "modified") {
-              console.log("📝 Cliente modificado:", atendimentoData);
-            }
-          });
-        },
-        (error) => {
-          console.error("❌ Erro ao escutar fila:", error);
-        }
-      );
-
-      console.log("✓ Escutando fila de clientes");
-    } catch (error) {
-      console.error("❌ Erro ao inicializar listener de fila:", error);
+  try {
+    if (!this.db || !this.fStore) {
+      console.error("❌ Firebase não configurado");
+      return;
     }
+
+    if (this.unsubscribers.filaClientes) {
+      this.unsubscribers.filaClientes();
+    }
+
+    const filaRef = this.fStore.collection(this.db, "atend_chat_fila");
+
+    // ✅ Ordenado por prioridade e chegada
+    const q = this.fStore.query(
+      filaRef,
+      this.fStore.where("status", "==", "FILA"),
+      this.fStore.orderBy("prioridade_peso", "asc"),
+      this.fStore.orderBy("criadoEm", "asc")
+    );
+
+    this.unsubscribers.filaClientes = this.fStore.onSnapshot(
+      q,
+      (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          const atendimentoData = change.doc.data();
+
+          if (change.type === "added") {
+            // Novo cliente entrou na fila
+            console.log("🔔 NOVO CLIENTE NA FILA:", change.doc.id);
+            if (this.callbacks.onNovoClienteFila) {
+              this.callbacks.onNovoClienteFila({
+                atendimentoId: change.doc.id,
+                ...atendimentoData
+              });
+            }
+          } else if (change.type === "removed") {
+            // Um cliente saiu da fila — verificar se há próximo
+            console.log("👋 Cliente saiu da fila, verificando próximo...");
+            this._verificarProximoNaFila(snapshot);
+          }
+        });
+      },
+      (error) => {
+        console.error("❌ Erro ao escutar fila:", error);
+      }
+    );
+
+    console.log("✓ Escutando fila de clientes");
+  } catch (error) {
+    console.error("❌ Erro ao inicializar listener de fila:", error);
   }
+}
+
+_verificarProximoNaFila(snapshot) {
+  if (snapshot.empty) {
+    console.log('Fila vazia.');
+    return;
+  }
+
+  // Ordenar localmente como proteção extra contra timing da Cloud Function
+  const docs = snapshot.docs.slice().sort((a, b) => {
+    const pesoA = a.data().prioridade_peso ?? 99;
+    const pesoB = b.data().prioridade_peso ?? 99;
+    if (pesoA !== pesoB) return pesoA - pesoB;
+    const tsA = a.data().criadoEm?.seconds ?? 0;
+    const tsB = b.data().criadoEm?.seconds ?? 0;
+    return tsA - tsB;
+  });
+
+  const proximoDoc = docs[0];
+  const dados = proximoDoc.data();
+
+  console.log(`➡️ Próximo: ${proximoDoc.id} | Classe: ${dados.classe_cliente} | Peso: ${dados.prioridade_peso}`);
+
+  if (this.callbacks.onNovoClienteFila) {
+    this.callbacks.onNovoClienteFila({
+      atendimentoId: proximoDoc.id,
+      ...dados
+    });
+  }
+}
 
   /**
    * ========================================================
@@ -268,7 +292,7 @@ class RealtimeListenersManager {
         q,
         (snapshot) => {
           const operadores = [];
-          
+
           snapshot.forEach((doc) => {
             operadores.push({
               uid: doc.id,

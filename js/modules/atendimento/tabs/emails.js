@@ -126,8 +126,8 @@ export const EmailsTab = {
       item.className = 'email-fila-item';
       item.innerHTML = `
         <div class="info">
-          <strong>${data.remetente_nome || 'Desconhecido'}</strong>
-          <span>${data.assunto}</span>
+          <strong>${Utils.escapeHtml(data.remetente_nome || 'Desconhecido')}</strong>
+          <span>${Utils.escapeHtml(data.assunto || '')}</span>
         </div>
       `;
       this.elements.filaCont.appendChild(item);
@@ -230,6 +230,9 @@ export const EmailsTab = {
       this.elements.displayNomeCliente.textContent = data.remetente_nome || "Nome não informado";
 
     if (this.elements.displayCorpo) {
+      // ATENÇÃO: corpo_html pode conter HTML legítimo de e-mails externos.
+      // Use DOMPurify para sanitizar antes de injetar: https://github.com/cure53/DOMPurify
+      // Exemplo: this.elements.displayCorpo.innerHTML = DOMPurify.sanitize(data.corpo_html || data.corpo || "Sem conteúdo");
       this.elements.displayCorpo.innerHTML = data.corpo_html || data.corpo || "Sem conteúdo";
     }
 

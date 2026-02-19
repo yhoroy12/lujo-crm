@@ -13,7 +13,7 @@
 .email-panel {
   display: flex;
   gap: 20px;
-  height: calc(100vh - 180px);
+  height: 100%;
   padding: 10px;
   background: var(--bg);
 }
@@ -184,6 +184,7 @@
   border-left: 6px solid var(--primary);
   display: flex;
   flex-direction: column;
+  overflow: auto;
 }
 
 .atendimento-ativo-header {

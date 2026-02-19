@@ -36,15 +36,8 @@ window.ROUTES = {
       '../public/css/atendimento/tabs/demandas/aba-demandas.css',
       '../public/css/atendimento/tabs/historico/aba-historico.css',
 
-      // Nível 3 — Sub-abas de Demandas
-      '../public/css/atendimento/tabs/demandas/demandas-consulta.css',
-      '../public/css/atendimento/tabs/demandas/demandas-recebidas.css',
-      '../public/css/atendimento/tabs/demandas/demandas-minhas.css',
-      '../public/css/atendimento/tabs/demandas/demandas-encaminhadas.css',
-
       // Nível 3 — Sub-abas de Histórico
-      '../public/css/atendimento/tabs/historico/historico-whatsapp.css',
-      '../public/css/atendimento/tabs/historico/historico-gmail.css',
+      
 
       // Utilitários compartilhados
       '../public/css/utils/modais.css',

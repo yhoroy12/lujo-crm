@@ -106,7 +106,7 @@ class AtendimentoRestorationManager {
       // Query: Buscar TODOS os atendimentos em_atendimento deste operador
       const q = query(
         collection(this.db, 'atend_chat_fila'),
-        where('status', '==', 'em_atendimento'),
+        where('status', '==', 'EM_ATENDIMENTO'),
         where('atribuido_para_uid', '==', operadorUid),
         limit(1)
       );
