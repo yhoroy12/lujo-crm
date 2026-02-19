@@ -127,6 +127,9 @@ async loadTemplate() {
       await import('./services/atendimento-chat-sistem/atendimento-acceptance-manager.js');
       await import('./services/atendimento-chat-sistem/atendimento-restoration-manager.js');
       await import('./services/atendimento-chat-sistem/state-machine-manager.js');
+      await import('./services/atendimento-chat-sistem/realtime-listeners-manager.js')
+      await import('./services/atendimento-chat-sistem/novo-cliente-notificacao-manager.js')
+      await import('./services/atendimento-chat-sistem/atendimento-service-integrado.js')
       await import('./services/ticketstatemachine.js');
       await import('./services/demandas-service/demandas-service.js');
       

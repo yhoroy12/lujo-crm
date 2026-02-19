@@ -352,7 +352,7 @@ const PermissionFilter = {
         } else {
           // Sessão deletada, fazer logout
           console.log('🚪 Sessão finalizada. Redirecionando...');
-          window.location.href = 'templates/login.html';
+          window.location.href = 'login.html';
         }
       }
     }, 2000);

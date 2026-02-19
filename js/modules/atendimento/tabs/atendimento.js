@@ -53,7 +53,7 @@ const WhatsAppTab = {
     try {
       this.cacheElements();
       this.bindEvents();
-      this.setupInitialState();
+      this.registrarListenerFila();
 
       const stateAtendimento = window.StateManager.get('atendimento') || {};
       const idSalvo = stateAtendimento.currentTicketId || localStorage.getItem('atendimento_ativo_id');
@@ -268,6 +268,66 @@ const WhatsAppTab = {
 
   },
 
+  registrarListenerFila() {
+    // Se o manager ainda não carregou, aguarda até 3 segundos
+    if (!window.RealtimeListenersManager) {
+      console.warn('⏳ RealtimeListenersManager ainda não disponível, aguardando...');
+      let tentativas = 0;
+      const intervalo = setInterval(() => {
+        tentativas++;
+        if (window.RealtimeListenersManager) {
+          clearInterval(intervalo);
+          console.log('✅ RealtimeListenersManager disponível, registrando listener...');
+          this._configurarCallbackFila();
+        } else if (tentativas >= 10) {
+          clearInterval(intervalo);
+          console.error('❌ RealtimeListenersManager não disponível após 3s');
+        }
+      }, 300);
+      return;
+    }
+
+    this._configurarCallbackFila();
+  },
+
+ 
+_configurarCallbackFila() {
+  window.RealtimeListenersManager.registrarCallback('NovoClienteFila', (dadosCliente) => {
+    // VERIFICAR SE PODE NOTIFICAR
+    const temAtivo = !!localStorage.getItem('atendimento_ativo_id');
+    const posicao = dadosCliente.posicao_fila ?? 1;
+    
+    // OBTER aba ativa do StateManager (ja e mantida pelo TabManager!)
+    const state = window.StateManager.get('atendimento') || {};
+    const abaAtiva = state.activeTab || 'aba-atendimento';
+    const abasPermitidas = ['atendimento'];
+    
+    console.log('[FILA] Verificando: temAtivo=' + temAtivo + ', abaAtiva=' + abaAtiva);
+    
+    // Se OCUPADO, IGNORA tudo
+    if (temAtivo) {
+      console.log('[FILA] Operador OCUPADO - bloqueado');
+      return;
+    }
+    
+    // Se em aba ERRADA, IGNORA
+    if (!abasPermitidas.includes(abaAtiva)) {
+      console.log('[FILA] Aba nao permitida (' + abaAtiva + ') - bloqueado');
+      return;
+    }
+    
+    // Se eh primeiro da fila, guarda como ticket
+    if (posicao === 1) {
+      this.ticketAtual = dadosCliente;
+    }
+    
+    // SO AGORA notifica (operador esta LIVRE e em aba CORRETA)
+    this.notificarNovoAtendimento(dadosCliente);
+  });
+
+  window.RealtimeListenersManager.escutarFilaClientes();
+  console.log('[FILA] Listener registrado');
+},
   /**
    * ✅ NOVO: Verificar se todas as checkboxes estão marcadas
    */
@@ -1106,132 +1166,197 @@ const WhatsAppTab = {
   /**
    * ✅ NOVO: Limpar interface após conclusão
    */
-  limparInterface() {
-    // Ocultar workspace
-    if (this.elements.workspace) {
-      this.elements.workspace.classList.add('hidden');
-    }
+limparInterface() {
+  // Ocultar workspace
+  if (this.elements.workspace) {
+    this.elements.workspace.classList.add('hidden');
+  }
 
-    // Mostrar empty state
-    if (this.elements.emptyState) {
-      this.elements.emptyState.classList.remove('hidden');
-    }
+  // Mostrar empty state
+  if (this.elements.emptyState) {
+    this.elements.emptyState.classList.remove('hidden');
+  }
 
-    // Limpar chat
-    if (this.elements.chatbox) {
-      this.elements.chatbox.innerHTML = '';
-    }
+  // Limpar chat
+  if (this.elements.chatbox) {
+    this.elements.chatbox.innerHTML = '';
+  }
 
-    // Resetar campos
-    if (this.elements.tipoDemanda) this.elements.tipoDemanda.value = '';
-    if (this.elements.setorResponsavel) this.elements.setorResponsavel.value = '';
-    if (this.elements.descricaoSolicitacao) this.elements.descricaoSolicitacao.value = '';
-    if (this.elements.observacoesInternas) this.elements.observacoesInternas.value = '';
+  // Resetar campos
+  if (this.elements.tipoDemanda) this.elements.tipoDemanda.value = '';
+  if (this.elements.setorResponsavel) this.elements.setorResponsavel.value = '';
+  if (this.elements.descricaoSolicitacao) this.elements.descricaoSolicitacao.value = '';
+  if (this.elements.observacoesInternas) this.elements.observacoesInternas.value = '';
 
-    // Resetar checkboxes
-    if (this.elements.checkNome) {
-      this.elements.checkNome.checked = false;
-      this.elements.checkNome.disabled = false;
-    }
-    if (this.elements.checkTelefone) {
-      this.elements.checkTelefone.checked = false;
-      this.elements.checkTelefone.disabled = false;
-    }
-    if (this.elements.checkEmail) {
-      this.elements.checkEmail.checked = false;
-      this.elements.checkEmail.disabled = false;
-    }
+  // Resetar checkboxes
+  if (this.elements.checkNome) {
+    this.elements.checkNome.checked = false;
+    this.elements.checkNome.disabled = false;
+  }
+  if (this.elements.checkTelefone) {
+    this.elements.checkTelefone.checked = false;
+    this.elements.checkTelefone.disabled = false;
+  }
+  if (this.elements.checkEmail) {
+    this.elements.checkEmail.checked = false;
+    this.elements.checkEmail.disabled = false;
+  }
 
-    // Resetar botão de validação
-    if (this.elements.btnValidarIdentidade) {
-      this.elements.btnValidarIdentidade.disabled = true;
-      this.elements.btnValidarIdentidade.textContent = 'Confirmar Identidade';
-      this.elements.btnValidarIdentidade.classList.remove('btn-success', 'btn-ready');
-    }
+  // Resetar botao de validacao
+  if (this.elements.btnValidarIdentidade) {
+    this.elements.btnValidarIdentidade.disabled = true;
+    this.elements.btnValidarIdentidade.textContent = 'Confirmar Identidade';
+    this.elements.btnValidarIdentidade.classList.remove('btn-success', 'btn-ready');
+  }
 
-    // ✅ Ocultar botões de ação
-    if (this.elements.btnIniciarAtendimento) {
-      this.elements.btnIniciarAtendimento.classList.add('hidden');
-    }
-    if (this.elements.btnConcluir) {
-      this.elements.btnConcluir.classList.add('hidden');
-    }
-    if (this.elements.btnEncaminhar) {
-      this.elements.btnEncaminhar.classList.add('hidden');
-    }
-    // Resetar estado local
-    this.dadosAtendimento = {
-      validacao_identidade: {
-        concluida: false,
-        campos_verificados: []
-      },
-      tipo_demanda: '',
-      setor_responsavel: '',
-      descricao_solicitacao: '',
-      observacoes_internas: ''
-    };
+  // Ocultar botoes de acao
+  if (this.elements.btnIniciarAtendimento) {
+    this.elements.btnIniciarAtendimento.classList.add('hidden');
+  }
+  if (this.elements.btnConcluir) {
+    this.elements.btnConcluir.classList.add('hidden');
+  }
+  if (this.elements.btnEncaminhar) {
+    this.elements.btnEncaminhar.classList.add('hidden');
+  }
 
-    console.log('🧹 Interface limpa');
+  // Resetar estado local
+  this.dadosAtendimento = {
+    validacao_identidade: {
+      concluida: false,
+      campos_verificados: []
+    },
+    tipo_demanda: '',
+    setor_responsavel: '',
+    descricao_solicitacao: '',
+    observacoes_internas: ''
+  };
+
+  console.log('[INTERFACE] Interface limpa apos conclusao');
+  
+  // RE-INICIALIZAR listener apos conclusao
+  // Isso garante que o proximo cliente na fila SERA notificado
+  setTimeout(() => {
+    console.log('[LISTENER] Re-inicializando listener da fila...');
+    this._configurarCallbackFila();
+    console.log('[LISTENER] Listener da fila re-inicializado');
+  }, 500);
+},
+
+  /**
+   * NOVO: Reiniciar listener da fila apos conclusao de atendimento
+   * Permite que proximas notificacoes cheguem sem precisar atualizar pagina
+   */
+  reiniciarListenerFila() {
+    // Aguardar um tempo antes de reiniciar (evita race condition)
+    setTimeout(() => {
+      console.log('Reiniciando listener da fila...');
+
+      // Se o manager ainda nao carregou, aguarda
+      if (!window.RealtimeListenersManager) {
+        console.warn('Aguardando RealtimeListenersManager...');
+        let tentativas = 0;
+        const intervalo = setInterval(() => {
+          tentativas++;
+          if (window.RealtimeListenersManager) {
+            clearInterval(intervalo);
+            console.log('OK RealtimeListenersManager disponivel, reiniciando listener...');
+            this._configurarCallbackFila();
+          } else if (tentativas >= 10) {
+            clearInterval(intervalo);
+            console.error('ERRO RealtimeListenersManager nao disponivel');
+          }
+        }, 300);
+        return;
+      }
+
+      // Se ja existe callback, registra novamente
+      this._configurarCallbackFila();
+
+      // Tambem inicia listener na fila para nao perder novos clientes
+      if (window.RealtimeListenersManager && window.RealtimeListenersManager.escutarFilaClientes) {
+        window.RealtimeListenersManager.escutarFilaClientes();
+      }
+
+      console.log('OK Listener da fila reiniciado com sucesso');
+    }, 1000); // 1 segundo de delay para evitar race condition
   },
-
-  setupInitialState() {
-    const db = window.FirebaseApp.db;
-    const fStore = window.FirebaseApp.fStore;
-    const q = fStore.query(fStore.collection(db, "atend_chat_fila"), fStore.where("status", "==", "FILA"));
-
-    this.unsubscribeFila = fStore.onSnapshot(q, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          this.ticketAtual = change.doc.data();
-          this.notificarNovoAtendimento(this.ticketAtual);
-        }
-      });
-    });
-  },
-
   /**
    * ✅ Lógica de notificação inteligente
    */
-  notificarNovoAtendimento(ticket) {
-    console.log('🔔 Novo atendimento detectado:', ticket.atendimentoId);
+ notificarNovoAtendimento(ticket) {
+  // Neste ponto, JA foi verificado tudo em _configurarCallbackFila()
+  // SO mostra a notificacao
 
-    const atendimentoAtivo = localStorage.getItem('atendimento_ativo_id');
-    const estaOcioso = !atendimentoAtivo;
+  console.log('[NOTIFICACAO] Exibindo: ' + ticket.atendimentoId);
 
-    if (!estaOcioso) {
-      console.log('🔕 Operador OCUPADO. Notificação ignorada');
-      return;
-    }
-
-    const state = window.StateManager.get('atendimento');
-    const abaAtiva = state?.activeTab || 'atendimento';
-    const abasPermitidas = ['atendimento', 'demandas', 'historico'];
-
-    if (!abasPermitidas.includes(abaAtiva)) {
-      console.log(`🔕 Operador em aba não permitida (${abaAtiva})`);
-      return;
-    }
-
-    console.log('✅ Exibindo notificação de novo atendimento');
+  if (window.NovoClienteNotificacaoManager) {
+    window.NovoClienteNotificacaoManager.mostrarNotificacao(
+      ticket,
+      // onAceitar
+      (dadosCliente) => {
+        this.ticketAtual = dadosCliente;
+        this.acceptCall();
+      },
+      // onRejeitar
+      (dadosCliente) => {
+        console.log('[NOTIFICACAO] Rejeitado: ' + dadosCliente.atendimentoId);
+      }
+    );
+  } else {
     this.mostrarPopup(ticket);
-  },
+  }
+},
 
   mostrarPopup(ticket) {
+    // Fallback simples — só usado se NovoClienteNotificacaoManager não estiver disponível
     const nomeExibicao = document.getElementById('popupCliente');
-    if (nomeExibicao) nomeExibicao.textContent = ticket.cliente.nome;
+    if (nomeExibicao) nomeExibicao.textContent = ticket.cliente?.nome || 'Cliente';
     if (this.elements.popup) this.elements.popup.style.display = 'flex';
   },
 
-  acceptCall() {
+  async acceptCall() {
     if (!this.ticketAtual) return;
-    const ticket = this.ticketAtual;
 
-    localStorage.setItem('atendimento_ativo_id', ticket.atendimentoId);
-    window.StateManager.set('atendimento', { currentTicketId: ticket.atendimentoId });
+    // Busca dados frescos do Firestore para garantir que é o ticket correto
+    try {
+      const db = window.FirebaseApp.db;
+      const { doc, getDoc } = window.FirebaseApp.fStore;
 
-    this.renderizarInterfaceAtendimento(ticket);
-    this.vincularOperadorNoFirebase(ticket.atendimentoId);
-    this.conectarChat(ticket.atendimentoId);
+      const docSnap = await getDoc(
+        doc(db, 'atend_chat_fila', this.ticketAtual.atendimentoId)
+      );
+
+      if (!docSnap.exists()) {
+        console.warn('⚠️ Ticket não encontrado, pode ter sido aceito por outro operador');
+        window.ToastManager?.show('Este atendimento não está mais disponível.', 'warning');
+        this.ticketAtual = null;
+        return;
+      }
+
+      const dadosAtuais = docSnap.data();
+
+      // Verificar se ainda está em FILA — outro operador pode ter aceitado antes
+      if (dadosAtuais.status !== 'FILA') {
+        console.warn('⚠️ Ticket já foi aceito por outro operador:', dadosAtuais.status);
+        window.ToastManager?.show('Este atendimento já foi aceito por outro operador.', 'warning');
+        this.ticketAtual = null;
+        return;
+      }
+
+      const ticket = { atendimentoId: docSnap.id, ...dadosAtuais };
+
+      localStorage.setItem('atendimento_ativo_id', ticket.atendimentoId);
+      window.StateManager.set('atendimento', { currentTicketId: ticket.atendimentoId });
+
+      this.renderizarInterfaceAtendimento(ticket);
+      this.vincularOperadorNoFirebase(ticket.atendimentoId);
+      this.conectarChat(ticket.atendimentoId);
+
+    } catch (error) {
+      console.error('❌ Erro ao aceitar atendimento:', error);
+      window.ToastManager?.show('Erro ao aceitar atendimento.', 'error');
+    }
   },
 
   async restaurarVisualAtendimento(atendimentoId) {
@@ -1592,6 +1717,11 @@ const WhatsAppTab = {
       this.unsubscribeFila = null;
     }
 
+    if (window.RealtimeListenersManager) {
+      window.RealtimeListenersManager.limparListener('filaClientes');
+      // Limpar o callback para não disparar após destruição
+      window.RealtimeListenersManager.registrarCallback('NovoClienteFila', null);
+    }
     this._initialized = false;
     console.log('✅ WhatsAppTab destruído');
   }
